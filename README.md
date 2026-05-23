@@ -1,6 +1,6 @@
 # Matter Acc V1
 
-Matter Acc V1 is a full-stack accounting web application with a Next.js frontend and a Flask backend. The repository is organized so both apps can be uploaded together to GitHub and run locally.
+Matter Acc V1 is a local full-stack accounting web application with a Next.js frontend and a Flask backend. It is intended to run from source on a developer machine.
 
 ## Tech Stack
 
@@ -13,48 +13,34 @@ Matter Acc V1 is a full-stack accounting web application with a Next.js frontend
 
 ```text
 .
-├── backend/
-│   ├── app/
-│   │   ├── config/
-│   │   ├── domain/
-│   │   ├── models/
-│   │   ├── routes/
-│   │   └── services/
-│   ├── storage/
-│   │   ├── generated/
-│   │   └── uploads/
-│   ├── tests/
-│   ├── requirements.txt
-│   └── run.py
-├── frontend/
-│   ├── app/
-│   ├── assets/
-│   ├── components/
-│   ├── hooks/
-│   ├── lib/
-│   ├── public/
-│   ├── styles/
-│   ├── views/
-│   └── package.json
-└── README.md
+|-- backend/
+|   |-- app/
+|   |   |-- config/
+|   |   |-- domain/
+|   |   |-- models/
+|   |   |-- routes/
+|   |   `-- services/
+|   |-- tests/
+|   |-- requirements.txt
+|   `-- run.py
+|-- frontend/
+|   |-- app/
+|   |-- assets/
+|   |-- components/
+|   |-- hooks/
+|   |-- lib/
+|   |-- public/
+|   |-- styles/
+|   |-- views/
+|   `-- package.json
+`-- README.md
 ```
 
-## What Is Ignored From Git
-
-The `.gitignore` keeps source files in Git and excludes local/runtime files:
-
-- dependency folders such as `node_modules/` and `.venv/`
-- build output such as `frontend/.next/`, `dist/`, and `*.tsbuildinfo`
-- logs and test caches
-- Python `__pycache__` and `*.pyc`
-- local `.env` files
-- backend runtime data in `backend/storage/`, including SQLite databases, generated PDFs/CSVs/TXT files, and uploaded files
-
-The backend creates storage folders automatically when it starts.
+Runtime files are created locally and ignored by Git. The backend recreates `backend/storage/` automatically when it starts.
 
 ## Environment Files
 
-Copy the examples before running locally:
+Copy the example environment files before running locally:
 
 ```powershell
 Copy-Item backend\.env.example backend\.env
@@ -63,17 +49,25 @@ Copy-Item frontend\.env.example frontend\.env.local
 
 Important variables:
 
-- `FLASK_SECRET_KEY`: change this for non-local environments
+- `FLASK_SECRET_KEY`: local Flask secret key
 - `FRONTEND_ORIGINS`: comma-separated frontend URLs allowed by Flask CORS
-- `DATABASE_URL`: backend database URL
+- `DATABASE_URL`: backend database URL, usually SQLite under `backend/storage/app.db`
 - `NEXT_PUBLIC_API_BASE_URL`: frontend API base URL, usually `http://127.0.0.1:5000`
 
 ## Run Locally
 
-### Backend
+Open one terminal for the backend:
 
 ```powershell
-cd backend
+cd "C:\Users\Matee\Desktop\NotScan\DataFlowXcel OCR\MainWebsite\entrepreneur\matter-acc-V1"
+backend\.venv\Scripts\activate
+python backend\run.py
+```
+
+If the backend virtual environment does not exist yet:
+
+```powershell
+cd "C:\Users\Matee\Desktop\NotScan\DataFlowXcel OCR\MainWebsite\entrepreneur\matter-acc-V1\backend"
 py -3.11 -m venv .venv
 .\.venv\Scripts\Activate.ps1
 pip install -r requirements.txt
@@ -88,12 +82,10 @@ Health check:
 Invoke-RestMethod http://127.0.0.1:5000/api/health
 ```
 
-### Frontend
-
-Open a second terminal:
+Open a second terminal for the frontend:
 
 ```powershell
-cd frontend
+cd "C:\Users\Matee\Desktop\NotScan\DataFlowXcel OCR\MainWebsite\entrepreneur\matter-acc-V1\frontend"
 npm install
 npm run dev
 ```
@@ -112,33 +104,45 @@ npm run build
 ```
 
 ```powershell
+cd ..
 .\backend\.venv\Scripts\python.exe -m unittest discover -s backend\tests
 .\backend\.venv\Scripts\python.exe -m compileall backend\app
 ```
 
-## Upload To GitHub
+## GitHub Workflow
 
-If this folder is not already a Git repository:
+This project is connected to:
 
-```powershell
-git init
-git add .
-git status
-git commit -m "Initial full-stack app"
-git branch -M main
-git remote add origin https://github.com/YOUR_USERNAME/YOUR_REPOSITORY.git
-git push -u origin main
+```text
+https://github.com/mateelonggpt-dev/entrepreneur-webapp
 ```
 
-Before committing, confirm that `git status` does not include runtime files such as:
+Common workflow:
 
-- `backend/storage/app.db`
-- `backend/storage/database.json`
-- `backend/storage/generated/*`
-- `backend/storage/uploads/*`
-- `frontend/.next/*`
-- `frontend/*.log`
-- `backend/*.log`
+```powershell
+git status
+git add .
+git commit -m "Describe your change"
+git push
+```
+
+To create and push a feature branch:
+
+```powershell
+git switch -c your-branch-name
+git add .
+git commit -m "Describe your change"
+git push -u origin your-branch-name
+```
+
+Before committing, confirm that `git status` does not include runtime or local files such as:
+
+- `backend/.env`
+- `frontend/.env.local`
+- `backend/.venv/`
+- `backend/storage/`
+- `frontend/.next/`
+- `frontend/node_modules/`
 
 ## Backend API
 
