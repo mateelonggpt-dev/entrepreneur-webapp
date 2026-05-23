@@ -27,10 +27,6 @@ This file tracks user-facing text that still cannot fully switch between English
   - Hardcoded labels and errors such as `Create Combined Receipt`, `Source mode`, `Billing document`, `Add Split`, `Create Receipt`, and submit error messages.
 - `frontend/components/modals/CombinedBillingModal.tsx`
   - Hardcoded labels and errors such as `Create Combined Billing`, `Create Billing`, and billing validation/error text.
-- `frontend/views/sales/Receipts.tsx`
-  - Hardcoded page title, empty state, action labels, and export/download messages.
-- `frontend/views/sales/Billing.tsx`
-  - Hardcoded page title, empty state, and action labels such as `New Billing` and `Create receipt`.
 - `frontend/views/settings/Settings.tsx`
   - Section titles, menu labels, and settings descriptions are largely hardcoded English.
 

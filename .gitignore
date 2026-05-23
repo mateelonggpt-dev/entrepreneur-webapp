@@ -41,14 +41,7 @@ htmlcov/
 !frontend/.env.example
 
 # Runtime application data
-backend/storage/*
-!backend/storage/.gitkeep
-!backend/storage/generated/
-backend/storage/generated/*
-!backend/storage/generated/.gitkeep
-!backend/storage/uploads/
-backend/storage/uploads/*
-!backend/storage/uploads/.gitkeep
+backend/storage/
 
 # Editor directories and files
 .vscode/*
