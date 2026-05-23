@@ -11,7 +11,7 @@ export const SalesDocumentTemplate = ({
 }) => {
   const copies: SalesDocumentCopyKind[] =
     data.copyGeneration === "both" ? ["original", "copy"] : [data.copyGeneration];
-  const accentColor = data.branding.accentColor || "#2DD4BF";
+  const accentColor = data.branding.accentColor || "#14B8A6";
 
   return (
     <div
@@ -32,36 +32,40 @@ export const SalesDocumentTemplate = ({
 
 const documentTemplateCss = `
   .sales-document-print-root {
-    --doc-border: #d1d5db;
-    --doc-text: #111827;
+    --doc-border: #d9e2ec;
+    --doc-text: #0f172a;
+    --doc-muted: #64748b;
     color: var(--doc-text);
-    font-family: "Noto Sans Thai", "Sarabun", "Prompt", Tahoma, Arial, sans-serif;
+    font-family: "Noto Sans Thai", "Sarabun", "Prompt", Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Arial, sans-serif;
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 24px;
-    background: #f8fafc;
+    gap: 28px;
+    padding: 24px;
+    background: linear-gradient(180deg, #f8fafc 0%, #eef2f7 100%);
   }
 
   .sales-document-page {
     width: 210mm;
-    height: 297mm;
-    margin: 0;
-    padding: 8mm 10mm;
+    max-width: 100%;
+    min-height: 297mm;
+    padding: 14mm 16mm;
     box-sizing: border-box;
     background: #ffffff;
     display: flex;
     flex-direction: column;
-    overflow: hidden;
+    overflow: visible;
     page-break-after: always;
     break-after: page;
-    font-family: "Noto Sans Thai", "Sarabun", "Prompt", Tahoma, Arial, sans-serif;
+    font-family: inherit;
+    font-size: 11.2px;
+    line-height: 1.45;
+    border: 1px solid rgba(148, 163, 184, 0.28);
+    border-radius: 20px;
+    box-shadow: 0 28px 90px rgba(15, 23, 42, 0.18);
   }
 
-  .sales-document-page:last-child {
-    page-break-after: auto;
-    break-after: auto;
-  }
+  .sales-document-page:last-child { page-break-after: auto; break-after: auto; }
 
   .sales-doc-avoid-break,
   .sales-doc-header,
@@ -75,465 +79,82 @@ const documentTemplateCss = `
     break-inside: avoid;
   }
 
-  .sales-doc-header {
-    display: grid;
-    grid-template-columns: 1fr 70mm;
-    gap: 5mm;
-    align-items: start;
-    padding-bottom: 5px;
-    border-bottom: 1px solid var(--doc-brand);
-  }
+  .sales-doc-header { display: grid; grid-template-columns: minmax(0, 1fr) minmax(64mm, 76mm); gap: 9mm; align-items: start; padding-bottom: 9mm; border-bottom: 2px solid var(--doc-brand); }
+  .sales-doc-seller-head { display: flex; gap: 5mm; align-items: flex-start; min-width: 0; }
+  .sales-doc-logo { width: 64px; height: 64px; display: flex; align-items: center; justify-content: center; color: #94a3b8; flex: 0 0 auto; border: 1px solid #e2e8f0; border-radius: 16px; background: #f8fafc; }
+  .sales-doc-logo img { max-width: 86%; max-height: 86%; object-fit: contain; }
+  .sales-doc-seller-copy { font-size: 10.6px; line-height: 1.42; color: #334155; max-width: 112mm; }
+  .sales-doc-seller-copy p { margin: 0; }
+  .sales-doc-company-name { font-size: 15.6px; line-height: 1.28; font-weight: 800; color: #020617; margin: 0 0 4px !important; }
+  .sales-doc-company-name span { color: var(--doc-brand); }
+  .sales-doc-title-zone { text-align: right; }
+  .sales-doc-copy-label { display: inline-flex; border: 1px solid #ccfbf1; background: var(--doc-brand-soft); color: var(--doc-brand); font-size: 10px; font-weight: 800; min-height: 26px; padding: 4px 12px; margin: 0 0 7px; border-radius: 999px; letter-spacing: 0.08em; text-transform: uppercase; }
+  .sales-doc-title-zone h1 { color: var(--doc-brand); font-size: 34px; line-height: 1.02; font-weight: 900; margin: 0; letter-spacing: -0.04em; overflow-wrap: anywhere; }
+  .sales-doc-title-en { color: var(--doc-muted); font-size: 11.2px; font-weight: 700; margin: 2mm 0 0; letter-spacing: 0.04em; text-transform: uppercase; }
 
-  .sales-doc-seller-head {
-    display: flex;
-    gap: 4mm;
-    min-width: 0;
-  }
+  .document-main-info { display: grid; grid-template-columns: minmax(0, 1fr) minmax(72mm, 82mm); gap: 7mm; margin-top: 8mm; font-size: 10.8px; line-height: 1.42; }
+  .left-info-column, .right-info-column { display: flex; flex-direction: column; gap: 5px; }
+  .sales-doc-party, .sales-doc-info-box { border: 1px solid var(--doc-border); border-radius: 16px; background: #fff; padding: 5mm; box-shadow: 0 10px 26px rgba(15, 23, 42, 0.045); }
+  .sales-doc-party { border-left: 4px solid var(--doc-brand); }
+  .sales-doc-section-label { color: var(--doc-brand); font-weight: 900; margin: 0 0 3mm; font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase; }
+  .sales-doc-party-grid { display: grid; grid-template-columns: 76px minmax(0, 1fr); gap: 2mm 4mm; }
+  .sales-doc-field-label, .sales-doc-info-row span, .sales-doc-summary-line span { color: var(--doc-muted); font-weight: 800; }
+  .sales-doc-strong { font-weight: 900; color: #0f172a; }
+  .sales-doc-party-grid p, .sales-doc-info-box p, .sales-doc-payment-grid p, .sales-doc-note-block p, .sales-doc-words-line p { margin: 0; }
+  .sales-doc-preline, .sales-doc-payment-grid p, .sales-doc-note-block p { white-space: pre-line; }
+  .sales-doc-info-row, .sales-doc-summary-line { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 12px; align-items: start; min-height: 21px; padding: 2px 0; }
+  .sales-doc-info-row strong, .sales-doc-summary-line strong { text-align: right; font-weight: 800; color: #0f172a; }
 
-  .sales-doc-logo {
-    width: 54px;
-    height: 54px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    color: #94a3b8;
-    flex: 0 0 auto;
-  }
+  .sales-doc-table-zone { flex: 1 1 auto; min-height: 230px; margin-top: 8mm; overflow-x: auto; }
+  .sales-doc-table { width: 100%; border-collapse: separate; border-spacing: 0; table-layout: fixed; font-size: 10.4px; border: 1px solid var(--doc-border); border-radius: 16px; overflow: hidden; }
+  .sales-doc-table th { background: #f1f5f9; border-bottom: 1px solid #b8c4d4; color: #0f172a; padding: 8px 7px; text-align: center; font-weight: 900; }
+  .sales-doc-table td { border-bottom: 1px solid #edf2f7; padding: 7px; vertical-align: top; text-align: right; overflow-wrap: anywhere; color: #1e293b; }
+  .sales-doc-table tbody tr:nth-child(even) td { background: #fbfdff; }
+  .sales-doc-text-left { text-align: left !important; }
+  .sales-doc-line-title { font-weight: 850; margin: 0; color: #0f172a; }
+  .sales-doc-line-detail { color: var(--doc-muted); margin: 1.2mm 0 0; font-size: 9.8px; line-height: 1.35; }
 
-  .sales-doc-logo img {
-    max-width: 100%;
-    max-height: 100%;
-    object-fit: contain;
-  }
+  .sales-doc-bottom { margin-top: auto; flex-shrink: 0; }
+  .sales-doc-bottom-grid { border-top: 1px solid #b8c4d4; padding-top: 8mm; display: grid; grid-template-columns: minmax(0, 1fr) minmax(64mm, 78mm); gap: 7mm; font-size: 10.6px; line-height: 1.4; }
+  .sales-doc-summary-words { border: 1px solid var(--doc-border); border-radius: 14px; margin-top: 5mm; padding: 4mm; background: #f8fafc; }
+  .sales-doc-summary-words span { display: block; color: var(--doc-brand); font-weight: 900; font-size: 9.8px; text-transform: uppercase; }
+  .sales-doc-summary-words p { margin: 2mm 0 0; color: #334155; line-height: 1.42; white-space: pre-line; }
+  .sales-doc-grand-total { background: linear-gradient(135deg, var(--doc-brand) 0%, #0f766e 100%); color: #fff; padding: 5mm; display: flex; justify-content: space-between; align-items: center; gap: 4mm; min-height: 44px; border-radius: 16px; box-shadow: 0 16px 32px rgba(15, 118, 110, 0.18); margin: 3mm 0; }
+  .sales-doc-grand-total span { font-weight: 900; color: rgba(255, 255, 255, 0.9); text-transform: uppercase; }
+  .sales-doc-grand-total strong { color: #fff; font-size: 18px; font-weight: 950; white-space: nowrap; }
+  .sales-doc-summary-strong { border-top: 1px solid var(--doc-border); margin-top: 2mm; padding-top: 3mm; }
+  .sales-doc-summary-strong strong { color: var(--doc-brand); font-size: 12.4px; }
 
-  .sales-doc-seller-copy {
-    font-size: 8.2px;
-    line-height: 1.16;
-    color: #334155;
-    max-width: 100mm;
-  }
+  .sales-doc-payment-notes { font-size: 10.6px; line-height: 1.42; }
+  .sales-doc-bank-card, .sales-doc-payment-block, .sales-doc-note-block { border: 1px solid var(--doc-border); border-radius: 16px; padding: 5mm; background: #fff; box-shadow: 0 10px 24px rgba(15, 23, 42, 0.05); }
+  .sales-doc-bank-card { display: grid; grid-template-columns: 5px 1fr; gap: 10px; }
+  .sales-doc-bank-strip { background: var(--doc-brand); border-radius: 999px; }
+  .sales-doc-bank-name { color: #0f172a; font-weight: 900; }
+  .sales-doc-note-block { margin-top: 4mm; }
 
-  .sales-doc-company-name {
-    font-size: 11.8px;
-    line-height: 1.18;
-    font-weight: 700;
-    color: #020617;
-    margin: 0 0 3px;
-  }
+  .sales-doc-signature-section { border-top: 1px solid #b8c4d4; margin-top: 8mm; padding-top: 6mm; font-size: 10.2px; min-height: 86px; overflow: hidden; }
+  .sales-doc-signatures { display: grid; grid-template-columns: 1fr 1fr; gap: 42px; text-align: center; }
+  .sales-doc-signature-box { min-height: 78px; display: flex; flex-direction: column; justify-content: flex-end; align-items: center; padding: 0 8px; }
+  .sales-doc-signature-image-frame { display: flex; align-items: center; justify-content: center; width: 58mm; max-width: 100%; height: 16mm; margin: 0 auto 2.5mm; overflow: hidden; }
+  .sales-doc-signature-image { max-width: 58mm; max-height: 16mm; object-fit: contain; display: block; }
+  .sales-doc-signature-line { border-top: 1px solid #334155; width: 76%; margin: 0 auto; }
+  .sales-doc-signature-box p { margin: 4px 0 0; font-weight: 850; }
+  .sales-doc-signature-box span { display: block; margin: 4px 0 0; color: var(--doc-muted); font-size: 9.2px; }
 
-  .sales-doc-title-zone {
-    text-align: right;
-  }
-
-  .sales-doc-copy-label {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    border: 1px solid #d1d5db;
-    background: #ffffff;
-    color: var(--doc-brand);
-    font-size: 8.2px;
-    font-weight: 700;
-    min-height: 18px;
-    padding: 1px 8px;
-    margin: 0 0 3px;
-    line-height: 1;
-  }
-
-  .sales-doc-title-zone h1 {
-    color: var(--doc-brand);
-    font-size: 22px;
-    line-height: 1.08;
-    font-weight: 800;
-    margin: 0;
-    overflow-wrap: anywhere;
-  }
-
-  .sales-doc-title-en {
-    color: #64748b;
-    font-size: 8.2px;
-    font-weight: 600;
-    margin: 1mm 0 0;
-  }
-
-  .document-main-info {
-    display: grid;
-    grid-template-columns: 1fr 285px;
-    gap: 12px;
-    margin-top: 5px;
-    font-size: 8.2px;
-    line-height: 1.15;
-  }
-
-  .left-info-column,
-  .right-info-column {
-    display: flex;
-    flex-direction: column;
-    gap: 4px;
-  }
-
-  .sales-doc-party {
-    border-top: 1px solid var(--doc-border);
-    padding-top: 3px;
-  }
-
-  .sales-doc-section-label {
-    display: flex;
-    align-items: center;
-    color: var(--doc-brand);
-    font-weight: 800;
-    margin: 0 0 2px;
-    font-size: 8.2px;
-    min-height: 12px;
-    line-height: 1.05;
-  }
-
-  .sales-doc-party-grid {
-    display: grid;
-    grid-template-columns: 62px 1fr;
-    gap: 1px 6px;
-  }
-
-  .sales-doc-field-label {
-    color: #334155;
-    font-weight: 700;
-    white-space: nowrap;
-  }
-
-  .sales-doc-strong {
-    font-weight: 800;
-  }
-
-  .sales-doc-party-grid p,
-  .sales-doc-info-box p,
-  .sales-doc-payment-grid p,
-  .sales-doc-note-block p,
-  .sales-doc-words-line p {
-    margin: 0;
-  }
-
-  .sales-doc-preline,
-  .sales-doc-payment-grid p,
-  .sales-doc-note-block p {
-    white-space: pre-line;
-  }
-
-  .sales-doc-info-box {
-    border-top: 1px solid var(--doc-border);
-    border-bottom: 1px solid var(--doc-border);
-    background: transparent;
-    padding: 4px 0;
-    font-size: 8.2px;
-    line-height: 1.15;
-  }
-
-  .sales-doc-info-row {
-    display: grid;
-    grid-template-columns: 78px 1fr;
-    gap: 5px;
-    align-items: center;
-    min-height: 15px;
-    line-height: 1.15;
-  }
-
-  .sales-doc-summary-line {
-    display: grid;
-    grid-template-columns: 1fr auto;
-    gap: 10px;
-    align-items: center;
-    min-height: 15px;
-    line-height: 1.15;
-  }
-
-  .sales-doc-info-row span,
-  .sales-doc-summary-line span {
-    color: var(--doc-brand);
-    font-weight: 700;
-  }
-
-  .sales-doc-info-row strong,
-  .sales-doc-summary-line strong {
-    text-align: right;
-    font-weight: 600;
-  }
-
-  .sales-doc-contact-box {
-    border-top: 1px solid var(--doc-border);
-    padding-top: 4px;
-    font-size: 8px;
-    line-height: 1.18;
-  }
-
-  .sales-doc-table-zone {
-    flex: 1 1 auto;
-    min-height: 210px;
-    max-height: none;
-    margin-top: 5px;
-  }
-
-  .sales-doc-table {
-    width: 100%;
-    border-collapse: collapse;
-    table-layout: fixed;
-    font-size: 8.2px;
-  }
-
-  .sales-doc-table th {
-    background: transparent;
-    border-top: 1px solid #cbd5e1;
-    border-bottom: 1px solid #cbd5e1;
-    color: #0f172a;
-    padding: 3px 5px;
-    text-align: center;
-    font-weight: 800;
-    vertical-align: middle;
-    line-height: 1.15;
-    height: 18px;
-  }
-
-  .sales-doc-table td {
-    border-bottom: 1px solid #eef2f7;
-    padding: 2.5px 5px;
-    vertical-align: top;
-    text-align: right;
-    overflow-wrap: anywhere;
-  }
-
-  .sales-doc-text-left {
-    text-align: left !important;
-  }
-
-  .sales-doc-line-title {
-    font-weight: 700;
-    margin: 0;
-  }
-
-  .sales-doc-line-detail {
-    color: #64748b;
-    margin: 0.5mm 0 0;
-  }
-
-  .sales-doc-bottom {
-    margin-top: auto;
-    flex-shrink: 0;
-    page-break-inside: avoid;
-    break-inside: avoid;
-  }
-
-  .sales-doc-bottom-grid {
-    border-top: 1px solid #cbd5e1;
-    padding-top: 8px;
-    display: grid;
-    grid-template-columns: 1fr 58mm;
-    gap: 12px;
-    font-size: 8.2px;
-    line-height: 1.15;
-  }
-
-  .sales-doc-words-line {
-    border-top: 0;
-    margin-top: 0;
-    padding-top: 0;
-  }
-
-  .sales-doc-summary-words {
-    border-top: 1px solid #e2e8f0;
-    margin-top: 5px;
-    padding-top: 4px;
-  }
-
-  .sales-doc-summary-words span {
-    display: block;
-    color: var(--doc-brand);
-    font-weight: 700;
-    line-height: 1.1;
-  }
-
-  .sales-doc-summary-words p {
-    margin: 2px 0 0;
-    color: #334155;
-    line-height: 1.18;
-    white-space: pre-line;
-  }
-
-  .sales-doc-words-line strong {
-    display: block;
-    margin-bottom: 0.8mm;
-  }
-
-  .sales-doc-grand-total {
-    border: 0;
-    border-top: 1px solid var(--doc-border);
-    border-bottom: 1px solid var(--doc-border);
-    background: #ffffff;
-    padding: 4px 0;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    gap: 3mm;
-    min-height: 25px;
-    line-height: 1.1;
-  }
-
-  .sales-doc-grand-total span {
-    font-weight: 800;
-  }
-
-  .sales-doc-grand-total strong {
-    color: var(--doc-brand);
-    font-size: 13px;
-  }
-
-  .sales-doc-total-details {
-    margin-top: 4px;
-  }
-
-  .sales-doc-summary-strong strong {
-    color: var(--doc-brand);
-    font-size: 10px;
-  }
-
-  .sales-doc-payment-notes {
-    font-size: 8.2px;
-    line-height: 1.15;
-  }
-
-  .sales-doc-payment-grid {
-    display: block;
-  }
-
-  .sales-doc-bank-card {
-    display: grid;
-    grid-template-columns: 4px 1fr;
-    gap: 7px;
-    border: 1px solid #ccfbf1;
-    background: #f8fffd;
-    padding: 5px 6px;
-    color: #334155;
-  }
-
-  .sales-doc-bank-strip {
-    background: var(--doc-brand);
-    min-height: 100%;
-  }
-
-  .sales-doc-bank-name {
-    color: #0f172a;
-    font-weight: 800;
-  }
-
-  .sales-doc-payment-block {
-    border-top: 1px solid #e2e8f0;
-    margin-top: 4px;
-    padding-top: 3px;
-  }
-
-  .sales-doc-note-block {
-    border-top: 1px solid #e2e8f0;
-    margin-top: 4px;
-    padding-top: 3px;
-    min-height: 16px;
-  }
-
-  .sales-doc-signature-section {
-    border-top: 1px solid #cbd5e1;
-    margin-top: 7px;
-    padding-top: 4px;
-    font-size: 8.2px;
-    min-height: 66px;
-    flex-shrink: 0;
-    page-break-inside: avoid;
-    break-inside: avoid;
-    position: relative;
-    overflow: hidden;
-  }
-
-  .sales-doc-signatures {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 34px;
-    align-items: stretch;
-    text-align: center;
-  }
-
-  .sales-doc-signature-box {
-    min-height: 58px;
-    display: flex;
-    flex-direction: column;
-    justify-content: flex-end;
-    align-items: center;
-    padding: 0 8px;
-    overflow: hidden;
-  }
-
-  .sales-doc-signature-image-frame {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    width: 58mm;
-    max-width: 100%;
-    height: 14mm;
-    margin: 0 auto 1.5mm;
-    overflow: hidden;
-  }
-
-  .sales-doc-signature-image {
-    max-width: 58mm;
-    max-height: 14mm;
-    object-fit: contain;
-    display: block;
-  }
-
-  .sales-doc-signature-line {
-    border-top: 1px solid #475569;
-    height: 0;
-    width: 76%;
-    margin: 0 auto;
-  }
-
-  .sales-doc-signature-box p {
-    margin: 3px 0 0;
-    font-weight: 700;
-    line-height: 1.05;
-  }
-
-  .sales-doc-signature-box span {
-    display: block;
-    margin: 4px 0 0;
-    color: #64748b;
-    font-size: 7.6px;
-    line-height: 1.05;
+  @media (max-width: 920px) {
+    .sales-document-print-root { padding: 12px; }
+    .sales-document-page { width: 100%; min-height: auto; padding: 24px; border-radius: 16px; font-size: 12px; }
+    .sales-doc-header, .document-main-info, .sales-doc-bottom-grid { grid-template-columns: 1fr; }
+    .sales-doc-title-zone { text-align: left; }
+    .sales-doc-title-zone h1 { font-size: 30px; }
+    .sales-doc-party-grid, .sales-doc-info-row { grid-template-columns: 1fr; gap: 2px; }
+    .sales-doc-table { min-width: 720px; }
   }
 
   @media print {
-    @page {
-      size: A4 portrait;
-      margin: 0;
-    }
-
-    body * {
-      visibility: hidden;
-    }
-
-    .sales-document-print-root,
-    .sales-document-print-root * {
-      visibility: visible;
-    }
-
-    .sales-document-print-root {
-      position: absolute;
-      inset: 0;
-      width: 100%;
-      background: #ffffff;
-      gap: 0;
-    }
-
-    .sales-document-page {
-      width: 210mm;
-      height: 297mm;
-      margin: 0;
-      border: 0;
-      box-shadow: none !important;
-    }
+    @page { size: A4 portrait; margin: 0; }
+    .sales-document-print-root { width: 100%; background: #fff; gap: 0; padding: 0; }
+    .sales-document-page { width: 210mm; min-height: 297mm; margin: 0; border: 0; border-radius: 0; box-shadow: none !important; page-break-after: always; break-after: page; }
+    .sales-document-page:last-child { page-break-after: auto; break-after: auto; }
   }
 `;
