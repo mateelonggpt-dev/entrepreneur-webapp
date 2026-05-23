@@ -1,6 +1,6 @@
 # Matter Acc V1
 
-Matter Acc V1 is a full-stack accounting web application with a Next.js frontend and a Flask backend. The repository is organized so both apps can be uploaded together to GitHub and run locally or with Docker Compose.
+Matter Acc V1 is a full-stack accounting web application with a Next.js frontend and a Flask backend. The repository is organized so both apps can be uploaded together to GitHub and run locally.
 
 ## Tech Stack
 
@@ -24,7 +24,6 @@ Matter Acc V1 is a full-stack accounting web application with a Next.js frontend
 │   │   ├── generated/
 │   │   └── uploads/
 │   ├── tests/
-│   ├── Dockerfile
 │   ├── requirements.txt
 │   └── run.py
 ├── frontend/
@@ -36,9 +35,7 @@ Matter Acc V1 is a full-stack accounting web application with a Next.js frontend
 │   ├── public/
 │   ├── styles/
 │   ├── views/
-│   ├── Dockerfile
 │   └── package.json
-├── docker-compose.yml
 └── README.md
 ```
 
@@ -53,7 +50,7 @@ The `.gitignore` keeps source files in Git and excludes local/runtime files:
 - local `.env` files
 - backend runtime data in `backend/storage/`, including SQLite databases, generated PDFs/CSVs/TXT files, and uploaded files
 
-The storage directories include `.gitkeep` placeholders so the folder structure is present after cloning.
+The backend creates storage folders automatically when it starts.
 
 ## Environment Files
 
@@ -102,21 +99,6 @@ npm run dev
 ```
 
 The frontend starts at `http://localhost:3000`.
-
-## Run With Docker Compose
-
-From the repository root:
-
-```powershell
-docker compose up --build
-```
-
-Services:
-
-- Frontend: `http://localhost:3000`
-- Backend: `http://localhost:5000`
-
-Docker Compose mounts `backend/storage` so local runtime data persists between container restarts.
 
 ## Verification
 
