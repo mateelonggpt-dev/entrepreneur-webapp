@@ -5023,26 +5023,42 @@ const downloadPreviewDomAsPdf = async (root: HTMLElement, filename: string) => {
             })
     )
   );
+  const PDF_PAGE_WIDTH_PX = 794;
+  const PDF_PAGE_HEIGHT_PX = 1123;
+  const PDF_EXPORT_CLASS = "sales-document-pdf-export";
   const pages = Array.from(root.querySelectorAll<HTMLElement>(".sales-document-page"));
   const sourcePages = pages.length ? pages : [root];
   const capturedImages: string[] = [];
 
-  for (const page of sourcePages) {
-    const width = page.offsetWidth;
-    const height = page.offsetHeight;
-    const canvas = await html2canvas(page, {
-      scale: 2.5,
-      backgroundColor: "#ffffff",
-      useCORS: true,
-      logging: false,
-      scrollX: 0,
-      scrollY: 0,
-      width,
-      height,
-      windowWidth: width,
-      windowHeight: height,
-    });
-    capturedImages.push(canvas.toDataURL("image/png"));
+  root.classList.add(PDF_EXPORT_CLASS);
+  await new Promise<void>((resolve) => requestAnimationFrame(() => resolve()));
+
+  try {
+    for (const page of sourcePages) {
+      const previousScrollLeft = page.scrollLeft;
+      const previousScrollTop = page.scrollTop;
+      page.scrollLeft = 0;
+      page.scrollTop = 0;
+
+      const canvas = await html2canvas(page, {
+        scale: Math.min(3, Math.max(2, window.devicePixelRatio || 2)),
+        backgroundColor: "#ffffff",
+        useCORS: true,
+        logging: false,
+        scrollX: 0,
+        scrollY: 0,
+        width: PDF_PAGE_WIDTH_PX,
+        height: PDF_PAGE_HEIGHT_PX,
+        windowWidth: 1280,
+        windowHeight: PDF_PAGE_HEIGHT_PX,
+      });
+
+      page.scrollLeft = previousScrollLeft;
+      page.scrollTop = previousScrollTop;
+      capturedImages.push(canvas.toDataURL("image/png"));
+    }
+  } finally {
+    root.classList.remove(PDF_EXPORT_CLASS);
   }
 
   try {

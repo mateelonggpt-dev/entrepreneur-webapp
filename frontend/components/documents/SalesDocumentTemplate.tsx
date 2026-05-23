@@ -141,6 +141,37 @@ const documentTemplateCss = `
   .sales-doc-signature-box p { margin: 4px 0 0; font-weight: 850; }
   .sales-doc-signature-box span { display: block; margin: 4px 0 0; color: var(--doc-muted); font-size: 9.2px; }
 
+
+  .sales-document-print-root.sales-document-pdf-export {
+    width: auto !important;
+    min-height: 0 !important;
+    padding: 0 !important;
+    gap: 0 !important;
+    background: #ffffff !important;
+    align-items: flex-start !important;
+  }
+
+  .sales-document-print-root.sales-document-pdf-export .sales-document-page {
+    width: 794px !important;
+    min-width: 794px !important;
+    max-width: 794px !important;
+    height: 1123px !important;
+    min-height: 1123px !important;
+    margin: 0 !important;
+    padding: 53px 60px !important;
+    border: 0 !important;
+    border-radius: 0 !important;
+    box-shadow: none !important;
+    overflow: hidden !important;
+    page-break-after: always;
+    break-after: page;
+  }
+
+  .sales-document-print-root.sales-document-pdf-export .sales-document-page:last-child {
+    page-break-after: auto;
+    break-after: auto;
+  }
+
   @media (max-width: 920px) {
     .sales-document-print-root { padding: 12px; }
     .sales-document-page { width: 100%; min-height: auto; padding: 24px; border-radius: 16px; font-size: 12px; }
