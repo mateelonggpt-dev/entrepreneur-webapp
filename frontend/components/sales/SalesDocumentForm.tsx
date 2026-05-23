@@ -5032,6 +5032,7 @@ const downloadPreviewDomAsPdf = async (root: HTMLElement, filename: string) => {
 
   root.classList.add(PDF_EXPORT_CLASS);
   await new Promise<void>((resolve) => requestAnimationFrame(() => resolve()));
+  await new Promise<void>((resolve) => requestAnimationFrame(() => resolve()));
 
   try {
     for (const page of sourcePages) {
@@ -5039,6 +5040,12 @@ const downloadPreviewDomAsPdf = async (root: HTMLElement, filename: string) => {
       const previousScrollTop = page.scrollTop;
       page.scrollLeft = 0;
       page.scrollTop = 0;
+
+      const captureHeight = Math.max(
+        PDF_PAGE_HEIGHT_PX,
+        Math.ceil(page.scrollHeight),
+        Math.ceil(page.getBoundingClientRect().height)
+      );
 
       const canvas = await html2canvas(page, {
         scale: Math.min(3, Math.max(2, window.devicePixelRatio || 2)),
@@ -5048,9 +5055,9 @@ const downloadPreviewDomAsPdf = async (root: HTMLElement, filename: string) => {
         scrollX: 0,
         scrollY: 0,
         width: PDF_PAGE_WIDTH_PX,
-        height: PDF_PAGE_HEIGHT_PX,
+        height: captureHeight,
         windowWidth: 1280,
-        windowHeight: PDF_PAGE_HEIGHT_PX,
+        windowHeight: captureHeight,
       });
 
       page.scrollLeft = previousScrollLeft;

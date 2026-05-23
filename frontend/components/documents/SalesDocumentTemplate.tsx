@@ -142,6 +142,7 @@ const documentTemplateCss = `
   .sales-doc-signature-box span { display: block; margin: 4px 0 0; color: var(--doc-muted); font-size: 9.2px; }
 
 
+
   .sales-document-print-root.sales-document-pdf-export {
     width: auto !important;
     min-height: 0 !important;
@@ -158,11 +159,13 @@ const documentTemplateCss = `
     height: 1123px !important;
     min-height: 1123px !important;
     margin: 0 !important;
-    padding: 53px 60px !important;
+    padding: 42px 56px !important;
     border: 0 !important;
     border-radius: 0 !important;
     box-shadow: none !important;
-    overflow: hidden !important;
+    overflow: visible !important;
+    font-size: 10.2px !important;
+    line-height: 1.32 !important;
     page-break-after: always;
     break-after: page;
   }
@@ -170,6 +173,183 @@ const documentTemplateCss = `
   .sales-document-print-root.sales-document-pdf-export .sales-document-page:last-child {
     page-break-after: auto;
     break-after: auto;
+  }
+
+  .sales-document-print-root.sales-document-pdf-export .sales-doc-header {
+    gap: 32px !important;
+    padding-bottom: 26px !important;
+  }
+
+  .sales-document-print-root.sales-document-pdf-export .sales-doc-logo {
+    width: 52px !important;
+    height: 52px !important;
+    border-radius: 12px !important;
+  }
+
+  .sales-document-print-root.sales-document-pdf-export .sales-doc-seller-head {
+    gap: 18px !important;
+  }
+
+  .sales-document-print-root.sales-document-pdf-export .sales-doc-seller-copy {
+    font-size: 9.4px !important;
+    line-height: 1.24 !important;
+  }
+
+  .sales-document-print-root.sales-document-pdf-export .sales-doc-company-name {
+    font-size: 14px !important;
+    line-height: 1.18 !important;
+  }
+
+  .sales-document-print-root.sales-document-pdf-export .sales-doc-copy-label {
+    min-height: 22px !important;
+    padding: 3px 10px !important;
+    margin-bottom: 6px !important;
+    font-size: 8.8px !important;
+  }
+
+  .sales-document-print-root.sales-document-pdf-export .sales-doc-title-zone h1 {
+    font-size: 30px !important;
+    line-height: 1 !important;
+  }
+
+  .sales-document-print-root.sales-document-pdf-export .sales-doc-title-en {
+    font-size: 9.8px !important;
+    margin-top: 6px !important;
+  }
+
+  .sales-document-print-root.sales-document-pdf-export .document-main-info {
+    gap: 24px !important;
+    margin-top: 28px !important;
+    font-size: 9.7px !important;
+    line-height: 1.25 !important;
+  }
+
+  .sales-document-print-root.sales-document-pdf-export .sales-doc-party,
+  .sales-document-print-root.sales-document-pdf-export .sales-doc-info-box {
+    padding: 18px !important;
+    border-radius: 12px !important;
+    box-shadow: none !important;
+  }
+
+  .sales-document-print-root.sales-document-pdf-export .sales-doc-section-label {
+    margin-bottom: 10px !important;
+    font-size: 9.4px !important;
+  }
+
+  .sales-document-print-root.sales-document-pdf-export .sales-doc-party-grid {
+    gap: 6px 14px !important;
+  }
+
+  .sales-document-print-root.sales-document-pdf-export .sales-doc-info-row,
+  .sales-document-print-root.sales-document-pdf-export .sales-doc-summary-line {
+    min-height: 18px !important;
+    padding: 1px 0 !important;
+  }
+
+  .sales-document-print-root.sales-document-pdf-export .sales-doc-table-zone {
+    min-height: 150px !important;
+    margin-top: 28px !important;
+    overflow: visible !important;
+  }
+
+  .sales-document-print-root.sales-document-pdf-export .sales-doc-table {
+    font-size: 9.3px !important;
+    border-radius: 10px !important;
+  }
+
+  .sales-document-print-root.sales-document-pdf-export .sales-doc-table th {
+    padding: 6px 6px !important;
+  }
+
+  .sales-document-print-root.sales-document-pdf-export .sales-doc-table td {
+    padding: 5px 6px !important;
+  }
+
+  .sales-document-print-root.sales-document-pdf-export .sales-doc-line-detail {
+    font-size: 8.7px !important;
+    line-height: 1.2 !important;
+    margin-top: 4px !important;
+  }
+
+  .sales-document-print-root.sales-document-pdf-export .sales-doc-bottom-grid {
+    padding-top: 22px !important;
+    gap: 24px !important;
+    font-size: 9.5px !important;
+    line-height: 1.25 !important;
+  }
+
+  .sales-document-print-root.sales-document-pdf-export .sales-doc-summary-words {
+    margin-top: 14px !important;
+    padding: 12px !important;
+    border-radius: 10px !important;
+  }
+
+  .sales-document-print-root.sales-document-pdf-export .sales-doc-summary-words span {
+    font-size: 8.7px !important;
+  }
+
+  .sales-document-print-root.sales-document-pdf-export .sales-doc-grand-total {
+    padding: 14px 18px !important;
+    min-height: 38px !important;
+    border-radius: 12px !important;
+    margin: 10px 0 !important;
+    box-shadow: none !important;
+  }
+
+  .sales-document-print-root.sales-document-pdf-export .sales-doc-grand-total strong {
+    font-size: 16px !important;
+  }
+
+  .sales-document-print-root.sales-document-pdf-export .sales-doc-summary-strong {
+    margin-top: 8px !important;
+    padding-top: 10px !important;
+  }
+
+  .sales-document-print-root.sales-document-pdf-export .sales-doc-payment-notes {
+    font-size: 9.5px !important;
+    line-height: 1.25 !important;
+  }
+
+  .sales-document-print-root.sales-document-pdf-export .sales-doc-bank-card,
+  .sales-document-print-root.sales-document-pdf-export .sales-doc-payment-block,
+  .sales-document-print-root.sales-document-pdf-export .sales-doc-note-block {
+    padding: 13px !important;
+    border-radius: 12px !important;
+    box-shadow: none !important;
+  }
+
+  .sales-document-print-root.sales-document-pdf-export .sales-doc-note-block {
+    margin-top: 14px !important;
+    min-height: 0 !important;
+  }
+
+  .sales-document-print-root.sales-document-pdf-export .sales-doc-signature-section {
+    margin-top: 18px !important;
+    padding-top: 14px !important;
+    min-height: 58px !important;
+    font-size: 9px !important;
+    overflow: visible !important;
+  }
+
+  .sales-document-print-root.sales-document-pdf-export .sales-doc-signatures {
+    gap: 34px !important;
+  }
+
+  .sales-document-print-root.sales-document-pdf-export .sales-doc-signature-box {
+    min-height: 52px !important;
+  }
+
+  .sales-document-print-root.sales-document-pdf-export .sales-doc-signature-image-frame {
+    height: 42px !important;
+    margin-bottom: 8px !important;
+  }
+
+  .sales-document-print-root.sales-document-pdf-export .sales-doc-signature-image {
+    max-height: 42px !important;
+  }
+
+  .sales-document-print-root.sales-document-pdf-export .sales-doc-signature-box span {
+    font-size: 8px !important;
   }
 
   @media (max-width: 920px) {
