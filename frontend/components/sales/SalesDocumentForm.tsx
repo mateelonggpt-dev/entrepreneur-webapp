@@ -5003,6 +5003,44 @@ const referenceGroupTitle = (
 const sanitizeFilename = (value: string) =>
   value.replace(/[\\/:*?"<>|]/g, "-").replace(/\s+/g, "-").replace(/-+/g, "-").replace(/^-|-$/g, "").slice(0, 90);
 
+
+const appendCanvasAsA4Images = (
+  target: string[],
+  canvas: HTMLCanvasElement,
+  logicalPageWidthPx: number,
+  logicalPageHeightPx: number
+) => {
+  const scale = canvas.width / logicalPageWidthPx;
+  const sliceHeight = Math.max(1, Math.round(logicalPageHeightPx * scale));
+
+  for (let sourceY = 0; sourceY < canvas.height; sourceY += sliceHeight) {
+    const pageCanvas = document.createElement("canvas");
+    pageCanvas.width = canvas.width;
+    pageCanvas.height = sliceHeight;
+
+    const context = pageCanvas.getContext("2d");
+    if (!context) {
+      continue;
+    }
+
+    context.fillStyle = "#ffffff";
+    context.fillRect(0, 0, pageCanvas.width, pageCanvas.height);
+    context.drawImage(
+      canvas,
+      0,
+      sourceY,
+      canvas.width,
+      Math.min(sliceHeight, canvas.height - sourceY),
+      0,
+      0,
+      canvas.width,
+      Math.min(sliceHeight, canvas.height - sourceY)
+    );
+
+    target.push(pageCanvas.toDataURL("image/png"));
+  }
+};
+
 const downloadPreviewDomAsPdf = async (root: HTMLElement, filename: string) => {
   const [{ default: html2canvas }, { default: JsPDF }] = await Promise.all([
     import("html2canvas"),
@@ -5062,7 +5100,7 @@ const downloadPreviewDomAsPdf = async (root: HTMLElement, filename: string) => {
 
       page.scrollLeft = previousScrollLeft;
       page.scrollTop = previousScrollTop;
-      capturedImages.push(canvas.toDataURL("image/png"));
+      appendCanvasAsA4Images(capturedImages, canvas, PDF_PAGE_WIDTH_PX, PDF_PAGE_HEIGHT_PX);
     }
   } finally {
     root.classList.remove(PDF_EXPORT_CLASS);
