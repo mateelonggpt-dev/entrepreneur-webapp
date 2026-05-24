@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -21,6 +22,7 @@ interface Props {
 }
 
 export const VendorModal = ({ open, onOpenChange, vendor, onSaved }: Props) => {
+  const { t } = useTranslation();
   const { refresh } = useAppData();
   const formRef = useRef<HTMLFormElement>(null);
   const [submitting, setSubmitting] = useState(false);
@@ -28,7 +30,7 @@ export const VendorModal = ({ open, onOpenChange, vendor, onSaved }: Props) => {
   const [errors, setErrors] = useState<Record<string, string>>({});
 
   const isEditing = Boolean(vendor);
-  const title = useMemo(() => (isEditing ? "Edit Vendor" : "New Vendor"), [isEditing]);
+  const title = useMemo(() => (isEditing ? t("contacts.editVendor") : t("contacts.newVendor")), [isEditing, t]);
 
   useEffect(() => {
     if (!open) {
@@ -53,15 +55,15 @@ export const VendorModal = ({ open, onOpenChange, vendor, onSaved }: Props) => {
     const nextErrors: Record<string, string> = {};
 
     if (!name) {
-      nextErrors.name = "Vendor name is required.";
+      nextErrors.name = t("contacts.validation.vendorNameRequired");
     }
     if (!email) {
-      nextErrors.email = "Email is required.";
+      nextErrors.email = t("contacts.validation.emailRequired");
     }
 
     if (Object.keys(nextErrors).length > 0) {
       setErrors(nextErrors);
-      toast.error("Please complete the vendor form.");
+      toast.error(t("contacts.validation.completeVendorForm"));
       return;
     }
 
@@ -83,11 +85,11 @@ export const VendorModal = ({ open, onOpenChange, vendor, onSaved }: Props) => {
       await refresh();
       onSaved?.(saved);
       onOpenChange(false);
-      toast.success(vendor ? `Vendor ${saved.id} updated` : `Vendor ${saved.id} created`, {
-        description: `${saved.name} is now available in purchasing workflows.`,
+      toast.success(vendor ? t("contacts.toast.vendorUpdated", { id: saved.id }) : t("contacts.toast.vendorCreated", { id: saved.id }), {
+        description: t("contacts.toast.vendorAvailable", { name: saved.name }),
       });
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Unable to save vendor.");
+      toast.error(error instanceof Error ? error.message : t("contacts.toast.unableToSaveVendor"));
     } finally {
       setSubmitting(false);
     }
@@ -105,8 +107,8 @@ export const VendorModal = ({ open, onOpenChange, vendor, onSaved }: Props) => {
               <h2 className="font-display text-lg font-bold leading-tight">{title}</h2>
               <p className="mt-0.5 text-xs text-muted-foreground">
                 {isEditing
-                  ? "Update the vendor profile used in purchase orders and expense flows."
-                  : "Create a vendor profile for purchasing and payables."}
+                  ? t("contacts.modals.vendorEditDescription")
+                  : t("contacts.modals.vendorCreateDescription")}
               </p>
             </div>
           </div>
@@ -114,47 +116,47 @@ export const VendorModal = ({ open, onOpenChange, vendor, onSaved }: Props) => {
           <form ref={formRef} className="space-y-4 bg-background px-6 py-5">
             <div className="grid grid-cols-2 gap-4">
               <div className="col-span-2">
-                <Label htmlFor="vendor-name">Vendor name</Label>
+                <Label htmlFor="vendor-name">{t("contacts.fields.vendorName")}</Label>
                 <Input id="vendor-name" name="name" defaultValue={vendor?.name ?? ""} className="mt-1.5" />
                 {errors.name ? <p className="mt-1 text-[11px] text-destructive">{errors.name}</p> : null}
               </div>
 
               <div>
-                <Label htmlFor="vendor-contact">Primary contact</Label>
+                <Label htmlFor="vendor-contact">{t("contacts.fields.contactPerson")}</Label>
                 <Input id="vendor-contact" name="contact" defaultValue={vendor?.contact ?? ""} className="mt-1.5" />
               </div>
 
               <div>
-                <Label>Status</Label>
+                <Label>{t("contacts.fields.status")}</Label>
                 <Select value={status} onValueChange={(value) => setStatus(value as "active" | "inactive")}>
                   <SelectTrigger className="mt-1.5">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="active">Active</SelectItem>
-                    <SelectItem value="inactive">Inactive</SelectItem>
+                    <SelectItem value="active">{t("status.active")}</SelectItem>
+                    <SelectItem value="inactive">{t("status.inactive")}</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
 
               <div>
-                <Label htmlFor="vendor-phone">Phone</Label>
+                <Label htmlFor="vendor-phone">{t("contacts.fields.phone")}</Label>
                 <Input id="vendor-phone" name="phone" defaultValue={vendor?.phone ?? ""} className="mt-1.5" />
               </div>
 
               <div>
-                <Label htmlFor="vendor-tax-id">Tax ID</Label>
+                <Label htmlFor="vendor-tax-id">{t("contacts.fields.taxId")}</Label>
                 <Input id="vendor-tax-id" name="taxId" defaultValue={vendor?.taxId ?? ""} className="mt-1.5 font-mono" />
               </div>
 
               <div className="col-span-2">
-                <Label htmlFor="vendor-email">Email</Label>
+                <Label htmlFor="vendor-email">{t("contacts.fields.email")}</Label>
                 <Input id="vendor-email" name="email" type="email" defaultValue={vendor?.email ?? ""} className="mt-1.5" />
                 {errors.email ? <p className="mt-1 text-[11px] text-destructive">{errors.email}</p> : null}
               </div>
 
               <div className="col-span-2">
-                <Label htmlFor="vendor-address">Address</Label>
+                <Label htmlFor="vendor-address">{t("contacts.fields.address")}</Label>
                 <Textarea
                   id="vendor-address"
                   name="address"
@@ -167,7 +169,7 @@ export const VendorModal = ({ open, onOpenChange, vendor, onSaved }: Props) => {
 
           <div className="flex items-center justify-end gap-2 border-t border-border bg-card px-6 py-3.5">
             <Button variant="ghost" onClick={() => onOpenChange(false)} disabled={submitting}>
-              Cancel
+              {t("common.cancel")}
             </Button>
             <Button
               className="border-0 bg-gradient-brand text-primary-foreground shadow-brand"
@@ -175,7 +177,7 @@ export const VendorModal = ({ open, onOpenChange, vendor, onSaved }: Props) => {
               disabled={submitting}
             >
               {submitting ? <Loader2 className="mr-1.5 h-4 w-4 animate-spin" /> : null}
-              {isEditing ? "Save Vendor" : "Create Vendor"}
+              {isEditing ? t("contacts.actions.saveVendor") : t("contacts.actions.createVendor")}
             </Button>
           </div>
         </DialogContent>
@@ -183,8 +185,8 @@ export const VendorModal = ({ open, onOpenChange, vendor, onSaved }: Props) => {
 
       <ProcessingDialog
         open={submitting}
-        title={isEditing ? "Saving vendor..." : "Creating vendor..."}
-        message="Saving the vendor profile to the backend."
+        title={isEditing ? t("contacts.processing.savingVendor") : t("contacts.processing.creatingVendor")}
+        message={t("contacts.processing.vendorMessage")}
       />
     </>
   );

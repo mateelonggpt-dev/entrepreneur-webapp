@@ -1,4 +1,5 @@
 import { useMemo, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { useNavigate } from "react-router-dom";
 import { AppShell } from "@/components/layout/AppShell";
 import { MasterDataModal } from "@/components/modals/DomainModals";
@@ -24,6 +25,7 @@ import { Mail, Phone, MoreHorizontal, UserPlus } from "lucide-react";
 import { toast } from "sonner";
 
 const Customers = () => {
+  const { t } = useTranslation();
   const nav = useNavigate();
   const { data } = useAppData();
   const { customers, vendors } = data;
@@ -62,26 +64,26 @@ const Customers = () => {
   const handleExport = async () => {
     try {
       await exportResource("customers");
-      toast.success("Contacts exported");
+      toast.success(t("contacts.toast.exported"));
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Unable to export customers.");
+      toast.error(error instanceof Error ? error.message : t("contacts.toast.unableToExportCustomers"));
     }
   };
 
   return (
     <AppShell>
       <PageHeader
-        title="Contacts"
-        description="Manage customer and vendor accounts, contact details, and document-facing actions."
-        breadcrumbs={[{ label: "Contacts" }]}
+        title={t("contacts.title")}
+        description={t("contacts.description")}
+        breadcrumbs={[{ label: t("contacts.title") }]}
       />
 
       <ListToolbar
-        searchPlaceholder="Search customers, contact, tax ID..."
+        searchPlaceholder={t("contacts.filters.searchCustomers")}
         searchValue={search}
         onSearchChange={setSearch}
         primaryAction={{
-          label: "New Customer",
+          label: t("contacts.newCustomer"),
           onClick: () => {
             setEditingCustomer(null);
             setOpen(true);
@@ -95,9 +97,9 @@ const Customers = () => {
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">All</SelectItem>
-                <SelectItem value="customer">Customer</SelectItem>
-                <SelectItem value="vendor">Vendor</SelectItem>
+                <SelectItem value="all">{t("contacts.filters.all")}</SelectItem>
+                <SelectItem value="customer">{t("contacts.customer")}</SelectItem>
+                <SelectItem value="vendor">{t("contacts.vendor")}</SelectItem>
               </SelectContent>
             </Select>
 
@@ -106,9 +108,9 @@ const Customers = () => {
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">All statuses</SelectItem>
-                <SelectItem value="active">Active</SelectItem>
-                <SelectItem value="inactive">Inactive</SelectItem>
+                <SelectItem value="all">{t("contacts.filters.allStatuses")}</SelectItem>
+                <SelectItem value="active">{t("status.active")}</SelectItem>
+                <SelectItem value="inactive">{t("status.inactive")}</SelectItem>
               </SelectContent>
             </Select>
 
@@ -117,9 +119,9 @@ const Customers = () => {
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">All balances</SelectItem>
-                <SelectItem value="with-balance">With receivable</SelectItem>
-                <SelectItem value="clear">Fully settled</SelectItem>
+                <SelectItem value="all">{t("contacts.filters.allBalances")}</SelectItem>
+                <SelectItem value="with-balance">{t("contacts.filters.withReceivable")}</SelectItem>
+                <SelectItem value="clear">{t("contacts.filters.fullySettled")}</SelectItem>
               </SelectContent>
             </Select>
           </>
@@ -145,11 +147,11 @@ const Customers = () => {
                   <div className="flex items-center gap-2">
                     <h3 className="truncate font-display font-semibold">{record.name}</h3>
                     <span className="rounded-full bg-secondary px-2 py-0.5 text-[10px] font-semibold uppercase text-muted-foreground">
-                      {type === "customer" ? "Customer" : "Vendor"}
+                      {type === "customer" ? t("contacts.customer") : t("contacts.vendor")}
                     </span>
                   </div>
-                  <p className="text-xs text-muted-foreground">{record.contact || "No primary contact"}</p>
-                  {record.taxId ? <p className="mt-1 text-[11px] text-muted-foreground">Tax ID: {record.taxId}</p> : null}
+                  <p className="text-xs text-muted-foreground">{record.contact || t("contacts.empty.noPrimaryContact")}</p>
+                  {record.taxId ? <p className="mt-1 text-[11px] text-muted-foreground">{t("contacts.fields.taxIdWithValue", { taxId: record.taxId })}</p> : null}
                 </div>
 
                 <DropdownMenu>
@@ -170,37 +172,37 @@ const Customers = () => {
                         }
                       }}
                     >
-                      {type === "customer" ? "Edit customer" : "Edit vendor"}
+                      {type === "customer" ? t("contacts.editCustomer") : t("contacts.editVendor")}
                     </DropdownMenuItem>
                     {type === "customer" ? (
                       <>
-                        <DropdownMenuItem onClick={() => nav("/sales/invoices/new")}>Create invoice</DropdownMenuItem>
-                        <DropdownMenuItem onClick={() => nav("/sales/quotations")}>Create quotation</DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => nav("/sales/invoices/new")}>{t("contacts.actions.createInvoice")}</DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => nav("/sales/quotations")}>{t("contacts.actions.createQuotation")}</DropdownMenuItem>
                       </>
                     ) : (
                       <>
                         <DropdownMenuItem onClick={() => nav(`/expense/create?vendor=${encodeURIComponent(record.name)}`)}>
-                          Create expense
+                          {t("contacts.actions.createExpense")}
                         </DropdownMenuItem>
                         <DropdownMenuItem onClick={() => nav(`/expense/documents?vendor=${encodeURIComponent(record.name)}`)}>
-                          View expense documents
+                          {t("contacts.actions.viewExpenseDocuments")}
                         </DropdownMenuItem>
                       </>
                     )}
                     <DropdownMenuItem asChild>
-                      <a href={`mailto:${record.email}`}>Send email</a>
+                      <a href={`mailto:${record.email}`}>{t("contacts.actions.sendEmail")}</a>
                     </DropdownMenuItem>
                     <DropdownMenuItem asChild>
-                      <a href={`tel:${record.phone}`}>{type === "customer" ? "Call customer" : "Call vendor"}</a>
+                      <a href={`tel:${record.phone}`}>{type === "customer" ? t("contacts.actions.callCustomer") : t("contacts.actions.callVendor")}</a>
                     </DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => void handleExport()}>Export contacts</DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => void handleExport()}>{t("contacts.actions.exportContacts")}</DropdownMenuItem>
                   </DropdownMenuContent>
                 </DropdownMenu>
               </div>
 
               <div className="mb-4 space-y-1.5 text-sm text-muted-foreground">
                 <p className="flex items-center gap-2 truncate">
-                  <Mail className="h-3.5 w-3.5" /> {record.email || "No email"}
+                  <Mail className="h-3.5 w-3.5" /> {record.email || t("contacts.empty.noEmail")}
                 </p>
                 <p className="flex items-center gap-2">
                   <Phone className="h-3.5 w-3.5" /> {record.phone || "-"}
@@ -210,7 +212,7 @@ const Customers = () => {
 
               <div className="flex items-end justify-between border-t border-border/60 pt-3">
                 <div>
-                  <p className="text-xs text-muted-foreground">Outstanding</p>
+                  <p className="text-xs text-muted-foreground">{t("contacts.fields.outstanding")}</p>
                   <p className={`text-lg font-display font-bold tabular-nums ${record.balance > 0 ? "text-warning" : "text-success"}`}>
                     {fmtTHB(record.balance)}
                   </p>
@@ -223,10 +225,10 @@ const Customers = () => {
       ) : (
         <Card className="card-premium">
           <EmptyState
-            title="No contacts match this view"
-            description="Adjust the search or filters, or create a new customer or vendor profile."
+            title={t("contacts.empty.noContactsTitle")}
+            description={t("contacts.empty.noContactsDescription")}
             action={{
-              label: "New Customer",
+              label: t("contacts.newCustomer"),
               onClick: () => {
                 setEditingCustomer(null);
                 setOpen(true);

@@ -1,4 +1,5 @@
 import { useMemo, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { useNavigate } from "react-router-dom";
 import { AppShell } from "@/components/layout/AppShell";
 import { MasterDataModal } from "@/components/modals/DomainModals";
@@ -23,6 +24,7 @@ import { Building2, Mail, MoreHorizontal, Phone } from "lucide-react";
 import { toast } from "sonner";
 
 const Vendors = () => {
+  const { t } = useTranslation();
   const nav = useNavigate();
   const { data } = useAppData();
   const { vendors } = data;
@@ -50,26 +52,26 @@ const Vendors = () => {
   const handleExport = async () => {
     try {
       await exportResource("vendors");
-      toast.success("Vendors exported");
+      toast.success(t("contacts.toast.vendorsExported"));
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Unable to export vendors.");
+      toast.error(error instanceof Error ? error.message : t("contacts.toast.unableToExportVendors"));
     }
   };
 
   return (
     <AppShell>
       <PageHeader
-        title="Vendors"
-        description="Manage supplier records and connect them to purchasing workflows."
-        breadcrumbs={[{ label: "Contacts" }, { label: "Vendors" }]}
+        title={t("contacts.vendors")}
+        description={t("contacts.vendorsDescription")}
+        breadcrumbs={[{ label: t("contacts.title") }, { label: t("contacts.vendors") }]}
       />
 
       <ListToolbar
-        searchPlaceholder="Search vendors, contact, tax ID..."
+        searchPlaceholder={t("contacts.filters.searchVendors")}
         searchValue={search}
         onSearchChange={setSearch}
         primaryAction={{
-          label: "New Vendor",
+          label: t("contacts.newVendor"),
           onClick: () => {
             setEditingVendor(null);
             setOpen(true);
@@ -82,9 +84,9 @@ const Vendors = () => {
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="all">All statuses</SelectItem>
-              <SelectItem value="active">Active</SelectItem>
-              <SelectItem value="inactive">Inactive</SelectItem>
+              <SelectItem value="all">{t("contacts.filters.allStatuses")}</SelectItem>
+              <SelectItem value="active">{t("status.active")}</SelectItem>
+              <SelectItem value="inactive">{t("status.inactive")}</SelectItem>
             </SelectContent>
           </Select>
         }
@@ -101,8 +103,8 @@ const Vendors = () => {
 
                 <div className="min-w-0 flex-1">
                   <h3 className="truncate font-display font-semibold">{vendor.name}</h3>
-                  <p className="text-xs text-muted-foreground">{vendor.contact || "No primary contact"}</p>
-                  {vendor.taxId ? <p className="mt-1 text-[11px] text-muted-foreground">Tax ID: {vendor.taxId}</p> : null}
+                  <p className="text-xs text-muted-foreground">{vendor.contact || t("contacts.empty.noPrimaryContact")}</p>
+                  {vendor.taxId ? <p className="mt-1 text-[11px] text-muted-foreground">{t("contacts.fields.taxIdWithValue", { taxId: vendor.taxId })}</p> : null}
                 </div>
 
                 <DropdownMenu>
@@ -118,43 +120,43 @@ const Vendors = () => {
                         setOpen(true);
                       }}
                     >
-                      Edit vendor
+                      {t("contacts.editVendor")}
                     </DropdownMenuItem>
                     <DropdownMenuItem
                       onClick={() =>
                         nav(`/purchases/orders?vendor=${encodeURIComponent(vendor.name)}`)
                       }
                     >
-                      Open purchase orders
+                      {t("contacts.actions.openPurchaseOrders")}
                     </DropdownMenuItem>
                     <DropdownMenuItem
                       onClick={() =>
                         nav(`/purchases/expenses?vendor=${encodeURIComponent(vendor.name)}`)
                       }
                     >
-                      Open expenses
+                      {t("contacts.actions.openExpenses")}
                     </DropdownMenuItem>
                     <DropdownMenuItem
                       onClick={() =>
                         nav(`/payment/transactions?type=supplier_payment&vendor=${encodeURIComponent(vendor.name)}`)
                       }
                     >
-                      Open payments
+                      {t("contacts.actions.openPayments")}
                     </DropdownMenuItem>
                     <DropdownMenuItem asChild>
-                      <a href={`mailto:${vendor.email}`}>Send email</a>
+                      <a href={`mailto:${vendor.email}`}>{t("contacts.actions.sendEmail")}</a>
                     </DropdownMenuItem>
                     <DropdownMenuItem asChild>
-                      <a href={`tel:${vendor.phone}`}>Call vendor</a>
+                      <a href={`tel:${vendor.phone}`}>{t("contacts.actions.callVendor")}</a>
                     </DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => void handleExport()}>Export vendors</DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => void handleExport()}>{t("contacts.actions.exportVendors")}</DropdownMenuItem>
                   </DropdownMenuContent>
                 </DropdownMenu>
               </div>
 
               <div className="mb-4 space-y-1.5 text-sm text-muted-foreground">
                 <p className="flex items-center gap-2 truncate">
-                  <Mail className="h-3.5 w-3.5" /> {vendor.email || "No email"}
+                  <Mail className="h-3.5 w-3.5" /> {vendor.email || t("contacts.empty.noEmail")}
                 </p>
                 <p className="flex items-center gap-2">
                   <Phone className="h-3.5 w-3.5" /> {vendor.phone || "-"}
@@ -164,7 +166,7 @@ const Vendors = () => {
 
               <div className="flex items-end justify-between border-t border-border/60 pt-3">
                 <div>
-                  <p className="text-xs text-muted-foreground">Open payable</p>
+                  <p className="text-xs text-muted-foreground">{t("contacts.fields.openPayable")}</p>
                   <p className={`text-lg font-display font-bold tabular-nums ${vendor.balance > 0 ? "text-warning" : "text-success"}`}>
                     {fmtTHB(vendor.balance)}
                   </p>
@@ -177,10 +179,10 @@ const Vendors = () => {
       ) : (
         <Card className="card-premium">
           <EmptyState
-            title="No vendors match this view"
-            description="Adjust your filters or create a supplier profile to start creating purchase documents."
+            title={t("contacts.empty.noVendorsTitle")}
+            description={t("contacts.empty.noVendorsDescription")}
             action={{
-              label: "New Vendor",
+              label: t("contacts.newVendor"),
               onClick: () => {
                 setEditingVendor(null);
                 setOpen(true);
