@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useTranslation } from "react-i18next";
 import { AppShell } from "@/components/layout/AppShell";
 import { MasterDataModal } from "@/components/modals/DomainModals";
 import { PageHeader } from "@/components/ui-kit/PageHeader";
@@ -35,6 +36,7 @@ const reportIcons = {
 };
 
 const Reports = () => {
+  const { t } = useTranslation();
   const { data, refresh } = useAppData();
   const reports = data.reports;
   const [projectModalOpen, setProjectModalOpen] = useState(false);
@@ -42,20 +44,20 @@ const Reports = () => {
 
   const handleReport = async (reportKey?: string, reportName?: string) => {
     if (!reportKey || !reportName) {
-      toast.error("This report is not available yet.");
+      toast.error(t("reports.toast.notAvailable"));
       return;
     }
 
     try {
       await downloadReport(reportKey);
-      toast.success(`${reportName} generated`);
+      toast.success(t("reports.toast.generated", { report: reportName }));
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Unable to generate report.");
+      toast.error(error instanceof Error ? error.message : t("reports.toast.unableToGenerate"));
     }
   };
 
   const handleDeleteProject = async (project: Project) => {
-    const confirmed = window.confirm(`Delete project ${project.name}?`);
+    const confirmed = window.confirm(t("reports.projects.confirmDelete", { name: project.name }));
     if (!confirmed) {
       return;
     }
@@ -63,18 +65,27 @@ const Reports = () => {
     try {
       await deleteProject(project.id);
       await refresh();
-      toast.success(`Project ${project.name} deleted`);
+      toast.success(t("reports.toast.projectDeleted", { name: project.name }));
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Unable to delete project.");
+      toast.error(error instanceof Error ? error.message : t("reports.toast.unableToDeleteProject"));
     }
   };
+
+  const reportGroupLabel = (category: string) =>
+    t(`reports.groups.${category.toLowerCase()}`, { defaultValue: category });
+
+  const reportName = (reportKey: string | undefined, fallback: string) =>
+    reportKey ? t(`reports.items.${reportKey}.name`, { defaultValue: fallback }) : fallback;
+
+  const reportDescription = (reportKey: string | undefined, fallback: string) =>
+    reportKey ? t(`reports.items.${reportKey}.description`, { defaultValue: fallback }) : fallback;
 
   return (
     <AppShell>
       <PageHeader
-        title="Reports"
-        description="Generate financial, tax, operational, and project profitability reports."
-        breadcrumbs={[{ label: "Finance & Reports" }, { label: "Reports" }]}
+        title={t("reports.title")}
+        description={t("reports.description")}
+        breadcrumbs={[{ label: t("nav.finance") }, { label: t("reports.title") }]}
         actions={
           <Button
             size="sm"
@@ -84,33 +95,33 @@ const Reports = () => {
               setProjectModalOpen(true);
             }}
           >
-            New project
+            {t("reports.projects.newProject")}
           </Button>
         }
       />
 
       <div className="mb-6 grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4">
         <Card className="card-premium p-5">
-          <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Net profit</p>
+          <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">{t("reports.kpi.netProfit")}</p>
           <p className="mt-2 font-display text-2xl font-bold">{fmtTHB(data.profitAndLoss.netProfit)}</p>
         </Card>
         <Card className="card-premium p-5">
-          <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Assets</p>
+          <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">{t("reports.kpi.assets")}</p>
           <p className="mt-2 font-display text-2xl font-bold">{fmtTHB(data.balanceSheet.assets)}</p>
         </Card>
         <Card className="card-premium p-5">
-          <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Net VAT payable</p>
+          <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">{t("reports.kpi.netVatPayable")}</p>
           <p className="mt-2 font-display text-2xl font-bold">{fmtTHB(data.vatSummary.netVatPayable)}</p>
         </Card>
         <Card className="card-premium p-5">
-          <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Open receivables</p>
+          <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">{t("reports.kpi.openReceivables")}</p>
           <p className="mt-2 font-display text-2xl font-bold">{fmtTHB(data.dashboardSummary.receivables)}</p>
         </Card>
       </div>
 
       {reports.map((group) => (
         <div key={group.cat} className="mb-8">
-          <h2 className="mb-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground">{group.cat}</h2>
+          <h2 className="mb-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground">{reportGroupLabel(group.cat)}</h2>
           <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
             {group.items.map((report) => {
               const Icon = reportIcons[report.icon as keyof typeof reportIcons] ?? FileBarChart;
@@ -119,11 +130,11 @@ const Reports = () => {
                 <Card
                   key={report.name}
                   className="card-premium group cursor-pointer p-5 transition hover:shadow-premium"
-                  onClick={() => void handleReport(report.key, report.name)}
+                  onClick={() => void handleReport(report.key, reportName(report.key, report.name))}
                   onKeyDown={(event) => {
                     if (event.key === "Enter" || event.key === " ") {
                       event.preventDefault();
-                      void handleReport(report.key, report.name);
+                      void handleReport(report.key, reportName(report.key, report.name));
                     }
                   }}
                   role="button"
@@ -134,8 +145,8 @@ const Reports = () => {
                       <Icon className="h-5 w-5 text-primary" />
                     </div>
                     <div className="min-w-0 flex-1">
-                      <h3 className="font-display font-semibold">{report.name}</h3>
-                      <p className="mt-0.5 text-xs text-muted-foreground">{report.desc}</p>
+                      <h3 className="font-display font-semibold">{reportName(report.key, report.name)}</h3>
+                      <p className="mt-0.5 text-xs text-muted-foreground">{reportDescription(report.key, report.desc)}</p>
                     </div>
                     <ChevronRight className="h-4 w-4 text-muted-foreground transition group-hover:translate-x-0.5" />
                   </div>
@@ -149,11 +160,11 @@ const Reports = () => {
       <Card className="card-premium p-6">
         <div className="mb-4 flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
           <div>
-            <h2 className="font-display font-semibold">Project profitability</h2>
-            <p className="mt-0.5 text-xs text-muted-foreground">Manage projects here and keep revenue/cost visibility tied to shared document data.</p>
+            <h2 className="font-display font-semibold">{t("reports.projects.title")}</h2>
+            <p className="mt-0.5 text-xs text-muted-foreground">{t("reports.projects.description")}</p>
           </div>
-          <Button variant="outline" size="sm" onClick={() => void handleReport("project-profitability", "Project profitability")}>
-            Export project report
+          <Button variant="outline" size="sm" onClick={() => void handleReport("project-profitability", t("reports.projects.title"))}>
+            {t("reports.actions.exportProjectReport")}
           </Button>
         </div>
 
@@ -162,13 +173,13 @@ const Reports = () => {
             <table className="w-full text-sm">
               <thead className="bg-secondary/40 text-xs uppercase tracking-wider text-muted-foreground">
                 <tr>
-                  <th className="px-3 py-3 text-left font-semibold">Project</th>
-                  <th className="px-3 py-3 text-left font-semibold">Customer</th>
-                  <th className="px-3 py-3 text-right font-semibold">Revenue</th>
-                  <th className="px-3 py-3 text-right font-semibold">Cost</th>
-                  <th className="px-3 py-3 text-right font-semibold">Profit</th>
-                  <th className="px-3 py-3 text-left font-semibold">Status</th>
-                  <th className="px-3 py-3 text-right font-semibold">Actions</th>
+                  <th className="px-3 py-3 text-left font-semibold">{t("reports.projects.fields.project")}</th>
+                  <th className="px-3 py-3 text-left font-semibold">{t("reports.projects.fields.customer")}</th>
+                  <th className="px-3 py-3 text-right font-semibold">{t("reports.projects.fields.revenue")}</th>
+                  <th className="px-3 py-3 text-right font-semibold">{t("reports.projects.fields.cost")}</th>
+                  <th className="px-3 py-3 text-right font-semibold">{t("reports.projects.fields.profit")}</th>
+                  <th className="px-3 py-3 text-left font-semibold">{t("reports.projects.fields.status")}</th>
+                  <th className="px-3 py-3 text-right font-semibold">{t("reports.projects.fields.actions")}</th>
                 </tr>
               </thead>
               <tbody>
@@ -178,7 +189,7 @@ const Reports = () => {
                       <p className="font-semibold">{project.name}</p>
                       <p className="text-xs text-muted-foreground">
                         {project.code || project.id}
-                        {project.lastActivityDate ? ` - Last activity ${project.lastActivityDate}` : ""}
+                        {project.lastActivityDate ? ` - ${t("reports.projects.lastActivity", { date: project.lastActivityDate })}` : ""}
                       </p>
                     </td>
                     <td className="px-3 py-3 text-muted-foreground">{project.customer || "-"}</td>
@@ -198,10 +209,10 @@ const Reports = () => {
                             setProjectModalOpen(true);
                           }}
                         >
-                          Edit
+                          {t("common.edit")}
                         </Button>
                         <Button variant="ghost" size="sm" className="text-destructive hover:text-destructive" onClick={() => void handleDeleteProject(project)}>
-                          Delete
+                          {t("common.delete")}
                         </Button>
                       </div>
                     </td>
@@ -212,10 +223,10 @@ const Reports = () => {
           </div>
         ) : (
           <EmptyState
-            title="No projects yet"
-            description="Create a project to tag documents and unlock profitability reporting."
+            title={t("reports.empty.noProjectsTitle")}
+            description={t("reports.empty.noProjectsDescription")}
             action={{
-              label: "Create project",
+              label: t("reports.projects.createProject"),
               onClick: () => {
                 setEditingProject(null);
                 setProjectModalOpen(true);

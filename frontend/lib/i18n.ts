@@ -443,6 +443,144 @@ const en = {
       stockAdjustmentMessage: "The movement log and inventory balance are being updated in the backend.",
     },
   },
+  reports: {
+    title: "Reports",
+    description: "Generate financial, tax, operational, and project profitability reports.",
+    groups: {
+      financial: "Financial reports",
+      tax: "Tax reports",
+      operational: "Operational reports",
+      projects: "Project reports",
+    },
+    kpi: {
+      netProfit: "Net profit",
+      assets: "Assets",
+      netVatPayable: "Net VAT payable",
+      openReceivables: "Open receivables",
+    },
+    actions: {
+      download: "Download",
+      export: "Export",
+      viewReport: "View report",
+      generateReport: "Generate report",
+      exportProjectReport: "Export project report",
+    },
+    filters: {
+      dateFrom: "Date from",
+      dateTo: "Date to",
+      period: "Period",
+    },
+    empty: {
+      noProjectsTitle: "No projects yet",
+      noProjectsDescription: "Create a project to tag documents and unlock profitability reporting.",
+    },
+    toast: {
+      notAvailable: "This report is not available yet.",
+      generated: "{{report}} generated",
+      unableToGenerate: "Unable to generate report.",
+      projectDeleted: "Project {{name}} deleted",
+      unableToDeleteProject: "Unable to delete project.",
+    },
+    projects: {
+      title: "Project profitability",
+      description: "Manage projects here and keep revenue/cost visibility tied to shared document data.",
+      newProject: "New project",
+      createProject: "Create project",
+      confirmDelete: "Delete project {{name}}?",
+      lastActivity: "Last activity {{date}}",
+      fields: {
+        project: "Project",
+        customer: "Customer",
+        revenue: "Revenue",
+        cost: "Cost",
+        profit: "Profit",
+        status: "Status",
+        actions: "Actions",
+      },
+    },
+    items: {
+      "profit-and-loss": {
+        name: "Profit & Loss",
+        description: "Revenue, costs and net income",
+      },
+      "balance-sheet": {
+        name: "Balance Sheet",
+        description: "Assets, liabilities and equity",
+      },
+      "cash-flow": {
+        name: "Cash Flow Statement",
+        description: "Operating cash receipts and payments",
+      },
+      "trial-balance": {
+        name: "Trial Balance",
+        description: "Account totals for the period",
+      },
+      "financial-account-movement": {
+        name: "Financial Account Movement",
+        description: "Channel-by-channel bank, cash, and gateway activity",
+      },
+      "vat-summary": {
+        name: "P.P.30 (VAT)",
+        description: "Monthly VAT return summary",
+      },
+      "tax-sell-summary": {
+        name: "Tax Sell Summary",
+        description: "Output VAT by sales document",
+      },
+      "tax-buy-summary": {
+        name: "Tax Buy Summary",
+        description: "Input VAT by purchase and expense document",
+      },
+      "withholding-tax": {
+        name: "P.N.D.3 / P.N.D.53",
+        description: "Withholding tax filings",
+      },
+      "aging-receivables": {
+        name: "Aging Receivables",
+        description: "Outstanding invoices by bucket",
+      },
+      "aging-payables": {
+        name: "Aging Payables",
+        description: "Vendor expenses awaiting approval or payment",
+      },
+      "receipt-payment-register": {
+        name: "Receipt / Payment Register",
+        description: "Incoming and outgoing settlement activity",
+      },
+      "petty-cash-movement": {
+        name: "Petty Cash Movement",
+        description: "Top ups, transfers, and direct petty cash spending",
+      },
+      "cheque-summary": {
+        name: "Cheque Summary",
+        description: "Cheque payment lifecycle monitoring",
+      },
+      "sales-documents": {
+        name: "Sales Documents",
+        description: "Sales-side document register by module",
+      },
+      "purchase-documents": {
+        name: "Purchase Documents",
+        description: "Purchase-side document register by module",
+      },
+      "customer-statements": {
+        name: "Customer Statements",
+        description: "Per-customer invoice and receipt activity",
+      },
+      "inventory-valuation": {
+        name: "Inventory Valuation",
+        description: "Stock value based on current catalog balances",
+      },
+      "inventory-movement": {
+        name: "Inventory Movement",
+        description: "Movement log with quantities and balances",
+      },
+      "project-profitability": {
+        name: "Project Profitability",
+        description: "Revenue, cost, and margin by project",
+      },
+    },
+  },
   status: {
     draft: "Draft",
     sent: "Sent",
@@ -1254,6 +1392,144 @@ const th = {
       productMessage: "กำลังบันทึกข้อมูลสินค้าลง backend",
       savingStockAdjustment: "กำลังบันทึกการปรับสต็อก...",
       stockAdjustmentMessage: "ระบบกำลังอัปเดต movement log และยอดคงเหลือใน backend",
+    },
+  },
+  reports: {
+    title: "รายงาน",
+    description: "สร้างรายงานการเงิน ภาษี การดำเนินงาน และกำไรขาดทุนแยกโครงการ",
+    groups: {
+      financial: "รายงานการเงิน",
+      tax: "รายงานภาษี",
+      operational: "รายงานการดำเนินงาน",
+      projects: "รายงานโครงการ",
+    },
+    kpi: {
+      netProfit: "กำไรสุทธิ",
+      assets: "สินทรัพย์",
+      netVatPayable: "VAT สุทธิต้องชำระ",
+      openReceivables: "ลูกหนี้คงค้าง",
+    },
+    actions: {
+      download: "ดาวน์โหลด",
+      export: "ส่งออก",
+      viewReport: "ดูรายงาน",
+      generateReport: "สร้างรายงาน",
+      exportProjectReport: "ส่งออกรายงานโครงการ",
+    },
+    filters: {
+      dateFrom: "วันที่เริ่มต้น",
+      dateTo: "วันที่สิ้นสุด",
+      period: "งวด",
+    },
+    empty: {
+      noProjectsTitle: "ยังไม่มีโครงการ",
+      noProjectsDescription: "สร้างโครงการเพื่อ tag เอกสารและดูรายงานกำไรขาดทุนแยกโครงการ",
+    },
+    toast: {
+      notAvailable: "รายงานนี้ยังไม่พร้อมใช้งาน",
+      generated: "สร้างรายงาน {{report}} แล้ว",
+      unableToGenerate: "ไม่สามารถสร้างรายงานได้",
+      projectDeleted: "ลบโครงการ {{name}} แล้ว",
+      unableToDeleteProject: "ไม่สามารถลบโครงการได้",
+    },
+    projects: {
+      title: "กำไรขาดทุนแยกโครงการ",
+      description: "จัดการโครงการและเชื่อมรายได้/ต้นทุนกับข้อมูลเอกสารชุดเดียวกัน",
+      newProject: "โครงการใหม่",
+      createProject: "สร้างโครงการ",
+      confirmDelete: "ลบโครงการ {{name}}?",
+      lastActivity: "กิจกรรมล่าสุด {{date}}",
+      fields: {
+        project: "โครงการ",
+        customer: "ลูกค้า",
+        revenue: "รายได้",
+        cost: "ต้นทุน",
+        profit: "กำไร",
+        status: "สถานะ",
+        actions: "การทำงาน",
+      },
+    },
+    items: {
+      "profit-and-loss": {
+        name: "งบกำไรขาดทุน",
+        description: "รายได้ ต้นทุน และกำไรสุทธิ",
+      },
+      "balance-sheet": {
+        name: "งบดุล",
+        description: "สินทรัพย์ หนี้สิน และส่วนของเจ้าของ",
+      },
+      "cash-flow": {
+        name: "งบกระแสเงินสด",
+        description: "กระแสเงินสดจากการดำเนินงาน ลงทุน และจัดหาเงิน",
+      },
+      "trial-balance": {
+        name: "งบทดลอง",
+        description: "ยอดรวมบัญชีตามงวด",
+      },
+      "financial-account-movement": {
+        name: "ความเคลื่อนไหวบัญชีการเงิน",
+        description: "รายการตามช่องทางธนาคาร เงินสด และ payment gateway",
+      },
+      "vat-summary": {
+        name: "ภ.พ.30 (VAT)",
+        description: "สรุปแบบภาษีมูลค่าเพิ่มรายเดือน",
+      },
+      "tax-sell-summary": {
+        name: "สรุปภาษีขาย",
+        description: "Output VAT ตามเอกสารขาย",
+      },
+      "tax-buy-summary": {
+        name: "สรุปภาษีซื้อ",
+        description: "Input VAT ตามเอกสารซื้อและรายจ่าย",
+      },
+      "withholding-tax": {
+        name: "ภ.ง.ด.3 / ภ.ง.ด.53",
+        description: "รายงานภาษีหัก ณ ที่จ่าย",
+      },
+      "aging-receivables": {
+        name: "อายุลูกหนี้",
+        description: "ใบแจ้งหนี้ค้างชำระตามช่วงอายุหนี้",
+      },
+      "aging-payables": {
+        name: "อายุเจ้าหนี้",
+        description: "รายจ่ายผู้ขายที่รออนุมัติหรือรอจ่าย",
+      },
+      "receipt-payment-register": {
+        name: "ทะเบียนรับ/จ่ายเงิน",
+        description: "กิจกรรมรับและจ่ายชำระเงิน",
+      },
+      "petty-cash-movement": {
+        name: "ความเคลื่อนไหวเงินสดย่อย",
+        description: "เติมเงิน โอนเงิน และจ่ายเงินสดย่อยโดยตรง",
+      },
+      "cheque-summary": {
+        name: "สรุปเช็ค",
+        description: "ติดตาม lifecycle การจ่ายด้วยเช็ค",
+      },
+      "sales-documents": {
+        name: "เอกสารขาย",
+        description: "ทะเบียนเอกสารฝั่งขายแยกตามโมดูล",
+      },
+      "purchase-documents": {
+        name: "เอกสารซื้อ",
+        description: "ทะเบียนเอกสารฝั่งซื้อแยกตามโมดูล",
+      },
+      "customer-statements": {
+        name: "Statement ลูกค้า",
+        description: "กิจกรรมใบแจ้งหนี้และใบเสร็จแยกลูกค้า",
+      },
+      "inventory-valuation": {
+        name: "มูลค่าสินค้าคงเหลือ",
+        description: "มูลค่าสต็อกจากยอดคงเหลือใน catalog",
+      },
+      "inventory-movement": {
+        name: "ความเคลื่อนไหวสต็อก",
+        description: "movement log พร้อมจำนวนและยอดคงเหลือ",
+      },
+      "project-profitability": {
+        name: "กำไรขาดทุนแยกโครงการ",
+        description: "รายได้ ต้นทุน และ margin ตามโครงการ",
+      },
     },
   },
   status: {
