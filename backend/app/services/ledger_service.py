@@ -687,6 +687,9 @@ def build_tax_summary_rows(data: dict[str, Any], summary_type: str) -> list[dict
                     "date": invoice.get("date", ""),
                     "documentId": invoice.get("id", ""),
                     "party": invoice.get("customer", ""),
+                    "taxPointDate": invoice.get("taxPointDate", ""),
+                    "taxPointReason": invoice.get("taxPointReason", ""),
+                    "vatReportingPeriod": invoice.get("vatReportingPeriod", ""),
                     "subtotal": subtotal,
                     "vatAmount": tax_amount,
                     "total": total,
@@ -704,6 +707,9 @@ def build_tax_summary_rows(data: dict[str, Any], summary_type: str) -> list[dict
                     "date": expense.get("date", ""),
                     "documentId": expense.get("id", ""),
                     "party": expense.get("vendor", ""),
+                    "taxPointDate": expense.get("taxPointDate", ""),
+                    "taxPointReason": expense.get("taxPointReason", ""),
+                    "vatReportingPeriod": expense.get("vatReportingPeriod", ""),
                     "subtotal": subtotal or total,
                     "vatAmount": tax_amount,
                     "total": total,
@@ -747,6 +753,13 @@ def build_document_module_rows(data: dict[str, Any], module_type: str) -> list[d
                     "currency": record.get("currency", "THB"),
                     "amount": _round_money(record.get("amount")),
                     "linkedCount": len(record.get("linkedDocumentIds", []) or []),
+                    "workflowId": record.get("workflowId", ""),
+                    "sourceDocumentIds": ", ".join(record.get("sourceDocumentIds", []) or []),
+                    "paymentStatus": record.get("paymentStatus", ""),
+                    "amountPaid": _round_money(record.get("amountPaid", 0)),
+                    "amountDue": _round_money(record.get("amountDue", 0)),
+                    "taxPointDate": record.get("taxPointDate", ""),
+                    "vatReportingPeriod": record.get("vatReportingPeriod", ""),
                 }
             )
     rows.sort(key=lambda item: (item["date"], item["documentId"]), reverse=True)
@@ -1163,6 +1176,7 @@ def build_vat_summary(data: dict[str, Any]) -> dict[str, Any]:
     policy = build_policy_snapshot(data.get("settings"))
     output_tax = 0.0
     input_tax = 0.0
+    reporting_periods: set[str] = set()
 
     for invoice in data.get("invoices", []):
         status = str(invoice.get("status", "draft")).lower()
@@ -1173,6 +1187,26 @@ def build_vat_summary(data: dict[str, Any]) -> dict[str, Any]:
             output_tax += _invoice_status_amount(invoice) * (tax_amount / total) if total else 0
         else:
             output_tax += tax_amount
+        if invoice.get("vatReportingPeriod"):
+            reporting_periods.add(str(invoice.get("vatReportingPeriod")))
+
+    for note in data.get("creditNotes", []):
+        status = str(note.get("status", "draft")).lower()
+        if status in {"draft", "cancelled", "void"}:
+            continue
+        _, tax_amount, _ = _invoice_breakdown(note, policy)
+        output_tax -= tax_amount
+        if note.get("vatReportingPeriod"):
+            reporting_periods.add(str(note.get("vatReportingPeriod")))
+
+    for note in data.get("debitNotes", []):
+        status = str(note.get("status", "draft")).lower()
+        if status in {"draft", "cancelled", "void"}:
+            continue
+        _, tax_amount, _ = _invoice_breakdown(note, policy)
+        output_tax += tax_amount
+        if note.get("vatReportingPeriod"):
+            reporting_periods.add(str(note.get("vatReportingPeriod")))
 
     for expense in data.get("expenses", []):
         status = str(expense.get("status", "pending")).lower()
@@ -1180,11 +1214,14 @@ def build_vat_summary(data: dict[str, Any]) -> dict[str, Any]:
             continue
         _, tax_amount, _ = _invoice_breakdown(expense, policy)
         input_tax += tax_amount
+        if expense.get("vatReportingPeriod"):
+            reporting_periods.add(str(expense.get("vatReportingPeriod")))
 
     today = _today(data)
     return {
         "vatRegistered": policy["vatRegistered"],
         "filingPeriod": today.strftime("%B %Y"),
+        "sourceReportingPeriods": sorted(reporting_periods),
         "outputTax": _round_money(output_tax),
         "inputTax": _round_money(input_tax),
         "netVatPayable": _round_money(output_tax - input_tax),
@@ -1466,6 +1503,7 @@ def build_report_rows(data: dict[str, Any], report_key: str) -> list[dict[str, A
         return [
             {"metric": "VAT Registered", "value": "Yes" if vat["vatRegistered"] else "No"},
             {"metric": "Filing Period", "value": vat["filingPeriod"]},
+            {"metric": "Source Reporting Periods", "value": ", ".join(vat.get("sourceReportingPeriods", []))},
             {"metric": "Output Tax", "amount": vat["outputTax"]},
             {"metric": "Input Tax", "amount": vat["inputTax"]},
             {"metric": "Net VAT Payable", "amount": vat["netVatPayable"]},
@@ -1483,6 +1521,8 @@ def build_report_rows(data: dict[str, Any], report_key: str) -> list[dict[str, A
                     "documentId": document.get("id", ""),
                     "vendor": document.get("vendor", ""),
                     "relatedDocumentId": document.get("sourceDocumentId", ""),
+                    "relatedPaymentId": document.get("relatedPaymentId", ""),
+                    "linkedDocumentIds": ", ".join(document.get("linkedDocumentIds", []) or []),
                     "incomeType": document.get("incomeType", ""),
                     "taxableAmount": _round_money(document.get("taxableAmount")),
                     "rate": _round_money(float(document.get("rate", 0) or 0) * (100 if float(document.get("rate", 0) or 0) <= 1 else 1)),

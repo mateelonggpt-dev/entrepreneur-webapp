@@ -16,6 +16,7 @@ const evidenceLabels: Record<RemainingTask["missingEvidenceType"], string> = {
   invoiceReceipt: "Invoice / Receipt",
   paymentEvidence: "Payment Evidence",
   deliveryEvidence: "Delivery Note / Proof of Delivery",
+  withholdingTaxEvidence: "Withholding Tax Evidence",
 };
 
 const RemainingTasks = () => {

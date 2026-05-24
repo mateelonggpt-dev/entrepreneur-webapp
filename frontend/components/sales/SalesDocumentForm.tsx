@@ -1,5 +1,6 @@
 ﻿import { useEffect, useMemo, useRef, useState, type ElementType, type ReactNode } from "react";
 import { useNavigate } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import {
   AlertTriangle,
   ArrowLeft,
@@ -1077,6 +1078,7 @@ export const SalesDocumentForm = ({
   initialInvoicePaymentMode = "full_payment",
 }: SalesDocumentFormProps) => {
   const nav = useNavigate();
+  const { t } = useTranslation();
   const { data, refresh } = useAppData();
   const realTypes = useMemo(
     () => getRealDocumentTypes(selectedDocumentTypes ?? selectedTypes ?? []),
@@ -1221,6 +1223,26 @@ export const SalesDocumentForm = ({
   const documentVatRate = effectiveVatEnabled ? sanitizeWholePercent(companySettings?.taxDefaults?.vatRate ?? 7) : 0;
   const effectiveWithholdingRate = showWhtFooter && !perLineWithholdingTax ? sanitizeWhtRate(withholdingRate) : 0;
   const withholdingEnabled = perLineWithholdingTax || (showWhtFooter && effectiveWithholdingRate > 0);
+  const transactionType = useMemo(
+    () => (lines.length > 0 && lines.every((line) => (line.productType || line.unit).toLowerCase().includes("service")) ? "service" : "goods"),
+    [lines]
+  );
+  const taxGuidanceMessages = useMemo(() => {
+    const messages: string[] = [];
+    if (!companyVatRegistered && (isTaxInvoiceDocument || invoiceTaxType === "tax")) {
+      messages.push(t("taxGuidance.companyNotVatRegistered"));
+    }
+    if (effectiveVatEnabled && realTypes.includes("delivery_note")) {
+      messages.push(t("taxGuidance.deliveryMayCreateTaxPoint"));
+    }
+    if (effectiveVatEnabled && (invoicePaymentMode === "deposit" || primaryDocumentType === "deposit" || realTypes.includes("receipt"))) {
+      messages.push(t("taxGuidance.paymentBeforeDelivery"));
+    }
+    if (effectiveVatEnabled && (isTaxInvoiceDocument || invoiceTaxType === "tax")) {
+      messages.push(t("taxGuidance.taxInvoiceRecommended"));
+    }
+    return Array.from(new Set(messages));
+  }, [companyVatRegistered, effectiveVatEnabled, invoicePaymentMode, invoiceTaxType, isTaxInvoiceDocument, primaryDocumentType, realTypes, t]);
   const referenceOptions = useMemo(() => buildReferenceOptions(data, primaryDocumentType), [data, primaryDocumentType]);
   const allowsMultipleReferences = ["receipt", "combined_receipt", "billing_note", "combined_billing_note"].includes(primaryDocumentType);
   const selectedReference = referenceDocuments[0] ?? referenceOptions.find((item) => item.id === sourceDocumentId) ?? null;
@@ -1919,6 +1941,10 @@ export const SalesDocumentForm = ({
       documentLanguage,
       documentCopy: copyGeneration,
       copyGeneration,
+      transactionType,
+      deliveryDate: realTypes.includes("delivery_note") ? issueDate : undefined,
+      paymentDate: realTypes.includes("receipt") || invoicePaymentMode === "deposit" ? issueDate : undefined,
+      serviceCompletedDate: transactionType === "service" ? issueDate : undefined,
       primaryDocumentType,
       documentNumberPrefix: numberPrefix,
       sellerInfo: seller,
@@ -2663,6 +2689,22 @@ export const SalesDocumentForm = ({
             </div>
           </div>
         </div>
+
+        {taxGuidanceMessages.length ? (
+          <div className="mt-4 rounded-lg border border-amber-300 bg-amber-50 p-3 text-sm text-amber-950">
+            <div className="flex items-start gap-2">
+              <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
+              <div>
+                <p className="font-semibold">{t("taxGuidance.title")}</p>
+                <ul className="mt-1 list-disc space-y-1 pl-4">
+                  {taxGuidanceMessages.map((message) => (
+                    <li key={message}>{message}</li>
+                  ))}
+                </ul>
+              </div>
+            </div>
+          </div>
+        ) : null}
 
         <div className="mt-6 grid gap-6 md:grid-cols-2">
           <PaperBlock title={labels.customer}>

@@ -73,7 +73,9 @@ export const PURCHASE_DOCUMENT_TYPE_OPTIONS: DocumentTypeOption[] = [
   { id: "expense", label: "Expense", thaiLabel: "บันทึกรายจ่าย" },
   { id: "purchase_order", label: "Purchase Order", thaiLabel: "ใบสั่งซื้อ" },
   { id: "receive", label: "Goods Receipt", thaiLabel: "ใบรับสินค้า" },
+  { id: "vendor_invoice", label: "Vendor Invoice", thaiLabel: "ใบแจ้งหนี้ผู้ขาย" },
   { id: "supplier_payment", label: "Supplier Payment", thaiLabel: "ชำระเงินผู้ขาย" },
+  { id: "advance_payment", label: "Advance Payment", thaiLabel: "จ่ายเงินล่วงหน้า" },
   { id: "withholding_tax", label: "Withholding Tax", thaiLabel: "หนังสือรับรองหัก ณ ที่จ่าย" },
   {
     id: "others",
@@ -111,8 +113,10 @@ export const SALES_DOCUMENT_KIND_LABELS: Record<string, string> = {
 export const PURCHASE_DOCUMENT_KIND_LABELS: Record<string, string> = {
   all: "All expense documents",
   supplier_payment: "Supplier Payments",
+  advance_payment: "Advance Payments",
   purchase_order: "Purchase Orders",
   receive: "Goods Receipts",
+  vendor_invoice: "Vendor Invoices",
   expense: "Expenses",
   withholding_tax: "Withholding Tax Certificates",
 };

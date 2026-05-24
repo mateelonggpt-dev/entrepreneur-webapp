@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -51,6 +52,7 @@ export const PaymentModal = ({
   payment,
   onSaved,
 }: Props) => {
+  const { t } = useTranslation();
   const { data } = useAppData();
   const [paymentMethod, setPaymentMethod] = useState("Bank transfer");
   const [paymentDate, setPaymentDate] = useState("2026-04-19");
@@ -163,11 +165,11 @@ export const PaymentModal = ({
   const handleSubmit = async () => {
     const numericAmount = Number(amount);
     if (!selectedVendor) {
-      setError("Select at least one payable document before opening the payment modal.");
+      setError(t("payment.validation.payableRequired"));
       return;
     }
     if (!Number.isFinite(numericAmount) || numericAmount <= 0) {
-      setError("Payment amount must be greater than zero.");
+      setError(t("payment.validation.amountPositive"));
       return;
     }
 
@@ -227,11 +229,11 @@ export const PaymentModal = ({
 
       onSaved?.(saved);
       onOpenChange(false);
-      toast.success(payment ? `Payment ${saved.id} updated` : `Payment ${saved.id} recorded`, {
-        description: autoCreateWht && !payment ? "Linked withholding tax document created automatically." : "Payable metadata is now synced with the backend.",
+      toast.success(payment ? t("payment.toast.updated", { id: saved.id }) : t("payment.toast.recorded", { id: saved.id }), {
+        description: autoCreateWht && !payment ? t("payment.toast.whtCreated") : t("payment.toast.synced"),
       });
     } catch (submitError) {
-      toast.error(submitError instanceof Error ? submitError.message : "Unable to save payment.");
+      toast.error(submitError instanceof Error ? submitError.message : t("payment.toast.unableToSave"));
     } finally {
       setSubmitting(false);
     }
@@ -247,10 +249,10 @@ export const PaymentModal = ({
             </div>
             <div>
               <h2 className="font-display text-lg font-bold leading-tight">
-                {payment ? "Edit Payment Metadata" : "Record Vendor Payment"}
+                {payment ? t("payment.editTitle") : t("payment.recordTitle")}
               </h2>
               <p className="mt-0.5 text-xs text-muted-foreground">
-                Support cash, bank transfer, petty cash, and cheque payments with optional WHT creation.
+                {t("payment.description")}
               </p>
             </div>
           </div>
@@ -258,7 +260,7 @@ export const PaymentModal = ({
           <div className="grid gap-6 bg-background px-6 py-5 lg:grid-cols-[1fr_0.9fr]">
             <div className="space-y-4">
               <div className="rounded-2xl border border-border/60 p-4">
-                <h3 className="font-display text-sm font-semibold">Payable selection</h3>
+                <h3 className="font-display text-sm font-semibold">{t("payment.payableSelection")}</h3>
                 <div className="mt-4 space-y-3">
                   {selectedPayables.map((row) => (
                     <div key={row.id} className="rounded-xl border border-border/50 p-3 text-sm">
@@ -270,7 +272,7 @@ export const PaymentModal = ({
                     </div>
                   ))}
                   {selectedPayables.length === 0 ? (
-                    <p className="text-sm text-muted-foreground">No payable rows were selected.</p>
+                    <p className="text-sm text-muted-foreground">{t("payment.empty.noPayables")}</p>
                   ) : null}
                 </div>
               </div>
@@ -278,11 +280,11 @@ export const PaymentModal = ({
               <div className="rounded-2xl border border-border/60 p-4">
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <Label>Payment date</Label>
+                    <Label>{t("payment.fields.paymentDate")}</Label>
                     <Input className="mt-1.5" type="date" value={paymentDate} onChange={(event) => setPaymentDate(event.target.value)} />
                   </div>
                   <div>
-                    <Label>Amount</Label>
+                    <Label>{t("payment.fields.amount")}</Label>
                     <Input
                       className="mt-1.5"
                       type="number"
@@ -293,21 +295,21 @@ export const PaymentModal = ({
                     />
                   </div>
                   <div>
-                    <Label>Payment method</Label>
+                    <Label>{t("payment.fields.paymentMethod")}</Label>
                     <Select value={paymentMethod} onValueChange={setPaymentMethod}>
                       <SelectTrigger className="mt-1.5">
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="Bank transfer">Bank transfer</SelectItem>
-                        <SelectItem value="Cash">Cash</SelectItem>
-                        <SelectItem value="Petty Cash">Petty Cash</SelectItem>
-                        <SelectItem value="Cheque">Cheque</SelectItem>
+                        <SelectItem value="Bank transfer">{t("payment.methods.bankTransfer")}</SelectItem>
+                        <SelectItem value="Cash">{t("payment.methods.cash")}</SelectItem>
+                        <SelectItem value="Petty Cash">{t("payment.methods.pettyCash")}</SelectItem>
+                        <SelectItem value="Cheque">{t("payment.methods.cheque")}</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
                   <div>
-                    <Label>Account</Label>
+                    <Label>{t("payment.fields.account")}</Label>
                     <Select
                       value={accountNumber || "none"}
                       onValueChange={(value) => {
@@ -317,7 +319,7 @@ export const PaymentModal = ({
                       }}
                     >
                       <SelectTrigger className="mt-1.5">
-                        <SelectValue placeholder="Select account" />
+                        <SelectValue placeholder={t("payment.fields.selectAccount")} />
                       </SelectTrigger>
                       <SelectContent>
                         {data.financeAccounts.map((account) => (
@@ -331,25 +333,25 @@ export const PaymentModal = ({
                   {paymentMethod === "Cheque" ? (
                     <>
                       <div>
-                        <Label>Cheque date</Label>
+                        <Label>{t("payment.fields.chequeDate")}</Label>
                         <Input className="mt-1.5" type="date" value={chequeDate} onChange={(event) => setChequeDate(event.target.value)} />
                       </div>
                       <div>
-                        <Label>Cheque cut date</Label>
+                        <Label>{t("payment.fields.chequeCutDate")}</Label>
                         <Input className="mt-1.5" type="date" value={chequeCutDate} onChange={(event) => setChequeCutDate(event.target.value)} />
                       </div>
                       <div>
-                        <Label>Deposit date</Label>
+                        <Label>{t("payment.fields.depositDate")}</Label>
                         <Input className="mt-1.5" type="date" value={chequeDepositDate} onChange={(event) => setChequeDepositDate(event.target.value)} />
                       </div>
                       <div>
-                        <Label>Cleared date</Label>
+                        <Label>{t("payment.fields.clearedDate")}</Label>
                         <Input className="mt-1.5" type="date" value={chequeClearedDate} onChange={(event) => setChequeClearedDate(event.target.value)} />
                       </div>
                     </>
                   ) : null}
                   <div className="col-span-2">
-                    <Label>Note</Label>
+                    <Label>{t("payment.fields.note")}</Label>
                     <Textarea className="mt-1.5 min-h-[110px]" value={note} onChange={(event) => setNote(event.target.value)} />
                   </div>
                 </div>
@@ -358,18 +360,18 @@ export const PaymentModal = ({
 
             <div className="space-y-4">
               <div className="rounded-2xl border border-border/60 bg-secondary/20 p-4">
-                <h3 className="font-display text-sm font-semibold">Summary</h3>
+                <h3 className="font-display text-sm font-semibold">{t("payment.summary.title")}</h3>
                 <dl className="mt-4 space-y-2 text-sm">
                   <div className="flex items-center justify-between">
-                    <dt className="text-muted-foreground">Vendor</dt>
+                    <dt className="text-muted-foreground">{t("contacts.vendor")}</dt>
                     <dd>{selectedVendor || "-"}</dd>
                   </div>
                   <div className="flex items-center justify-between">
-                    <dt className="text-muted-foreground">Open payable</dt>
+                    <dt className="text-muted-foreground">{t("contacts.fields.openPayable")}</dt>
                     <dd>{fmtTHB(totalRemaining)}</dd>
                   </div>
                   <div className="flex items-center justify-between border-t border-border pt-2 font-semibold">
-                    <dt>Payment amount</dt>
+                    <dt>{t("payment.fields.paymentAmount")}</dt>
                     <dd>{fmtTHB(Number(amount) || 0)}</dd>
                   </div>
                 </dl>
@@ -379,9 +381,9 @@ export const PaymentModal = ({
                 <div className="rounded-2xl border border-border/60 p-4">
                   <div className="flex items-center justify-between">
                     <div>
-                      <h3 className="font-display text-sm font-semibold">Withholding tax</h3>
+                      <h3 className="font-display text-sm font-semibold">{t("payment.wht.title")}</h3>
                       <p className="mt-1 text-xs text-muted-foreground">
-                        Optionally create a WHT record from this payment.
+                        {t("payment.wht.description")}
                       </p>
                     </div>
                     <Switch checked={autoCreateWht} onCheckedChange={setAutoCreateWht} />
@@ -389,25 +391,25 @@ export const PaymentModal = ({
                   {autoCreateWht ? (
                     <div className="mt-4 grid grid-cols-2 gap-4">
                       <div>
-                        <Label>WHT rate (%)</Label>
+                        <Label>{t("payment.wht.rate")}</Label>
                         <Input className="mt-1.5" type="number" min="0" value={whtRate} onChange={(event) => setWhtRate(event.target.value)} />
                       </div>
                       <div>
-                        <Label>Income type</Label>
+                        <Label>{t("payment.wht.incomeType")}</Label>
                         <Select value={incomeType} onValueChange={setIncomeType}>
                           <SelectTrigger className="mt-1.5">
                             <SelectValue />
                           </SelectTrigger>
                           <SelectContent>
-                            <SelectItem value="service">Service</SelectItem>
-                            <SelectItem value="rent">Rent</SelectItem>
-                            <SelectItem value="transport">Transport</SelectItem>
-                            <SelectItem value="professional_fee">Professional fee</SelectItem>
+                            <SelectItem value="service">{t("payment.wht.incomeTypes.service")}</SelectItem>
+                            <SelectItem value="rent">{t("payment.wht.incomeTypes.rent")}</SelectItem>
+                            <SelectItem value="transport">{t("payment.wht.incomeTypes.transport")}</SelectItem>
+                            <SelectItem value="professional_fee">{t("payment.wht.incomeTypes.professionalFee")}</SelectItem>
                           </SelectContent>
                         </Select>
                       </div>
                       <div className="col-span-2">
-                        <Label>Filing month</Label>
+                        <Label>{t("payment.wht.filingMonth")}</Label>
                         <Input className="mt-1.5" type="month" value={filingMonth} onChange={(event) => setFilingMonth(event.target.value)} />
                       </div>
                     </div>
@@ -421,7 +423,7 @@ export const PaymentModal = ({
 
           <div className="flex items-center justify-end gap-2 border-t border-border bg-card px-6 py-3.5">
             <Button variant="ghost" onClick={() => onOpenChange(false)} disabled={submitting}>
-              Cancel
+              {t("common.cancel")}
             </Button>
             <Button
               className="border-0 bg-gradient-brand text-primary-foreground shadow-brand"
@@ -429,7 +431,7 @@ export const PaymentModal = ({
               disabled={submitting}
             >
               {submitting ? <Loader2 className="mr-1.5 h-4 w-4 animate-spin" /> : null}
-              {payment ? "Save Payment Metadata" : "Record Payment"}
+              {payment ? t("payment.actions.saveMetadata") : t("documentActions.recordPayment")}
             </Button>
           </div>
         </DialogContent>
@@ -437,8 +439,8 @@ export const PaymentModal = ({
 
       <ProcessingDialog
         open={submitting}
-        title={payment ? "Updating payment metadata..." : "Recording payment..."}
-        message="Saving payment allocations and validation data to the backend."
+        title={payment ? t("payment.processing.updating") : t("payment.processing.recording")}
+        message={t("payment.processing.message")}
       />
     </>
   );

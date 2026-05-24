@@ -40,8 +40,15 @@ import {
 import { toast } from "sonner";
 import { useTranslation } from "react-i18next";
 
-type ExpenseDocType = "purchase_order" | "receive" | "expense" | "supplier_payment" | "withholding_tax";
-type EvidenceType = "invoiceReceipt" | "paymentEvidence" | "deliveryEvidence";
+type ExpenseDocType =
+  | "purchase_order"
+  | "receive"
+  | "vendor_invoice"
+  | "expense"
+  | "supplier_payment"
+  | "advance_payment"
+  | "withholding_tax";
+type EvidenceType = "invoiceReceipt" | "paymentEvidence" | "deliveryEvidence" | "withholdingTaxEvidence";
 
 type ExpenseLine = {
   id: string;
@@ -85,21 +92,22 @@ type TaxRateGroup = {
 
 type EvidenceFiles = Record<EvidenceType, File[]>;
 
-const sourceDocumentCategoryLabels: Record<EvidenceType, { en: string; th: string; missing: string }> = {
+const sourceDocumentCategoryLabels: Record<EvidenceType, { labelKey: string; missingKey: string }> = {
   invoiceReceipt: {
-    en: "Invoice / Receipt",
-    th: "ใบแจ้งหนี้ / ใบเสร็จรับเงิน",
-    missing: "Please attach Invoice / Receipt",
+    labelKey: "expenseCreate.evidence.invoiceReceipt",
+    missingKey: "expenseCreate.evidence.missingInvoiceReceipt",
   },
   paymentEvidence: {
-    en: "Payment Evidence",
-    th: "หลักฐานการชำระเงิน",
-    missing: "Please attach Payment Evidence",
+    labelKey: "expenseCreate.evidence.paymentEvidence",
+    missingKey: "expenseCreate.evidence.missingPaymentEvidence",
   },
   deliveryEvidence: {
-    en: "Delivery Note / Proof of Delivery",
-    th: "ใบส่งของ / หลักฐานการจัดส่ง",
-    missing: "Please attach Delivery Note / Proof of Delivery",
+    labelKey: "expenseCreate.evidence.deliveryEvidence",
+    missingKey: "expenseCreate.evidence.missingDeliveryEvidence",
+  },
+  withholdingTaxEvidence: {
+    labelKey: "expenseCreate.evidence.withholdingTaxEvidence",
+    missingKey: "expenseCreate.evidence.missingWithholdingTaxEvidence",
   },
 };
 
@@ -108,19 +116,21 @@ const documentTitles: Record<
   { en: string; th: string; prefix: string; kind: "purchase_order" | "receive" | "expense" | "withholding_tax" | "supplier_payment" }
 > = {
   expense: { en: "Record Expense", th: "บันทึกรายจ่าย", prefix: "EXP", kind: "expense" },
+  vendor_invoice: { en: "Vendor Invoice", th: "ใบแจ้งหนี้ผู้ขาย", prefix: "VI", kind: "expense" },
   purchase_order: { en: "Purchase Order", th: "ใบสั่งซื้อ", prefix: "PO", kind: "purchase_order" },
   receive: { en: "Goods Receipt", th: "ใบรับสินค้า", prefix: "GRN", kind: "receive" },
   supplier_payment: { en: "Supplier Payment", th: "ชำระเงินผู้ขาย", prefix: "PAY", kind: "supplier_payment" },
+  advance_payment: { en: "Advance Payment", th: "จ่ายเงินล่วงหน้า", prefix: "ADV", kind: "supplier_payment" },
   withholding_tax: { en: "Withholding Tax Certificate", th: "หนังสือรับรองหัก ณ ที่จ่าย", prefix: "WHT", kind: "withholding_tax" },
 };
 
 const sourceDocumentOptions = [
-  { id: "vendor_invoice", en: "Vendor Invoice", th: "ใบแจ้งหนี้จากผู้ขาย" },
-  { id: "tax_invoice", en: "Tax Invoice", th: "ใบกำกับภาษี" },
-  { id: "receipt", en: "Receipt", th: "ใบเสร็จรับเงิน" },
-  { id: "delivery_note", en: "Delivery Note", th: "ใบส่งของ" },
-  { id: "receive", en: "Goods Receipt Note", th: "ใบรับสินค้า" },
-  { id: "other", en: "Other", th: "อื่น ๆ" },
+  { id: "vendor_invoice", labelKey: "expenseCreate.sourceDocuments.vendorInvoice" },
+  { id: "tax_invoice", labelKey: "expenseCreate.sourceDocuments.taxInvoice" },
+  { id: "receipt", labelKey: "expenseCreate.sourceDocuments.receipt" },
+  { id: "delivery_note", labelKey: "expenseCreate.sourceDocuments.deliveryNote" },
+  { id: "receive", labelKey: "expenseCreate.sourceDocuments.goodsReceipt" },
+  { id: "other", labelKey: "expenseCreate.sourceDocuments.other" },
 ];
 
 const todayText = () => new Date().toISOString().slice(0, 10);
@@ -187,7 +197,7 @@ const getExpenseRoute = (documentId: string) => `/expense/documents?document=${e
 
 const PurchaseCreate = () => {
   const nav = useNavigate();
-  const { i18n } = useTranslation();
+  const { t, i18n } = useTranslation();
   const previewRef = useRef<HTMLDivElement>(null);
   const { data, refresh } = useAppData();
   const [selectedTypes, setSelectedTypes] = useState<string[]>(["none"]);
@@ -213,6 +223,7 @@ const PurchaseCreate = () => {
     invoiceReceipt: [],
     paymentEvidence: [],
     deliveryEvidence: [],
+    withholdingTaxEvidence: [],
   });
   const [sourceDocumentModalOpen, setSourceDocumentModalOpen] = useState(false);
   const [paymentModalOpen, setPaymentModalOpen] = useState(false);
@@ -226,6 +237,26 @@ const PurchaseCreate = () => {
   const documentSettings = data.policySummary?.documents;
   const perLineWithholdingTax = Boolean(documentSettings?.perLineWithholdingTax);
   const effectiveVatEnabled = companyVatRegistered && vatEnabled;
+  const transactionType = useMemo(
+    () => (lines.length > 0 && lines.every((line) => line.unit.toLowerCase().includes("service")) ? "service" : "goods"),
+    [lines]
+  );
+  const taxGuidanceMessages = useMemo(() => {
+    const messages: string[] = [];
+    if (!companyVatRegistered) {
+      messages.push(t("taxGuidance.companyNotVatRegistered"));
+    }
+    if (effectiveVatEnabled && selectedType === "receive") {
+      messages.push(t("taxGuidance.deliveryMayCreateTaxPoint"));
+    }
+    if (effectiveVatEnabled && paymentStatus === "paid") {
+      messages.push(t("taxGuidance.paymentBeforeDelivery"));
+    }
+    if (effectiveVatEnabled && (selectedType === "expense" || selectedType === "vendor_invoice" || sourceDocumentType === "tax_invoice")) {
+      messages.push(t("taxGuidance.taxInvoiceRecommended"));
+    }
+    return Array.from(new Set(messages));
+  }, [companyVatRegistered, effectiveVatEnabled, paymentStatus, selectedType, sourceDocumentType, t]);
 
   const documentNumber = useMemo(() => {
     if (!selectedType || !title) return "";
@@ -236,8 +267,10 @@ const PurchaseCreate = () => {
           ? data.receives.length + 1
           : selectedType === "withholding_tax"
             ? data.withholdingTaxDocuments.length + 1
-            : selectedType === "supplier_payment"
+          : selectedType === "supplier_payment"
               ? data.vendorPayments.length + 1
+              : selectedType === "advance_payment"
+                ? data.vendorPayments.length + 1
               : data.expenses.length + 1;
     return `${title.prefix}-2026-${String(next).padStart(4, "0")}`;
   }, [data.expenses.length, data.purchaseOrders.length, data.receives.length, data.vendorPayments.length, data.withholdingTaxDocuments.length, selectedType, title]);
@@ -343,14 +376,14 @@ const PurchaseCreate = () => {
 
   const validateForPreview = () => {
     const missing: string[] = [];
-    if (!selectedType) missing.push("Document type");
-    if (selectedType === "expense" && !sourceDocumentType) missing.push("Source document type");
-    if (!vendor) missing.push("Supplier/vendor");
-    if (!issueDate) missing.push("Issue date");
-    if (!documentNumber) missing.push("Document number");
-    if (!lines.some((line) => line.desc && line.qty > 0)) missing.push("At least one item/expense line");
+    if (!selectedType) missing.push(t("expenseCreate.validation.documentType"));
+    if (selectedType === "expense" && !sourceDocumentType) missing.push(t("expenseCreate.validation.sourceDocumentType"));
+    if (!vendor) missing.push(t("expenseCreate.validation.vendor"));
+    if (!issueDate) missing.push(t("expenseCreate.validation.issueDate"));
+    if (!documentNumber) missing.push(t("expenseCreate.validation.documentNumber"));
+    if (!lines.some((line) => line.desc && line.qty > 0)) missing.push(t("expenseCreate.validation.lineItem"));
     if (missing.length) {
-      toast.error(`${missing.length} required field${missing.length > 1 ? "s are" : " is"} missing`, {
+      toast.error(t("expenseCreate.toast.requiredMissing", { count: missing.length }), {
         description: missing.join(", "),
       });
       return false;
@@ -359,14 +392,12 @@ const PurchaseCreate = () => {
   };
 
   const createMissingEvidenceTasks = (createdId: string) => {
-    const labels: Record<EvidenceType, string> = {
-      invoiceReceipt: "Please attach Invoice / Receipt",
-      paymentEvidence: "Please attach Payment Evidence",
-      deliveryEvidence: "Please attach Delivery Note / Proof of Delivery",
-    };
     const tasks: RemainingTask[] = missingEvidence.map((type) => ({
       id: `${createdId}-${type}`,
-      title: `${labels[type]} for ${createdId}`,
+      title: t("expenseCreate.tasks.attachEvidence", {
+        evidence: t(sourceDocumentCategoryLabels[type].labelKey),
+        documentId: createdId,
+      }),
       relatedDocumentNumber: createdId,
       documentType: title?.en ?? "Record Expense",
       missingEvidenceType: type,
@@ -376,7 +407,7 @@ const PurchaseCreate = () => {
     }));
     if (tasks.length) {
       upsertRemainingTasks(tasks);
-      toast.warning(`${tasks.length} remaining task${tasks.length > 1 ? "s" : ""} created for missing evidence.`);
+      toast.warning(t("expenseCreate.toast.remainingTasksCreated", { count: tasks.length }));
     }
   };
 
@@ -385,6 +416,7 @@ const PurchaseCreate = () => {
       invoiceReceipt: "invoice-receipt",
       paymentEvidence: "payment-evidence",
       deliveryEvidence: "delivery-evidence",
+      withholdingTaxEvidence: "withholding-tax-evidence",
     };
     for (const [type, files] of Object.entries(evidenceFiles) as Array<[EvidenceType, File[]]>) {
       if (files.length) {
@@ -401,15 +433,15 @@ const PurchaseCreate = () => {
 
   const submit = async (mode: "draft" | "create") => {
     if (!selectedType || !title) {
-      toast.error("Select an expense document type first.");
+      toast.error(t("expenseCreate.toast.selectDocumentType"));
       return;
     }
-    if (selectedType === "supplier_payment" || selectedType === "withholding_tax") {
-      toast.error("Use the quick action panel for this document type.");
+    if (selectedType === "supplier_payment" || selectedType === "advance_payment" || selectedType === "withholding_tax") {
+      toast.error(t("expenseCreate.toast.useQuickAction"));
       return;
     }
     if (!preview) {
-      toast.error("Preview the document before saving or creating it.");
+      toast.error(t("expenseCreate.toast.previewRequired"));
       return;
     }
 
@@ -431,7 +463,7 @@ const PurchaseCreate = () => {
           totalAmount: roundMoney(taxableBase + roundMoney(taxableBase * (vatRate / 100))),
         };
       });
-      if (selectedType === "expense") {
+      if (selectedType === "expense" || selectedType === "vendor_invoice") {
         const created = await createExpense({
           id: documentNumber,
           vendor,
@@ -447,6 +479,13 @@ const PurchaseCreate = () => {
           status: mode === "draft" ? "draft" : paymentStatus === "paid" ? "paid" : "pending",
           sourceDocumentId: reference,
           sourceDocumentType,
+          documentTypes: [selectedType],
+          documentTitle: title.th,
+          documentVariant: title.en,
+          transactionType,
+          deliveryDate: undefined,
+          paymentDate: paymentStatus === "paid" ? issueDate : undefined,
+          serviceCompletedDate: transactionType === "service" ? issueDate : undefined,
           paymentSummary: {
             paid: paymentStatus === "paid" ? grandTotal : 0,
             remaining: paymentStatus === "paid" ? 0 : grandTotal,
@@ -469,13 +508,14 @@ const PurchaseCreate = () => {
             invoiceReceipt: evidenceFiles.invoiceReceipt.map((file) => file.name),
             paymentEvidence: evidenceFiles.paymentEvidence.map((file) => file.name),
             deliveryEvidence: evidenceFiles.deliveryEvidence.map((file) => file.name),
+            withholdingTaxEvidence: evidenceFiles.withholdingTaxEvidence.map((file) => file.name),
           },
           evidenceStatus: missingEvidence.length ? "missing" : "complete",
         } as Parameters<typeof createExpense>[0]);
         await uploadEvidenceFor(created.id);
         createMissingEvidenceTasks(created.id);
         await refresh();
-        toast.success(mode === "draft" ? `Draft ${created.id} saved` : `Expense ${created.id} created`);
+        toast.success(mode === "draft" ? t("expenseCreate.toast.draftSaved", { id: created.id }) : t("expenseCreate.toast.expenseCreated", { id: created.id }));
         nav("/expense/documents");
         return;
       }
@@ -495,6 +535,10 @@ const PurchaseCreate = () => {
         documentTypes: [selectedType],
         documentTitle: title.th,
         documentVariant: title.en,
+        transactionType,
+        deliveryDate: selectedType === "receive" ? issueDate : undefined,
+        paymentDate: paymentStatus === "paid" ? issueDate : undefined,
+        serviceCompletedDate: transactionType === "service" ? issueDate : undefined,
         amount: grandTotal,
         subtotal: amountBeforeVat,
         taxAmount: vatAmount,
@@ -509,10 +553,10 @@ const PurchaseCreate = () => {
         lines: savedLines,
       });
       await refresh();
-      toast.success(mode === "draft" ? `Draft ${created.id} saved` : `${title.en} ${created.id} created`);
+      toast.success(mode === "draft" ? t("expenseCreate.toast.draftSaved", { id: created.id }) : t("expenseCreate.toast.documentCreated", { document: title.en, id: created.id }));
       nav("/expense/documents");
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Unable to save expense document.");
+      toast.error(error instanceof Error ? error.message : t("expenseCreate.toast.unableToSave"));
     } finally {
       setSubmitting(null);
     }
@@ -539,7 +583,7 @@ const PurchaseCreate = () => {
       }
       pdf.save(`${documentNumber}-${title.en.replace(/\s+/g, "-")}.pdf`);
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Unable to download PDF.");
+      toast.error(error instanceof Error ? error.message : t("expenseCreate.toast.unableToDownloadPdf"));
     } finally {
       setDownloading(false);
     }
@@ -548,41 +592,43 @@ const PurchaseCreate = () => {
   return (
     <AppShell>
       <PageHeader
-        title="Expense / Create"
-        description="Create purchase orders, goods receipt notes, or record expenses with evidence tracking."
-        breadcrumbs={[{ label: "Expense / รายจ่าย" }, { label: "Create / สร้าง" }]}
+        title={t("expenseCreate.title")}
+        description={t("expenseCreate.description")}
+        breadcrumbs={[{ label: t("common.expense") }, { label: t("common.create") }]}
       />
 
       <Card className="card-premium mb-4 p-5">
         <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
           <div>
-            <h2 className="font-display text-base font-semibold">Expense document type</h2>
-            <p className="text-xs text-muted-foreground">Choose one document type. None clears the selection.</p>
+            <h2 className="font-display text-base font-semibold">{t("expenseCreate.documentTypes.title")}</h2>
+            <p className="text-xs text-muted-foreground">{t("expenseCreate.documentTypes.description")}</p>
           </div>
-          <Badge variant="secondary">{title ? title.en : "No document selected"}</Badge>
+          <Badge variant="secondary">{title ? title.en : t("incomeCreate.noDocumentSelected")}</Badge>
         </div>
         <DocumentTypeSelector
           options={PURCHASE_DOCUMENT_TYPE_OPTIONS}
           selectedValues={selectedTypes}
           onSelectedValuesChange={handleTypeChange}
-          otherMenuLabel="Other expense documents"
+          otherMenuLabel={t("expenseCreate.documentTypes.otherDocuments")}
         />
       </Card>
 
       {!selectedType ? (
-        <Card className="p-8 text-center text-muted-foreground">Select an expense document type to start.</Card>
-      ) : selectedType === "supplier_payment" ? (
+        <Card className="p-8 text-center text-muted-foreground">{t("expenseCreate.emptyState")}</Card>
+      ) : selectedType === "supplier_payment" || selectedType === "advance_payment" ? (
         <Card className="p-6">
-          <h2 className="font-display text-lg font-semibold">Supplier Payment / ชำระเงินผู้ขาย</h2>
+          <h2 className="font-display text-lg font-semibold">
+            {selectedType === "advance_payment" ? t("expenseCreate.documentTypes.advancePayment") : t("expenseCreate.documentTypes.supplierPayment")}
+          </h2>
           <p className="mt-1 text-sm text-muted-foreground">
-            Record supplier payment from open payable documents. Payments can use cash, bank transfer, cheque, or petty cash, and can create withholding tax where enabled.
+            {selectedType === "advance_payment" ? t("expenseCreate.guidance.advancePayment") : t("expenseCreate.guidance.supplierPayment")}
           </p>
           <div className="mt-5 flex flex-wrap gap-2">
             <Button type="button" onClick={() => setPaymentModalOpen(true)}>
-              <Plus className="mr-1.5 h-4 w-4" /> Record supplier payment
+              <Plus className="mr-1.5 h-4 w-4" /> {t("expenseCreate.actions.recordSupplierPayment")}
             </Button>
             <Button type="button" variant="outline" onClick={() => nav("/payment/transactions?type=supplier_payment")}>
-              View payments
+              {t("expenseCreate.actions.viewPayments")}
             </Button>
           </div>
           <PaymentActionModal
@@ -595,16 +641,16 @@ const PurchaseCreate = () => {
         </Card>
       ) : selectedType === "withholding_tax" ? (
         <Card className="p-6">
-          <h2 className="font-display text-lg font-semibold">Withholding Tax Certificate / หนังสือรับรองหัก ณ ที่จ่าย</h2>
+          <h2 className="font-display text-lg font-semibold">{t("expenseCreate.documentTypes.withholdingTax")}</h2>
           <p className="mt-1 text-sm text-muted-foreground">
-            Create a withholding tax certificate from an expense, goods receipt, or supplier payment without leaving Expense / Create.
+            {t("expenseCreate.guidance.withholdingTax")}
           </p>
           <div className="mt-5 flex flex-wrap gap-2">
             <Button type="button" onClick={() => setWithholdingModalOpen(true)}>
-              <Plus className="mr-1.5 h-4 w-4" /> Create WHT certificate
+              <Plus className="mr-1.5 h-4 w-4" /> {t("documentActions.createWhtCertificate")}
             </Button>
             <Button type="button" variant="outline" onClick={() => nav("/tax/withholding-tax")}>
-              View WHT documents
+              {t("expenseCreate.actions.viewWhtDocuments")}
             </Button>
           </div>
           <ExpenseDocumentModal
@@ -616,9 +662,9 @@ const PurchaseCreate = () => {
         </Card>
       ) : selectedType === "expense" && !sourceDocumentType ? (
         <Card className="p-6">
-          <h2 className="font-display text-lg font-semibold">What source document does this expense come from?</h2>
+          <h2 className="font-display text-lg font-semibold">{t("expenseCreate.sourceDocuments.prompt")}</h2>
           <p className="mt-1 text-sm text-muted-foreground">
-            Evidence requirements and remaining tasks are based on this source.
+            {t("expenseCreate.sourceDocuments.description")}
           </p>
           <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
             {sourceDocumentOptions.map((option) => (
@@ -633,8 +679,7 @@ const PurchaseCreate = () => {
                 }}
               >
                 <span>
-                  <span className="block font-semibold">{option.en}</span>
-                  <span className="text-xs text-muted-foreground">{option.th}</span>
+                  <span className="block font-semibold">{t(option.labelKey)}</span>
                 </span>
             </Button>
           ))}
@@ -651,20 +696,20 @@ const PurchaseCreate = () => {
         <div className="space-y-4">
           <div className="sticky top-0 z-20 flex flex-wrap items-center justify-between gap-2 rounded-xl border bg-background/95 p-3 shadow-sm backdrop-blur">
             <Button variant="outline" onClick={() => setPreview(false)}>
-              <ArrowLeft className="mr-1.5 h-4 w-4" /> Back to Edit
+              <ArrowLeft className="mr-1.5 h-4 w-4" /> {t("expenseCreate.actions.backToEdit")}
             </Button>
             <div className="flex flex-wrap gap-2">
               <Button variant="outline" onClick={() => void downloadPdf()} disabled={downloading}>
                 {downloading ? <Loader2 className="mr-1.5 h-4 w-4 animate-spin" /> : <Download className="mr-1.5 h-4 w-4" />}
-                Download PDF
+                {t("common.downloadPdf")}
               </Button>
               <Button variant="outline" onClick={() => void submit("draft")} disabled={Boolean(submitting)}>
                 {submitting === "draft" ? <Loader2 className="mr-1.5 h-4 w-4 animate-spin" /> : <Save className="mr-1.5 h-4 w-4" />}
-                Save Draft
+                {t("common.saveDraft")}
               </Button>
               <Button onClick={() => void submit("create")} disabled={Boolean(submitting)}>
                 {submitting === "create" ? <Loader2 className="mr-1.5 h-4 w-4 animate-spin" /> : <Send className="mr-1.5 h-4 w-4" />}
-                Create Document
+                {t("common.createDocument")}
               </Button>
             </div>
           </div>
@@ -704,20 +749,34 @@ const PurchaseCreate = () => {
               </div>
             </div>
             <div className="min-w-[240px] rounded-lg border border-slate-200 p-4 text-sm">
-              <p className="text-xs text-slate-500">Document number</p>
+              <p className="text-xs text-slate-500">{t("expenseCreate.fields.documentNumber")}</p>
               <p className="font-mono text-lg font-bold text-primary">{documentNumber}</p>
               {selectedType === "expense" ? (
                 <p className="mt-2 text-xs text-slate-500">
-                  Source: {sourceDocumentOptions.find((option) => option.id === sourceDocumentType)?.en}
+                  {t("expenseCreate.fields.source")}: {t(sourceDocumentOptions.find((option) => option.id === sourceDocumentType)?.labelKey ?? "expenseCreate.sourceDocuments.other")}
                 </p>
               ) : null}
             </div>
           </div>
 
+          {taxGuidanceMessages.length ? (
+            <Alert className="mt-4 border-amber-300 bg-amber-50 text-amber-950">
+              <AlertTriangle className="h-4 w-4" />
+              <AlertDescription>
+                <p className="font-semibold">{t("taxGuidance.title")}</p>
+                <ul className="mt-1 list-disc space-y-1 pl-4">
+                  {taxGuidanceMessages.map((message) => (
+                    <li key={message}>{message}</li>
+                  ))}
+                </ul>
+              </AlertDescription>
+            </Alert>
+          ) : null}
+
           <div className="mt-5 grid gap-4 md:grid-cols-2">
-            <PaperField label="Supplier / Vendor *">
+            <PaperField label={t("expenseCreate.fields.vendorRequired")}>
               <Select value={vendor} onValueChange={setVendor}>
-                <SelectTrigger><SelectValue placeholder="Select supplier" /></SelectTrigger>
+                <SelectTrigger><SelectValue placeholder={t("expenseCreate.fields.selectSupplier")} /></SelectTrigger>
                 <SelectContent>
                   {data.vendors.map((item) => (
                     <SelectItem key={item.id} value={item.name}>{item.name}</SelectItem>
@@ -725,28 +784,28 @@ const PurchaseCreate = () => {
                 </SelectContent>
               </Select>
             </PaperField>
-            <PaperField label="Project">
+            <PaperField label={t("reports.projects.fields.project")}>
               <Select value={projectId || "none"} onValueChange={(value) => setProjectId(value === "none" ? "" : value)}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="none">No project</SelectItem>
+                  <SelectItem value="none">{t("expenseCreate.fields.noProject")}</SelectItem>
                   {data.projects.map((project) => (
                     <SelectItem key={project.id} value={project.id}>{project.code} - {project.name}</SelectItem>
                   ))}
                 </SelectContent>
               </Select>
             </PaperField>
-            <PaperField label={selectedType === "expense" ? "Expense date *" : "Issue date *"}>
+            <PaperField label={selectedType === "expense" ? t("expenseCreate.fields.expenseDateRequired") : t("expenseCreate.fields.issueDateRequired")}>
               <Input type="date" value={issueDate} onChange={(event) => setIssueDate(event.target.value)} />
             </PaperField>
-            <PaperField label={selectedType === "expense" ? "Payment due date" : "Expected receive date"}>
+            <PaperField label={selectedType === "expense" ? t("expenseCreate.fields.paymentDueDate") : t("expenseCreate.fields.expectedReceiveDate")}>
               <Input type="date" value={expectedDate} onChange={(event) => setExpectedDate(event.target.value)} />
             </PaperField>
-            <PaperField label="Reference document">
+            <PaperField label={t("expenseCreate.fields.referenceDocument")}>
               <Select value={reference || "none"} onValueChange={(value) => setReference(value === "none" ? "" : value)}>
-                <SelectTrigger><SelectValue placeholder="Link existing document" /></SelectTrigger>
+                <SelectTrigger><SelectValue placeholder={t("expenseCreate.fields.linkExistingDocument")} /></SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="none">No reference</SelectItem>
+                  <SelectItem value="none">{t("expenseCreate.fields.noReference")}</SelectItem>
                   {references.map((item) => (
                     <SelectItem key={item.id} value={item.id}>{item.label}</SelectItem>
                   ))}
@@ -754,44 +813,44 @@ const PurchaseCreate = () => {
               </Select>
             </PaperField>
             {selectedType === "expense" ? (
-              <PaperField label="Source document number">
+              <PaperField label={t("expenseCreate.fields.sourceDocumentNumber")}>
                 <Input value={sourceDocumentNumber} onChange={(event) => setSourceDocumentNumber(event.target.value)} />
               </PaperField>
             ) : (
-              <PaperField label="Credit/payment term">
+              <PaperField label={t("expenseCreate.fields.creditPaymentTerm")}>
                 <Input type="number" min={0} value={paymentTerm} onChange={(event) => setPaymentTerm(event.target.value)} />
               </PaperField>
             )}
             {selectedType === "expense" ? (
               <>
-                <PaperField label="Expense category/account">
+                <PaperField label={t("expenseCreate.fields.expenseCategory")}>
                   <Input value={category} onChange={(event) => setCategory(event.target.value)} />
                 </PaperField>
-                <PaperField label="Payment status">
+                <PaperField label={t("expenseCreate.fields.paymentStatus")}>
                   <Select value={paymentStatus} onValueChange={setPaymentStatus}>
                     <SelectTrigger><SelectValue /></SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="unpaid">Unpaid</SelectItem>
-                      <SelectItem value="paid">Paid</SelectItem>
-                      <SelectItem value="partial">Partial</SelectItem>
+                      <SelectItem value="unpaid">{t("paymentStatus.unpaid")}</SelectItem>
+                      <SelectItem value="paid">{t("paymentStatus.paid")}</SelectItem>
+                      <SelectItem value="partial">{t("paymentStatus.partial")}</SelectItem>
                     </SelectContent>
                   </Select>
                 </PaperField>
-                <PaperField label="Payment method">
+                <PaperField label={t("payment.fields.paymentMethod")}>
                   <Select value={paymentMethod} onValueChange={setPaymentMethod}>
                     <SelectTrigger><SelectValue /></SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="Bank Transfer">Bank Transfer</SelectItem>
-                      <SelectItem value="Cash">Cash</SelectItem>
-                      <SelectItem value="Credit Card">Credit Card</SelectItem>
-                      <SelectItem value="Cheque">Cheque</SelectItem>
-                      <SelectItem value="Other">Other</SelectItem>
+                      <SelectItem value="Bank Transfer">{t("payment.methods.bankTransfer")}</SelectItem>
+                      <SelectItem value="Cash">{t("payment.methods.cash")}</SelectItem>
+                      <SelectItem value="Credit Card">{t("payment.methods.creditCard")}</SelectItem>
+                      <SelectItem value="Cheque">{t("payment.methods.cheque")}</SelectItem>
+                      <SelectItem value="Other">{t("expenseCreate.fields.other")}</SelectItem>
                     </SelectContent>
                   </Select>
                 </PaperField>
               </>
             ) : null}
-            <PaperField label="VAT setting">
+            <PaperField label={t("expenseCreate.fields.vatSetting")}>
               <Select
                 value={effectiveVatEnabled ? "vat" : "none"}
                 onValueChange={(value) => setVatEnabled(companyVatRegistered && value === "vat")}
@@ -799,8 +858,8 @@ const PurchaseCreate = () => {
               >
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="vat">Include VAT / มี VAT</SelectItem>
-                  <SelectItem value="none">No VAT / ไม่มี VAT</SelectItem>
+                  <SelectItem value="vat">{t("expenseCreate.fields.includeVat")}</SelectItem>
+                  <SelectItem value="none">{t("expenseCreate.fields.noVat")}</SelectItem>
                 </SelectContent>
               </Select>
               {!companyVatRegistered ? (
@@ -828,13 +887,13 @@ const PurchaseCreate = () => {
                 <div className="rounded-lg border border-slate-200 p-4">
                   <div className="flex items-start justify-between gap-3">
                     <div>
-                      <h3 className="font-semibold">Source documents</h3>
+                      <h3 className="font-semibold">{t("expenseCreate.evidence.sourceDocuments")}</h3>
                       <p className="text-xs text-muted-foreground">
-                        Missing categories will create Remaining Tasks so the team can finish them later.
+                        {t("expenseCreate.evidence.remainingTasksHelper")}
                       </p>
                     </div>
                     <Button type="button" variant="outline" size="sm" onClick={() => setSourceDocumentModalOpen(true)}>
-                      <Upload className="mr-1.5 h-4 w-4" /> Attach source documents
+                      <Upload className="mr-1.5 h-4 w-4" /> {t("expenseCreate.evidence.attachSourceDocuments")}
                     </Button>
                   </div>
                   {missingEvidence.length ? (
@@ -842,40 +901,40 @@ const PurchaseCreate = () => {
                       {missingEvidence.map((type) => (
                         <Alert key={type} className="border-amber-300 bg-amber-50 text-amber-950">
                           <AlertTriangle className="h-4 w-4" />
-                          <AlertDescription>{sourceDocumentCategoryLabels[type].missing}</AlertDescription>
+                          <AlertDescription>{t(sourceDocumentCategoryLabels[type].missingKey)}</AlertDescription>
                         </Alert>
                       ))}
                     </div>
                   ) : (
                     <p className="mt-3 flex items-center gap-2 text-sm text-emerald-700">
-                      <Check className="h-4 w-4" /> Source document requirements look complete.
+                      <Check className="h-4 w-4" /> {t("expenseCreate.evidence.complete")}
                     </p>
                   )}
                 </div>
               ) : null}
-              <PaperField label="Notes">
+              <PaperField label={t("expenseCreate.fields.notes")}>
                 <Textarea
                   value={notes}
                   onChange={(event) => setNotes(event.target.value)}
-                  placeholder="Document note or internal remark..."
+                  placeholder={t("expenseCreate.fields.notesPlaceholder")}
                 />
               </PaperField>
               <div className="grid grid-cols-2 gap-4 rounded-lg border border-slate-200 p-4 text-center text-sm">
                 <div className="min-h-28 pt-14">
-                  <div className="border-t pt-2">Supplier / Receiver</div>
+                  <div className="border-t pt-2">{t("expenseCreate.preview.supplierReceiver")}</div>
                 </div>
                 <div className="min-h-28 pt-14">
-                  <div className="border-t pt-2">Authorized / Approved by</div>
+                  <div className="border-t pt-2">{t("expenseCreate.preview.authorizedBy")}</div>
                 </div>
               </div>
             </div>
             <div className="rounded-lg border border-slate-200 p-4">
-              <SummaryLine label="Subtotal" value={subtotal} />
+              <SummaryLine label={t("expenseCreate.summary.subtotal")} value={subtotal} />
               <SummaryLine label={taxText.amountBeforeVat} value={amountBeforeVat} />
               {totals.vatGroups.map((group) => (
                 <SummaryLine key={`purchase-vat-${group.rate}`} label={`VAT ${group.rate}%`} value={group.taxAmount} />
               ))}
-              <SummaryLine label="Grand total" value={grandTotal} strong />
+              <SummaryLine label={t("expenseCreate.summary.grandTotal")} value={grandTotal} strong />
               {!perLineWithholdingTax ? (
                 <div className="mt-3 flex items-center justify-between gap-3 border-t pt-3">
                   <Label className="text-xs text-muted-foreground">{taxText.whtPercent}</Label>
@@ -909,13 +968,13 @@ const PurchaseCreate = () => {
 
           <div className="sticky bottom-0 -mx-6 mt-8 flex items-center justify-between border-t bg-white/95 px-6 py-3 backdrop-blur">
             <div className="text-sm">
-              <span className="font-semibold">Amount due: THB {fmt(amountDue)}</span>
+              <span className="font-semibold">{t("expenseCreate.summary.amountDue")}: THB {fmt(amountDue)}</span>
               {missingEvidence.length ? (
-                <span className="ml-3 text-amber-700">{missingEvidence.length} evidence warning(s)</span>
+                <span className="ml-3 text-amber-700">{t("expenseCreate.evidence.warningCount", { count: missingEvidence.length })}</span>
               ) : null}
             </div>
             <Button onClick={() => validateForPreview() && setPreview(true)}>
-              <Eye className="mr-1.5 h-4 w-4" /> Preview Document
+              <Eye className="mr-1.5 h-4 w-4" /> {t("common.preview")}
             </Button>
           </div>
         </Card>
@@ -956,7 +1015,9 @@ const LineTable = ({
   onChange: (id: string, key: keyof ExpenseLine, value: string | number) => void;
   onAdd: () => void;
   onRemove: (id: string) => void;
-}) => (
+}) => {
+  const { t } = useTranslation();
+  return (
   <div className="mt-5 overflow-x-auto">
     <datalist id="expense-product-codes">
       {products.map((product) => (
@@ -971,14 +1032,14 @@ const LineTable = ({
     <table className="w-full min-w-[920px] text-sm">
       <thead className="bg-slate-100 text-xs uppercase text-slate-600">
         <tr>
-          <th className="px-2 py-2 text-left">Code</th>
-          <th className="px-2 py-2 text-left">Description / Detail</th>
-          <th className="px-2 py-2 text-right">Qty</th>
-          <th className="px-2 py-2">Unit</th>
-          <th className="px-2 py-2 text-right">Unit price</th>
-          <th className="px-2 py-2 text-right">VAT %</th>
+          <th className="px-2 py-2 text-left">{t("expenseCreate.lineTable.code")}</th>
+          <th className="px-2 py-2 text-left">{t("expenseCreate.lineTable.descriptionDetail")}</th>
+          <th className="px-2 py-2 text-right">{t("expenseCreate.lineTable.qty")}</th>
+          <th className="px-2 py-2">{t("expenseCreate.lineTable.unit")}</th>
+          <th className="px-2 py-2 text-right">{t("expenseCreate.lineTable.unitPrice")}</th>
+          <th className="px-2 py-2 text-right">{t("expenseCreate.lineTable.vatPercent")}</th>
           {perLineWithholdingTax ? <th className="px-2 py-2 text-right">{whtLabel}</th> : null}
-          <th className="px-2 py-2 text-right">Total</th>
+          <th className="px-2 py-2 text-right">{t("expenseCreate.lineTable.total")}</th>
           <th className="w-10" />
         </tr>
       </thead>
@@ -1006,7 +1067,7 @@ const LineTable = ({
                 <Input
                   value={line.detail}
                   onChange={(event) => onChange(line.id, "detail", event.target.value)}
-                  placeholder="Detail"
+                  placeholder={t("expenseCreate.lineTable.detailPlaceholder")}
                   className="mt-1 h-7 text-xs"
                 />
               </td>
@@ -1068,10 +1129,11 @@ const LineTable = ({
       </tbody>
     </table>
     <Button type="button" variant="outline" size="sm" className="mt-3" onClick={onAdd}>
-      <Plus className="mr-1.5 h-4 w-4" /> Add line
+      <Plus className="mr-1.5 h-4 w-4" /> {t("common.addLine")}
     </Button>
   </div>
-);
+  );
+};
 
 const SourceDocumentModal = ({
   open,
@@ -1085,34 +1147,36 @@ const SourceDocumentModal = ({
   evidenceFiles: EvidenceFiles;
   missingEvidence: EvidenceType[];
   onFilesChange: (type: EvidenceType, files: FileList | null) => void;
-}) => (
+}) => {
+  const { t } = useTranslation();
+  return (
   <Dialog open={open} onOpenChange={onOpenChange}>
     <DialogContent className="max-w-4xl">
       <DialogHeader>
-        <DialogTitle>Attach source documents</DialogTitle>
+        <DialogTitle>{t("expenseCreate.evidence.attachSourceDocuments")}</DialogTitle>
       </DialogHeader>
       <p className="text-sm text-muted-foreground">
-        You can save without all files. Missing categories will be added to Remaining Tasks.
+        {t("expenseCreate.evidence.saveWithoutAllFiles")}
       </p>
       {missingEvidence.length ? (
         <div className="grid gap-2">
           {missingEvidence.map((type) => (
             <Alert key={type} className="border-amber-300 bg-amber-50 text-amber-950">
               <AlertTriangle className="h-4 w-4" />
-              <AlertDescription>{sourceDocumentCategoryLabels[type].missing}</AlertDescription>
+              <AlertDescription>{t(sourceDocumentCategoryLabels[type].missingKey)}</AlertDescription>
             </Alert>
           ))}
         </div>
       ) : (
         <p className="flex items-center gap-2 text-sm text-emerald-700">
-          <Check className="h-4 w-4" /> Source document requirements look complete.
+          <Check className="h-4 w-4" /> {t("expenseCreate.evidence.complete")}
         </p>
       )}
       <div className="grid gap-3 md:grid-cols-3">
         {(Object.keys(sourceDocumentCategoryLabels) as EvidenceType[]).map((type) => (
           <EvidenceInput
             key={type}
-            label={`${sourceDocumentCategoryLabels[type].en}\n${sourceDocumentCategoryLabels[type].th}`}
+            label={t(sourceDocumentCategoryLabels[type].labelKey)}
             type={type}
             files={evidenceFiles[type]}
             onFilesChange={onFilesChange}
@@ -1120,11 +1184,12 @@ const SourceDocumentModal = ({
         ))}
       </div>
       <DialogFooter>
-        <Button type="button" onClick={() => onOpenChange(false)}>Save source documents</Button>
+        <Button type="button" onClick={() => onOpenChange(false)}>{t("expenseCreate.evidence.saveSourceDocuments")}</Button>
       </DialogFooter>
     </DialogContent>
   </Dialog>
-);
+  );
+};
 
 const EvidenceInput = ({
   label,
@@ -1136,11 +1201,13 @@ const EvidenceInput = ({
   type: EvidenceType;
   files: File[];
   onFilesChange: (type: EvidenceType, files: FileList | null) => void;
-}) => (
+}) => {
+  const { t } = useTranslation();
+  return (
   <div className="rounded-md border border-slate-200 p-3">
     <Label className="whitespace-pre-line text-xs text-slate-500">{label}</Label>
     <Input className="mt-2 text-xs" type="file" multiple onChange={(event) => onFilesChange(type, event.target.files)} />
-    <p className="mt-1 text-[11px] text-muted-foreground">{files.length ? `${files.length} file(s) selected` : "No file selected"}</p>
+    <p className="mt-1 text-[11px] text-muted-foreground">{files.length ? t("inventory.evidence.filesSelected", { count: files.length }) : t("expenseCreate.evidence.noFileSelected")}</p>
     {files.some((file) => file.type.startsWith("image/")) ? (
       <div className="mt-2 grid grid-cols-3 gap-1">
         {files
@@ -1157,7 +1224,8 @@ const EvidenceInput = ({
       </div>
     ) : null}
   </div>
-);
+  );
+};
 
 const ExpensePreview = ({
   refEl,

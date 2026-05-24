@@ -9,6 +9,8 @@ import type {
   CompanySettings,
   CreateDocumentPayload,
   DocumentKind,
+  DocumentWorkflowNextActions,
+  DocumentWorkflowRules,
   DocumentSettings,
   DocumentSummary,
   Expense,
@@ -257,6 +259,82 @@ export const createDocument = (kind: DocumentKind, payload: CreateDocumentPayloa
 export const fetchDocument = <T>(kind: DocumentKind, id: string) =>
   fetchJson<T>(`/api/documents/${kind}/${id}`);
 
+export const fetchDocumentWorkflowRules = () =>
+  fetchJson<DocumentWorkflowRules>("/api/document-workflow/rules");
+
+export const fetchDocumentNextActions = (kind: string, id: string) =>
+  fetchJson<DocumentWorkflowNextActions>(
+    `/api/documents/${encodeURIComponent(kind)}/${encodeURIComponent(id)}/next-actions`
+  );
+
+export const validateDocumentFlow = (kind: string, payload: {
+  sourceKind?: string;
+  targetKind?: string;
+  workflowMode?: "strict" | "guided" | "free";
+  overrideReason?: string;
+}) =>
+  fetchJson<{
+    valid: boolean;
+    allowed: boolean;
+    severity: "info" | "warning" | "error";
+    warning?: { messageKey: string; sourceKind?: string; targetKind?: string } | null;
+    requiresOverrideReason?: boolean;
+    overrideReason?: string;
+  }>(`/api/documents/${encodeURIComponent(kind)}/validate-flow`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(payload),
+  });
+
+export const convertDocumentWorkflow = (kind: string, id: string, payload: {
+  targetKind: string;
+  workflowMode?: "strict" | "guided" | "free";
+  overrideReason?: string;
+  overrides?: Record<string, unknown>;
+}) =>
+  fetchJson<Invoice | DocumentSummary | VendorPayment>(
+    `/api/documents/${encodeURIComponent(kind)}/${encodeURIComponent(id)}/convert`,
+    {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(payload),
+    }
+  );
+
+export const linkDocumentWorkflow = (kind: string, id: string, payload: {
+  targetDocumentId: string;
+  relationType?: string;
+}) =>
+  fetchJson<{ source: DocumentSummary; target: DocumentSummary }>(
+    `/api/documents/${encodeURIComponent(kind)}/${encodeURIComponent(id)}/link`,
+    {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(payload),
+    }
+  );
+
+export const overrideWorkflowWarning = (kind: string, id: string, payload: {
+  overrideReason: string;
+  workflowMode?: "strict" | "guided" | "free";
+}) =>
+  fetchJson<DocumentSummary>(
+    `/api/documents/${encodeURIComponent(kind)}/${encodeURIComponent(id)}/override-workflow-warning`,
+    {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(payload),
+    }
+  );
+
 export const fetchInvoiceDetail = (id: string) => fetchJson<Invoice>(`/api/invoices/${id}`);
 
 export const fetchExpenseDetail = (id: string) => fetchJson<Expense>(`/api/expenses/${id}`);
@@ -283,6 +361,7 @@ export const createExpense = (payload: {
     invoiceReceipt?: string[];
     paymentEvidence?: string[];
     deliveryEvidence?: string[];
+    withholdingTaxEvidence?: string[];
   };
   linkedDocumentIds?: string[];
   paymentSummary?: {

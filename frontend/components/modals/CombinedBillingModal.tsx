@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -18,6 +19,7 @@ interface Props {
 }
 
 export const CombinedBillingModal = ({ open, onOpenChange, preselectedInvoiceIds = [] }: Props) => {
+  const { t } = useTranslation();
   const { data, refresh } = useAppData();
   const [customer, setCustomer] = useState("");
   const [selectedInvoiceIds, setSelectedInvoiceIds] = useState<string[]>([]);
@@ -52,11 +54,11 @@ export const CombinedBillingModal = ({ open, onOpenChange, preselectedInvoiceIds
 
   const handleSubmit = async () => {
     if (!customer) {
-      toast.error("Please select a customer.");
+      toast.error(t("modals.combinedBilling.validation.customerRequired"));
       return;
     }
     if (selectedInvoiceIds.length === 0) {
-      toast.error("Select at least one invoice.");
+      toast.error(t("modals.combinedBilling.validation.invoiceRequired"));
       return;
     }
 
@@ -85,9 +87,9 @@ export const CombinedBillingModal = ({ open, onOpenChange, preselectedInvoiceIds
       });
       await refresh();
       onOpenChange(false);
-      toast.success(`Billing ${created.id} created`);
+      toast.success(t("modals.combinedBilling.toast.created", { id: created.id }));
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Unable to create billing document.");
+      toast.error(error instanceof Error ? error.message : t("modals.combinedBilling.toast.unableToCreate"));
     } finally {
       setSubmitting(false);
     }
@@ -102,16 +104,16 @@ export const CombinedBillingModal = ({ open, onOpenChange, preselectedInvoiceIds
               <ReceiptText className="h-5 w-5" />
             </div>
             <div>
-              <h2 className="font-display text-lg font-bold leading-tight">Create Combined Billing</h2>
+              <h2 className="font-display text-lg font-bold leading-tight">{t("modals.combinedBilling.title")}</h2>
               <p className="mt-0.5 text-xs text-muted-foreground">
-                Group unpaid invoices from one customer into a single billing note.
+                {t("modals.combinedBilling.description")}
               </p>
             </div>
           </div>
 
           <div className="space-y-4 bg-background px-6 py-5">
             <div>
-              <Label>Customer</Label>
+              <Label>{t("contacts.customer")}</Label>
               <Select
                 value={customer || "none"}
                 onValueChange={(value) => {
@@ -120,10 +122,10 @@ export const CombinedBillingModal = ({ open, onOpenChange, preselectedInvoiceIds
                 }}
               >
                 <SelectTrigger className="mt-1.5">
-                  <SelectValue placeholder="Select customer" />
+                  <SelectValue placeholder={t("modals.combinedBilling.selectCustomer")} />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="none">Select customer</SelectItem>
+                  <SelectItem value="none">{t("modals.combinedBilling.selectCustomer")}</SelectItem>
                   {data.customers.map((item) => (
                     <SelectItem key={item.id} value={item.name}>
                       {item.name}
@@ -135,7 +137,7 @@ export const CombinedBillingModal = ({ open, onOpenChange, preselectedInvoiceIds
 
             <div className="rounded-xl border border-border/60">
               <div className="flex items-center justify-between border-b border-border/60 px-4 py-3">
-                <p className="text-sm font-semibold">Eligible invoices</p>
+                <p className="text-sm font-semibold">{t("modals.combinedBilling.eligibleInvoices")}</p>
                 <p className="text-sm font-semibold">{fmtTHB(total)}</p>
               </div>
               <div className="max-h-80 overflow-y-auto">
@@ -154,7 +156,7 @@ export const CombinedBillingModal = ({ open, onOpenChange, preselectedInvoiceIds
                 ))}
                 {eligibleInvoices.length === 0 ? (
                   <p className="px-4 py-6 text-center text-sm text-muted-foreground">
-                    No eligible invoices for this customer.
+                    {t("modals.combinedBilling.emptyInvoices")}
                   </p>
                 ) : null}
               </div>
@@ -163,11 +165,11 @@ export const CombinedBillingModal = ({ open, onOpenChange, preselectedInvoiceIds
 
           <div className="flex items-center justify-end gap-2 border-t border-border bg-card px-6 py-3.5">
             <Button variant="ghost" onClick={() => onOpenChange(false)} disabled={submitting}>
-              Cancel
+              {t("common.cancel")}
             </Button>
             <Button onClick={() => void handleSubmit()} disabled={submitting}>
               {submitting ? <Loader2 className="mr-1.5 h-4 w-4 animate-spin" /> : null}
-              Create Billing
+              {t("modals.combinedBilling.createButton")}
             </Button>
           </div>
         </DialogContent>
@@ -175,8 +177,8 @@ export const CombinedBillingModal = ({ open, onOpenChange, preselectedInvoiceIds
 
       <ProcessingDialog
         open={submitting}
-        title="Creating billing document..."
-        message="Linking selected invoices and saving the billing document."
+        title={t("modals.combinedBilling.processingTitle")}
+        message={t("modals.combinedBilling.processingMessage")}
       />
     </>
   );

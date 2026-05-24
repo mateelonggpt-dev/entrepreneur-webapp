@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { AppShell } from "@/components/layout/AppShell";
 import { BrandMark } from "@/components/brand/BrandMark";
+import { DocumentNextActions } from "@/components/documents/DocumentNextActions";
 import { EvidenceAttachmentModal, MasterDataModal } from "@/components/modals/DomainModals";
 import { SalesDocumentActionsMenu } from "@/components/sales/SalesDocumentActionsMenu";
 import { CombinedReceiptModal } from "@/components/modals/CombinedReceiptModal";
@@ -32,7 +33,7 @@ import {
   isSalesDocumentEditable,
   salesDeleteRequiresReset,
 } from "@/lib/sales";
-import type { Attachment, DocumentLine, Invoice, SalesDocumentRecord } from "@/lib/types";
+import type { Attachment, DocumentLine, DocumentWorkflowAction, Invoice, SalesDocumentRecord } from "@/lib/types";
 import {
   Activity,
   ArrowLeft,
@@ -189,6 +190,11 @@ const InvoiceDetail = ({ id: propId }: { id?: string } = {}) => {
       ...extra,
     });
     return `/income/create?${params.toString()}`;
+  };
+
+  const handleNextAction = (action: DocumentWorkflowAction) => {
+    const targetKind = action.targetKind === "combined_receipt" ? "receipt" : action.targetKind;
+    nav(createFromDocumentPath(targetKind));
   };
 
   const handleMoreAction = async (action: SalesDocumentActionId) => {
@@ -495,6 +501,8 @@ const InvoiceDetail = ({ id: propId }: { id?: string } = {}) => {
         </div>
 
         <div className="space-y-4">
+          <DocumentNextActions kind={isTaxInvoice ? "tax_invoice" : "invoice"} documentId={invoice.id} onAction={handleNextAction} />
+
           <Card className="card-premium p-5">
             <h3 className="mb-3 text-sm font-display font-semibold">Summary</h3>
             <dl className="space-y-2 text-sm">
@@ -664,6 +672,11 @@ const GenericIncomeDocumentDetail = ({ summary }: { summary: ReturnType<typeof c
     return `/income/create?${params.toString()}`;
   };
 
+  const handleNextAction = (action: DocumentWorkflowAction) => {
+    const targetKind = action.targetKind === "combined_receipt" ? "receipt" : action.targetKind;
+    nav(createFromDocumentPath(targetKind));
+  };
+
   const handleMoreAction = async (action: SalesDocumentActionId) => {
     if (action === "create_from_reference") {
       nav(createFromDocumentPath(getSalesDocumentActionType(summary)));
@@ -743,6 +756,9 @@ const GenericIncomeDocumentDetail = ({ summary }: { summary: ReturnType<typeof c
           </>
         }
       />
+      <div className="mb-4">
+        <DocumentNextActions kind={summary.kind} documentId={summary.id} onAction={handleNextAction} />
+      </div>
       <Card className="card-premium p-6">
         <div className="mb-8 flex items-start justify-between border-b border-border pb-6">
           <BrandMark size="md" />

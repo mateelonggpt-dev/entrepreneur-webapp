@@ -26,7 +26,7 @@ const getDocumentLanguage = (value: string | null): DocumentLanguage => (value =
 
 const SaleCreate = () => {
   const location = useLocation();
-  const { i18n } = useTranslation();
+  const { t, i18n } = useTranslation();
   const { data } = useAppData();
   const activeLanguage = i18n.language?.startsWith("th") ? "th" : "en";
   const queryDefaults = useMemo(() => {
@@ -66,9 +66,7 @@ const SaleCreate = () => {
     if (!source) return {};
     const workflow = buildSalesWorkflow(source, workflowDocuments, data.linkedDocumentGraph);
     const disabled: Record<string, string> = {};
-    const text = activeLanguage === "th"
-      ? "ขั้นตอนนี้เสร็จสมบูรณ์แล้วในสายเอกสารนี้"
-      : "This workflow step is already complete for this document chain.";
+    const text = t("incomeCreate.workflowStepComplete");
     workflow.steps.forEach((step) => {
       if (step.status !== "complete") return;
       const ids = step.id === "invoice" ? ["invoice", "tax_invoice"] : [step.id];
@@ -78,31 +76,48 @@ const SaleCreate = () => {
       });
     });
     return disabled;
-  }, [activeLanguage, data, queryDefaults.sourceDocumentId, queryDefaults.workflowSourceId, queryDefaults.workflowStep]);
+  }, [data, queryDefaults.sourceDocumentId, queryDefaults.workflowSourceId, queryDefaults.workflowStep, t]);
+  const localizedDisabledReasons = useMemo(() => {
+    const translateReason = (reason: string) => {
+      if (reason === QUOTATION_INCOMPATIBILITY_HELPER) {
+        return t("incomeCreate.quotationIncompatibility");
+      }
+      if (reason === "This document type cannot be combined with the current Income document selection.") {
+        return t("incomeCreate.documentCombinationDisabled");
+      }
+      return reason;
+    };
+
+    return Object.fromEntries(
+      Object.entries(disabledReasons).map(([kind, reason]) => [kind, translateReason(reason)])
+    );
+  }, [disabledReasons, t]);
   const mergedDisabledReasons = useMemo(
-    () => ({ ...disabledReasons, ...workflowDisabledReasons }),
-    [disabledReasons, workflowDisabledReasons]
+    () => ({ ...localizedDisabledReasons, ...workflowDisabledReasons }),
+    [localizedDisabledReasons, workflowDisabledReasons]
   );
   const updateSelectedTypes = (values: string[]) => setSelectedTypes(sanitizeSalesDocumentTypes(values));
 
   return (
     <AppShell>
       <PageHeader
-        title="Income / Create"
-        description="Create one unified income document with a dynamic title, reference flow, tax behavior, payment behavior, and PDF preview."
-        breadcrumbs={[{ label: "Income" }, { label: "Create / สร้าง" }]}
+        title={t("incomeCreate.title")}
+        description={t("incomeCreate.description")}
+        breadcrumbs={[{ label: t("common.income") }, { label: t("common.create") }]}
       />
 
       <Card className="card-premium mb-6 p-6">
         <div className="mb-5 flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
           <div>
-            <h2 className="font-display text-lg font-semibold">Income document types</h2>
+            <h2 className="font-display text-lg font-semibold">{t("incomeCreate.documentTypesTitle")}</h2>
             <p className="mt-1 text-sm text-muted-foreground">
-              Select one or more compatible document types. The generated title, number prefix, reference options, and preview update automatically.
+              {t("incomeCreate.documentTypesDescription")}
             </p>
           </div>
           <Badge variant="secondary" className="w-fit">
-            {realTypes.length === 0 ? "No document selected" : `${realTypes.length} selected`}
+            {realTypes.length === 0
+              ? t("incomeCreate.noDocumentSelected")
+              : t("incomeCreate.selectedCount", { count: realTypes.length })}
           </Badge>
         </div>
 
@@ -111,17 +126,15 @@ const SaleCreate = () => {
           selectedValues={selectedTypes}
           onSelectedValuesChange={updateSelectedTypes}
           language={activeLanguage}
-          otherMenuLabel={activeLanguage === "th" ? "เอกสารอื่น ๆ" : "Other income documents"}
+          otherMenuLabel={t("incomeCreate.otherDocuments")}
           disabledReasons={mergedDisabledReasons}
         />
 
         {Object.keys(mergedDisabledReasons).length > 0 ? (
           <p className="mt-3 text-xs text-muted-foreground">
             {Object.keys(workflowDisabledReasons).length > 0
-              ? activeLanguage === "th"
-                ? "ประเภทเอกสารที่เสร็จแล้วในสายงานนี้จะถูกปิดไว้"
-                : "Completed workflow document types are disabled for this chain."
-              : QUOTATION_INCOMPATIBILITY_HELPER}
+              ? t("incomeCreate.completedWorkflowDisabled")
+              : t("incomeCreate.quotationIncompatibility")}
           </p>
         ) : null}
 
@@ -146,7 +159,7 @@ const SaleCreate = () => {
         />
       ) : (
         <Card className="card-premium p-8 text-center text-sm text-muted-foreground">
-          Select one or more document types to start creating a document.
+          {t("incomeCreate.emptyState")}
         </Card>
       )}
     </AppShell>

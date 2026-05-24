@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -21,6 +22,7 @@ interface Props {
 }
 
 export const CustomerModal = ({ open, onOpenChange, customer, onSaved }: Props) => {
+  const { t } = useTranslation();
   const { refresh } = useAppData();
   const formRef = useRef<HTMLFormElement>(null);
   const [submitting, setSubmitting] = useState(false);
@@ -28,13 +30,13 @@ export const CustomerModal = ({ open, onOpenChange, customer, onSaved }: Props) 
   const [errors, setErrors] = useState<Record<string, string>>({});
 
   const isEditing = Boolean(customer);
-  const title = useMemo(() => (isEditing ? "Edit Customer" : "New Customer"), [isEditing]);
+  const title = useMemo(() => (isEditing ? t("contacts.editCustomer") : t("contacts.newCustomer")), [isEditing, t]);
   const description = useMemo(
     () =>
       isEditing
-        ? "Update the customer profile used in sales and receivables."
-        : "Create a customer profile for invoicing and receivables.",
-    [isEditing]
+        ? t("contacts.modals.customerEditDescription")
+        : t("contacts.modals.customerCreateDescription"),
+    [isEditing, t]
   );
 
   useEffect(() => {
@@ -66,16 +68,16 @@ export const CustomerModal = ({ open, onOpenChange, customer, onSaved }: Props) 
     const nextErrors: Record<string, string> = {};
 
     if (!name) {
-      nextErrors.name = "Customer name is required.";
+      nextErrors.name = t("contacts.validation.customerNameRequired");
     }
 
     if (!email) {
-      nextErrors.email = "Email is required.";
+      nextErrors.email = t("contacts.validation.emailRequired");
     }
 
     if (Object.keys(nextErrors).length > 0) {
       setErrors(nextErrors);
-      toast.error("Please complete the customer form.");
+      toast.error(t("contacts.validation.completeCustomerForm"));
       return;
     }
 
@@ -101,13 +103,15 @@ export const CustomerModal = ({ open, onOpenChange, customer, onSaved }: Props) 
       onSaved?.(saved);
       onOpenChange(false);
       toast.success(
-        customer ? `Customer ${saved.id} updated` : `Customer ${saved.id} created`,
+        customer
+          ? t("contacts.toast.customerUpdated", { id: saved.id })
+          : t("contacts.toast.customerCreated", { id: saved.id }),
         {
-          description: `${saved.name} is now available in Contacts.`,
+          description: t("contacts.toast.customerAvailable", { name: saved.name }),
         }
       );
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Unable to save customer.");
+      toast.error(error instanceof Error ? error.message : t("contacts.toast.unableToSaveCustomer"));
     } finally {
       setSubmitting(false);
     }
@@ -130,36 +134,36 @@ export const CustomerModal = ({ open, onOpenChange, customer, onSaved }: Props) 
           <form ref={formRef} className="space-y-4 bg-background px-6 py-5">
             <div className="grid grid-cols-2 gap-4">
               <div className="col-span-2">
-                <Label htmlFor="customer-name">Customer name</Label>
+                <Label htmlFor="customer-name">{t("contacts.fields.customerName")}</Label>
                 <Input id="customer-name" name="name" defaultValue={customer?.name ?? ""} className="mt-1.5" />
                 {errors.name ? <p className="mt-1 text-[11px] text-destructive">{errors.name}</p> : null}
               </div>
 
               <div>
-                <Label htmlFor="customer-contact">Primary contact</Label>
+                <Label htmlFor="customer-contact">{t("contacts.fields.contactPerson")}</Label>
                 <Input id="customer-contact" name="contact" defaultValue={customer?.contact ?? ""} className="mt-1.5" />
               </div>
 
               <div>
-                <Label>Status</Label>
+                <Label>{t("contacts.fields.status")}</Label>
                 <Select value={status} onValueChange={(value) => setStatus(value as "active" | "inactive")}>
                   <SelectTrigger className="mt-1.5">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="active">Active</SelectItem>
-                    <SelectItem value="inactive">Inactive</SelectItem>
+                    <SelectItem value="active">{t("status.active")}</SelectItem>
+                    <SelectItem value="inactive">{t("status.inactive")}</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
 
               <div>
-                <Label htmlFor="customer-phone">Phone</Label>
+                <Label htmlFor="customer-phone">{t("contacts.fields.phone")}</Label>
                 <Input id="customer-phone" name="phone" defaultValue={customer?.phone ?? ""} className="mt-1.5" />
               </div>
 
               <div>
-                <Label htmlFor="customer-tax-id">Tax ID</Label>
+                <Label htmlFor="customer-tax-id">{t("contacts.fields.taxId")}</Label>
                 <Input
                   id="customer-tax-id"
                   name="taxId"
@@ -169,7 +173,7 @@ export const CustomerModal = ({ open, onOpenChange, customer, onSaved }: Props) 
               </div>
 
               <div className="col-span-2">
-                <Label htmlFor="customer-email">Email</Label>
+                <Label htmlFor="customer-email">{t("contacts.fields.email")}</Label>
                 <Input
                   id="customer-email"
                   name="email"
@@ -181,7 +185,7 @@ export const CustomerModal = ({ open, onOpenChange, customer, onSaved }: Props) 
               </div>
 
               <div className="col-span-2">
-                <Label htmlFor="customer-address">Address</Label>
+                <Label htmlFor="customer-address">{t("contacts.fields.address")}</Label>
                 <Textarea
                   id="customer-address"
                   name="address"
@@ -194,7 +198,7 @@ export const CustomerModal = ({ open, onOpenChange, customer, onSaved }: Props) 
 
           <div className="flex items-center justify-end gap-2 border-t border-border bg-card px-6 py-3.5">
             <Button variant="ghost" onClick={() => onOpenChange(false)} disabled={submitting}>
-              Cancel
+              {t("common.cancel")}
             </Button>
             <Button
               className="border-0 bg-gradient-brand text-primary-foreground shadow-brand"
@@ -202,7 +206,7 @@ export const CustomerModal = ({ open, onOpenChange, customer, onSaved }: Props) 
               disabled={submitting}
             >
               {submitting ? <Loader2 className="mr-1.5 h-4 w-4 animate-spin" /> : null}
-              {isEditing ? "Save Customer" : "Create Customer"}
+              {isEditing ? t("contacts.actions.saveCustomer") : t("contacts.actions.createCustomer")}
             </Button>
           </div>
         </DialogContent>
@@ -210,8 +214,8 @@ export const CustomerModal = ({ open, onOpenChange, customer, onSaved }: Props) 
 
       <ProcessingDialog
         open={submitting}
-        title={isEditing ? "Saving customer..." : "Creating customer..."}
-        message="Saving the customer profile to the backend."
+        title={isEditing ? t("contacts.processing.savingCustomer") : t("contacts.processing.creatingCustomer")}
+        message={t("contacts.processing.customerMessage")}
       />
     </>
   );

@@ -121,6 +121,68 @@ export interface DocumentSummary {
   };
   attachments?: string[];
   attachmentCount?: number;
+  workflowId?: string;
+  sourceDocumentIds?: string[];
+  convertedFromId?: string | null;
+  convertedToIds?: string[];
+  workflowMode?: "strict" | "guided" | "free";
+  overrideReason?: string | null;
+  paymentStatus?: PaymentStatus | string;
+  deliveryStatus?: string;
+  amountPaid?: number;
+  amountDue?: number;
+  withholdingAmount?: number;
+  taxPointDate?: string | null;
+  taxPointReason?: string | null;
+  taxInvoiceRequired?: boolean;
+  vatReportingPeriod?: string | null;
+  taxGuidance?: TaxGuidanceMessage[];
+  vatAuditSnapshot?: VatAuditSnapshot;
+  transactionType?: "goods" | "service" | string;
+  deliveryDate?: string | null;
+  ownershipTransferDate?: string | null;
+  serviceCompletedDate?: string | null;
+  paymentDate?: string | null;
+  taxOverrideReason?: string | null;
+}
+
+export interface DocumentWorkflowAction {
+  type: string;
+  labelKey: string;
+  targetKind: string;
+  recommended?: boolean;
+  requiresReference?: boolean;
+  warningKey?: string;
+}
+
+export interface DocumentWorkflowNextActions {
+  documentId: string;
+  kind: string;
+  status: string;
+  nextActions: DocumentWorkflowAction[];
+}
+
+export interface DocumentWorkflowRules {
+  workflowModes: Array<"strict" | "guided" | "free">;
+  allowedTransitions: Record<string, string[]>;
+  defaultMode: "strict" | "guided" | "free";
+}
+
+export interface TaxGuidanceMessage {
+  severity: "info" | "warning" | "error";
+  messageKey: string;
+}
+
+export interface VatAuditSnapshot {
+  kind?: string;
+  documentTypes?: string[];
+  taxAmount?: number;
+  vatGroups?: TaxRateGroup[];
+  taxPointDate?: string | null;
+  taxPointReason?: string | null;
+  vatReportingPeriod?: string | null;
+  taxInvoiceRequired?: boolean;
+  sourceEvents?: Record<string, string>;
 }
 
 export interface Attachment extends DomainAttachment {}
@@ -224,6 +286,18 @@ export interface SalesDocumentRecord
   vatGroups?: TaxRateGroup[];
   withholdingGroups?: TaxRateGroup[];
   totalWithholdingTax?: number;
+  taxPointDate?: string | null;
+  taxPointReason?: string | null;
+  taxInvoiceRequired?: boolean;
+  vatReportingPeriod?: string | null;
+  taxGuidance?: TaxGuidanceMessage[];
+  vatAuditSnapshot?: VatAuditSnapshot;
+  transactionType?: "goods" | "service" | string;
+  deliveryDate?: string | null;
+  ownershipTransferDate?: string | null;
+  serviceCompletedDate?: string | null;
+  paymentDate?: string | null;
+  taxOverrideReason?: string | null;
   paymentSummary?: {
     received: number;
     remaining: number;
@@ -286,10 +360,23 @@ export interface PurchaseDocumentRecord
   internalRemark?: string;
   tags?: string[];
   evidenceCount?: number;
+  taxPointDate?: string | null;
+  taxPointReason?: string | null;
+  taxInvoiceRequired?: boolean;
+  vatReportingPeriod?: string | null;
+  taxGuidance?: TaxGuidanceMessage[];
+  vatAuditSnapshot?: VatAuditSnapshot;
+  transactionType?: "goods" | "service" | string;
+  deliveryDate?: string | null;
+  ownershipTransferDate?: string | null;
+  serviceCompletedDate?: string | null;
+  paymentDate?: string | null;
+  taxOverrideReason?: string | null;
   sourceDocuments?: {
     invoiceReceipt?: string[];
     paymentEvidence?: string[];
     deliveryEvidence?: string[];
+    withholdingTaxEvidence?: string[];
   };
   accountantCategory?: string;
   paymentSummary?: {
@@ -1203,6 +1290,18 @@ export interface CreateDocumentPayload {
   totalWithholdingTax?: number;
   amountPaid?: number;
   amountDue?: number;
+  transactionType?: "goods" | "service" | string;
+  deliveryDate?: string | null;
+  ownershipTransferDate?: string | null;
+  serviceCompletedDate?: string | null;
+  paymentDate?: string | null;
+  taxPointDate?: string | null;
+  taxPointReason?: string | null;
+  taxInvoiceRequired?: boolean;
+  vatReportingPeriod?: string | null;
+  taxGuidance?: TaxGuidanceMessage[];
+  vatAuditSnapshot?: VatAuditSnapshot;
+  taxOverrideReason?: string | null;
   amountInWordsThai?: string;
   amountInWordsEnglish?: string;
 }
