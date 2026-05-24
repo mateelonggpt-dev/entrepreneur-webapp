@@ -1,4 +1,5 @@
 import type { ReactNode } from "react";
+import { useTranslation } from "react-i18next";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Sheet, SheetContent, SheetDescription, SheetFooter, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
@@ -196,7 +197,7 @@ export const ConfigurableActionModal = ({
   title,
   description,
   children,
-  confirmLabel = "Continue",
+  confirmLabel,
   onConfirm,
 }: BaseModalProps & {
   title: string;
@@ -204,21 +205,24 @@ export const ConfigurableActionModal = ({
   children?: ReactNode;
   confirmLabel?: string;
   onConfirm?: () => void | Promise<void>;
-}) => (
-  <Dialog open={open} onOpenChange={onOpenChange}>
-    <DialogContent>
-      <DialogHeader>
-        <DialogTitle>{title}</DialogTitle>
-      </DialogHeader>
-      {description ? <p className="text-sm text-muted-foreground">{description}</p> : null}
-      {children}
-      <DialogFooter>
-        <Button variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button>
-        <Button onClick={() => void onConfirm?.()}>{confirmLabel}</Button>
-      </DialogFooter>
-    </DialogContent>
-  </Dialog>
-);
+}) => {
+  const { t } = useTranslation();
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>{title}</DialogTitle>
+        </DialogHeader>
+        {description ? <p className="text-sm text-muted-foreground">{description}</p> : null}
+        {children}
+        <DialogFooter>
+          <Button variant="outline" onClick={() => onOpenChange(false)}>{t("common.cancel")}</Button>
+          <Button onClick={() => void onConfirm?.()}>{confirmLabel ?? t("common.confirm")}</Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+};
 
 export const ConfigurableActionDrawer = ({
   open,
@@ -226,7 +230,7 @@ export const ConfigurableActionDrawer = ({
   title,
   description,
   children,
-  confirmLabel = "Continue",
+  confirmLabel,
   onConfirm,
 }: BaseModalProps & {
   title: string;
@@ -234,18 +238,21 @@ export const ConfigurableActionDrawer = ({
   children?: ReactNode;
   confirmLabel?: string;
   onConfirm?: () => void | Promise<void>;
-}) => (
-  <Sheet open={open} onOpenChange={onOpenChange}>
-    <SheetContent>
-      <SheetHeader>
-        <SheetTitle>{title}</SheetTitle>
-        {description ? <SheetDescription>{description}</SheetDescription> : null}
-      </SheetHeader>
-      <div className="mt-6">{children}</div>
-      <SheetFooter className="mt-6">
-        <Button variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button>
-        <Button onClick={() => void onConfirm?.()}>{confirmLabel}</Button>
-      </SheetFooter>
-    </SheetContent>
-  </Sheet>
-);
+}) => {
+  const { t } = useTranslation();
+  return (
+    <Sheet open={open} onOpenChange={onOpenChange}>
+      <SheetContent>
+        <SheetHeader>
+          <SheetTitle>{title}</SheetTitle>
+          {description ? <SheetDescription>{description}</SheetDescription> : null}
+        </SheetHeader>
+        <div className="mt-6">{children}</div>
+        <SheetFooter className="mt-6">
+          <Button variant="outline" onClick={() => onOpenChange(false)}>{t("common.cancel")}</Button>
+          <Button onClick={() => void onConfirm?.()}>{confirmLabel ?? t("common.confirm")}</Button>
+        </SheetFooter>
+      </SheetContent>
+    </Sheet>
+  );
+};
