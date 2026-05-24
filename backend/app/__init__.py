@@ -14,6 +14,7 @@ def create_app() -> Flask:
     settings = get_settings()
 
     app.config["JSON_SORT_KEYS"] = False
+    app.config["JSON_AS_ASCII"] = False
     app.config["SECRET_KEY"] = settings.secret_key
     app.config["SQLALCHEMY_DATABASE_URI"] = settings.database_url
     app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
@@ -24,6 +25,7 @@ def create_app() -> Flask:
     db.init_app(app)
     migrate.init_app(app, db)
     login_manager.init_app(app)
+    app.json.ensure_ascii = False
 
     @login_manager.user_loader
     def load_user(user_id: str):

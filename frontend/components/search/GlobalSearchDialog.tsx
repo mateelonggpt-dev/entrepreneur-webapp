@@ -2,6 +2,7 @@
 
 import { useMemo } from "react";
 import { useNavigate } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import {
   CommandDialog,
   CommandEmpty,
@@ -19,20 +20,21 @@ interface Props {
 }
 
 const quickRoutes = [
-  { label: "Dashboard", route: "/app", keywords: "overview kpi summary" },
-  { label: "Invoices", route: "/sales/invoices", keywords: "sales tax invoice documents" },
-  { label: "Receipts", route: "/sales/receipts", keywords: "sales receipts payments" },
-  { label: "Quotations", route: "/sales/quotations", keywords: "sales quote quotation" },
-  { label: "Expenses", route: "/purchases/expenses", keywords: "purchase expense bills" },
-  { label: "Payment Transactions", route: "/payment/transactions", keywords: "payables vendor customer payment banking cheque petty cash" },
-  { label: "Inventory", route: "/inventory", keywords: "stock warehouse products" },
-  { label: "Reports", route: "/reports", keywords: "financial reports tax" },
-  { label: "Settings", route: "/settings", keywords: "company users document settings branding currency" },
-  { label: "Payroll Foundations", route: "/finance/payroll", keywords: "salary employees payroll" },
+  { labelKey: "searchDialog.routes.dashboard", route: "/app", keywords: "overview kpi summary" },
+  { labelKey: "searchDialog.routes.invoices", route: "/sales/invoices", keywords: "sales tax invoice documents" },
+  { labelKey: "searchDialog.routes.receipts", route: "/sales/receipts", keywords: "sales receipts payments" },
+  { labelKey: "searchDialog.routes.quotations", route: "/sales/quotations", keywords: "sales quote quotation" },
+  { labelKey: "searchDialog.routes.expenses", route: "/purchases/expenses", keywords: "purchase expense bills" },
+  { labelKey: "searchDialog.routes.paymentTransactions", route: "/payment/transactions", keywords: "payables vendor customer payment banking cheque petty cash" },
+  { labelKey: "searchDialog.routes.inventory", route: "/inventory", keywords: "stock warehouse products" },
+  { labelKey: "searchDialog.routes.reports", route: "/reports", keywords: "financial reports tax" },
+  { labelKey: "searchDialog.routes.settings", route: "/settings", keywords: "company users document settings branding currency" },
+  { labelKey: "searchDialog.routes.payrollFoundations", route: "/finance/payroll", keywords: "salary employees payroll" },
 ];
 
 export const GlobalSearchDialog = ({ open, onOpenChange }: Props) => {
   const nav = useNavigate();
+  const { t } = useTranslation();
   const { data } = useAppData();
 
   const invoiceItems = useMemo(
@@ -49,20 +51,20 @@ export const GlobalSearchDialog = ({ open, onOpenChange }: Props) => {
     () =>
       data.customers.slice(0, 8).map((customer) => ({
         id: customer.id,
-        label: `${customer.name} - ${customer.contact || customer.email || "Customer"}`,
+        label: `${customer.name} - ${customer.contact || customer.email || t("searchDialog.customers")}`,
         route: "/contacts/customers",
       })),
-    [data.customers]
+    [data.customers, t]
   );
 
   const vendorItems = useMemo(
     () =>
       data.vendors.slice(0, 8).map((vendor) => ({
         id: vendor.id,
-        label: `${vendor.name} - ${vendor.contact || vendor.email || "Vendor"}`,
+        label: `${vendor.name} - ${vendor.contact || vendor.email || t("searchDialog.vendors")}`,
         route: "/contacts/vendors",
       })),
-    [data.vendors]
+    [data.vendors, t]
   );
 
   const projectItems = useMemo(
@@ -82,25 +84,25 @@ export const GlobalSearchDialog = ({ open, onOpenChange }: Props) => {
 
   return (
     <CommandDialog open={open} onOpenChange={onOpenChange}>
-      <CommandInput placeholder="Search routes, invoices, contacts, vendors, or reports..." />
+      <CommandInput placeholder={t("searchDialog.placeholder")} />
       <CommandList>
-        <CommandEmpty>No matching results.</CommandEmpty>
+        <CommandEmpty>{t("searchDialog.empty")}</CommandEmpty>
 
-        <CommandGroup heading="Go To">
+        <CommandGroup heading={t("searchDialog.goTo")}>
           {quickRoutes.map((item) => (
             <CommandItem
               key={item.route}
-              value={`${item.label} ${item.keywords}`}
+              value={`${t(item.labelKey)} ${item.keywords}`}
               onSelect={() => handleSelect(item.route)}
             >
-              {item.label}
+              {t(item.labelKey)}
             </CommandItem>
           ))}
         </CommandGroup>
 
         <CommandSeparator />
 
-        <CommandGroup heading="Invoices">
+        <CommandGroup heading={t("searchDialog.invoices")}>
           {invoiceItems.map((item) => (
             <CommandItem key={item.id} value={item.label} onSelect={() => handleSelect(item.route)}>
               {item.label}
@@ -110,7 +112,7 @@ export const GlobalSearchDialog = ({ open, onOpenChange }: Props) => {
 
         <CommandSeparator />
 
-        <CommandGroup heading="Customers">
+        <CommandGroup heading={t("searchDialog.customers")}>
           {customerItems.map((item) => (
             <CommandItem key={item.id} value={item.label} onSelect={() => handleSelect(item.route)}>
               {item.label}
@@ -120,7 +122,7 @@ export const GlobalSearchDialog = ({ open, onOpenChange }: Props) => {
 
         <CommandSeparator />
 
-        <CommandGroup heading="Vendors">
+        <CommandGroup heading={t("searchDialog.vendors")}>
           {vendorItems.map((item) => (
             <CommandItem key={item.id} value={item.label} onSelect={() => handleSelect(item.route)}>
               {item.label}
@@ -130,7 +132,7 @@ export const GlobalSearchDialog = ({ open, onOpenChange }: Props) => {
 
         <CommandSeparator />
 
-        <CommandGroup heading="Projects">
+        <CommandGroup heading={t("searchDialog.projects")}>
           {projectItems.map((item) => (
             <CommandItem key={item.id} value={item.label} onSelect={() => handleSelect(item.route)}>
               {item.label}

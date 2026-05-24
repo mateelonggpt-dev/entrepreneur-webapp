@@ -20,6 +20,9 @@ import { buildSalesWorkflow, collectSalesWorkflowDocuments, type SalesWorkflowSt
 import type { DocumentKind } from "@/lib/types";
 
 type InvoicePaymentMode = "full_payment" | "partial_payment" | "deposit";
+type DocumentLanguage = "th" | "en";
+
+const getDocumentLanguage = (value: string | null): DocumentLanguage => (value === "en" ? "en" : "th");
 
 const SaleCreate = () => {
   const location = useLocation();
@@ -48,6 +51,7 @@ const SaleCreate = () => {
       workflowStep: (params.get("workflowStep") || undefined) as SalesWorkflowStepId | undefined,
       duplicateDocumentId: params.get("duplicateDocumentId") ?? "",
       duplicateDocumentType: (params.get("duplicateDocumentType") || params.get("sourceDocumentType") || undefined) as DocumentKind | undefined,
+      documentLanguage: getDocumentLanguage(params.get("documentLanguage")),
     };
   }, [location.search]);
   const [selectedTypes, setSelectedTypes] = useState<string[]>(queryDefaults.selectedTypes);
@@ -131,8 +135,7 @@ const SaleCreate = () => {
       {realTypes.length > 0 ? (
         <SalesDocumentForm
           selectedDocumentTypes={realTypes}
-          documentTitle={documentTitle}
-          language={activeLanguage}
+          language={queryDefaults.documentLanguage}
           mode="create"
           initialSourceDocumentId={queryDefaults.sourceDocumentId}
           initialSourceDocumentType={queryDefaults.sourceDocumentType}

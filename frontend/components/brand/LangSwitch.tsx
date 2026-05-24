@@ -6,13 +6,14 @@ interface LangSwitchProps {
   className?: string;
 }
 
-/**
- * Premium segmented EN | TH switch — visual translation toggle.
- * Persists via i18next LanguageDetector (localStorage).
- */
+const languageOptions = [
+  { value: "th", label: "ไทย" },
+  { value: "en", label: "EN" },
+] as const;
+
 export const LangSwitch = ({ variant = "default", className }: LangSwitchProps) => {
   const { i18n } = useTranslation();
-  const current = (i18n.language || "en").startsWith("th") ? "th" : "en";
+  const current = (i18n.language || "th").startsWith("en") ? "en" : "th";
 
   const setLang = (lng: "en" | "th") => i18n.changeLanguage(lng);
 
@@ -41,20 +42,20 @@ export const LangSwitch = ({ variant = "default", className }: LangSwitchProps) 
         className
       )}
     >
-      {(["en", "th"] as const).map((lng) => {
-        const isActive = current === lng;
+      {languageOptions.map((option) => {
+        const isActive = current === option.value;
         return (
           <button
-            key={lng}
+            key={option.value}
             type="button"
-            onClick={() => setLang(lng)}
+            onClick={() => setLang(option.value)}
             aria-pressed={isActive}
             className={cn(
               "px-3 h-7 text-[11px] font-bold uppercase tracking-wider rounded-full transition-all",
               isActive ? activeCls : inactiveCls
             )}
           >
-            {lng}
+            {option.label}
           </button>
         );
       })}

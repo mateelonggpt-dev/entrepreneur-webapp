@@ -28,20 +28,20 @@ const companies = [
 
 const notifications = [
   {
-    title: "Invoice INV-2026-0142 paid",
-    summary: "Bangkok Foods received THB 42,800",
+    titleKey: "topbar.notifications.invoicePaid.title",
+    summaryKey: "topbar.notifications.invoicePaid.summary",
     time: "2m",
     to: "/sales/invoices/INV-2026-0142",
   },
   {
-    title: "Vendor bill due tomorrow",
-    summary: "Office Plus - THB 18,500",
+    titleKey: "topbar.notifications.vendorDue.title",
+    summaryKey: "topbar.notifications.vendorDue.summary",
     time: "1h",
     to: "/purchases/expenses",
   },
   {
-    title: "VAT filing reminder",
-    summary: "Submit P.P.30 by April 15, 2026",
+    titleKey: "topbar.notifications.vatReminder.title",
+    summaryKey: "topbar.notifications.vatReminder.summary",
     time: "3h",
     to: "/reports",
   },
@@ -77,7 +77,7 @@ export const Topbar = ({ sidebarCollapsed }: { sidebarCollapsed: boolean }) => {
     }
 
     setActiveCompanyId(companyId);
-    toast.success(`Switched to ${nextCompany.name}`);
+    toast.success(t("common.switchedCompany", { name: nextCompany.name }));
   };
 
   return (
@@ -135,7 +135,7 @@ export const Topbar = ({ sidebarCollapsed }: { sidebarCollapsed: boolean }) => {
                 <Input
                   readOnly
                   role="button"
-                  aria-label="Open global search"
+                  aria-label={t("common.searchShort")}
                   placeholder={t("common.search")}
                   className="h-10 cursor-pointer border-transparent bg-secondary/50 pl-9 focus-visible:border-input focus-visible:bg-card"
                   onClick={() => setSearchOpen(true)}
@@ -166,13 +166,13 @@ export const Topbar = ({ sidebarCollapsed }: { sidebarCollapsed: boolean }) => {
                     className="h-10 w-10"
                     onClick={() => nav("/settings")}
                     data-tour="nav-settings"
-                    aria-label="Settings / ตั้งค่า"
-                    title="Settings / ตั้งค่า"
+                    aria-label={t("nav.settings")}
+                    title={t("nav.settings")}
                   >
                     <SettingsIcon className="h-5 w-5 text-muted-foreground" />
                   </Button>
                 </TooltipTrigger>
-                <TooltipContent>Settings / ตั้งค่า</TooltipContent>
+                <TooltipContent>{t("nav.settings")}</TooltipContent>
               </Tooltip>
             </TooltipProvider>
 
@@ -187,19 +187,19 @@ export const Topbar = ({ sidebarCollapsed }: { sidebarCollapsed: boolean }) => {
                 <DropdownMenuLabel className="flex items-center justify-between">
                   {t("common.notifications")}
                   <Badge variant="secondary" className="text-[10px]">
-                    3 new
+                    {t("common.newCount", { count: 3 })}
                   </Badge>
                 </DropdownMenuLabel>
                 <DropdownMenuSeparator />
                 {notifications.map((notification) => (
                   <DropdownMenuItem
-                    key={notification.title}
+                    key={notification.titleKey}
                     className="flex-col items-start gap-0.5 py-3"
                     onSelect={() => nav(notification.to)}
                   >
-                    <span className="text-sm font-medium">{notification.title}</span>
+                    <span className="text-sm font-medium">{t(notification.titleKey)}</span>
                     <span className="text-xs text-muted-foreground">
-                      {notification.summary} · {notification.time}
+                      {t(notification.summaryKey)} · {notification.time}
                     </span>
                   </DropdownMenuItem>
                 ))}

@@ -1,5 +1,6 @@
 import { NavLink, useLocation } from "react-router-dom";
 import { useState } from "react";
+import { useTranslation } from "react-i18next";
 import {
   BadgeDollarSign,
   BookOpen,
@@ -31,55 +32,55 @@ import {
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 
 type NavItem = {
-  label: string;
+  labelKey: string;
   to: string;
   icon: any;
   tourId?: string;
   activePrefixes?: string[];
   end?: boolean;
-  children?: Array<{ label: string; to: string }>;
+  children?: Array<{ labelKey: string; to: string }>;
 };
 
 const navItems: NavItem[] = [
-  { label: "Dashboard", to: "/app", icon: LayoutDashboard, tourId: "nav-overview", end: true, activePrefixes: ["/app", "/dashboard"] },
+  { labelKey: "nav.overview", to: "/app", icon: LayoutDashboard, tourId: "nav-overview", end: true, activePrefixes: ["/app", "/dashboard"] },
   {
-    label: "Income",
+    labelKey: "common.income",
     to: "/income/create",
     icon: BadgeDollarSign,
     tourId: "nav-income",
     activePrefixes: ["/income", "/sale", "/sales"],
     children: [
-      { label: "Create", to: "/income/create" },
-      { label: "Documents", to: "/income/documents" }
+      { labelKey: "common.create", to: "/income/create" },
+      { labelKey: "common.documents", to: "/income/documents" }
     ],
   },
   {
-    label: "Expense",
+    labelKey: "common.expense",
     to: "/expense/create",
     icon: ShoppingCart,
     tourId: "nav-expense",
     activePrefixes: ["/expense", "/purchase", "/purchases"],
     children: [
-      { label: "Create", to: "/expense/create" },
-      { label: "Documents", to: "/expense/documents" }
+      { labelKey: "common.create", to: "/expense/create" },
+      { labelKey: "common.documents", to: "/expense/documents" }
     ],
   },
   {
-    label: "Inventory",
+    labelKey: "nav.inventory",
     to: "/inventory/products",
     icon: Package,
     activePrefixes: ["/inventory", "/products"]
   },
   {
-    label: "Settings",
+    labelKey: "nav.settings",
     to: "/settings/company",
     icon: Building,
     activePrefixes: ["/settings"],
     children: [
-      { label: "Company Profile", to: "/settings/company" },
-      { label: "Users & Roles", to: "/settings/users" },
-      { label: "Document Settings", to: "/settings/documents" },
-      { label: "Currency", to: "/settings/currency" },
+      { labelKey: "nav.company", to: "/settings/company" },
+      { labelKey: "nav.users", to: "/settings/users" },
+      { labelKey: "nav.documents", to: "/settings/documents" },
+      { labelKey: "nav.currency", to: "/settings/currency" },
     ],
   },
 ];
@@ -91,6 +92,7 @@ interface SidebarProps {
 
 export const Sidebar = ({ collapsed, onToggle }: SidebarProps) => {
   const location = useLocation();
+  const { t } = useTranslation();
   const [expandedItems, setExpandedItems] = useState<Record<string, boolean>>({});
 
   const isItemActive = (item: NavItem) => {
@@ -119,7 +121,7 @@ export const Sidebar = ({ collapsed, onToggle }: SidebarProps) => {
             "shrink-0 rounded-lg p-1.5 text-sidebar-foreground/60 transition-colors hover:bg-sidebar-accent hover:text-sidebar-foreground",
             collapsed && "absolute -right-3 top-5 rounded-full border border-sidebar-border bg-sidebar p-1 shadow-md"
           )}
-          aria-label="Toggle sidebar"
+          aria-label={t("sidebar.toggleSidebar")}
         >
           <ChevronsLeft className={cn("h-4 w-4 transition-transform", collapsed && "rotate-180")} />
         </button>
@@ -129,7 +131,8 @@ export const Sidebar = ({ collapsed, onToggle }: SidebarProps) => {
         {navItems.map((item) => {
           const Icon = item.icon;
           const active = isItemActive(item);
-          const isExpanded = !collapsed && Boolean(item.children?.length) && (active || expandedItems[item.label]);
+          const itemLabel = t(item.labelKey);
+          const isExpanded = !collapsed && Boolean(item.children?.length) && (active || expandedItems[item.labelKey]);
 
           return (
             <div key={item.to} className="space-y-0.5" {...(item.tourId ? { "data-tour": item.tourId } : {})}>
@@ -145,13 +148,13 @@ export const Sidebar = ({ collapsed, onToggle }: SidebarProps) => {
                       ? "bg-sidebar-accent text-sidebar-primary shadow-sm"
                       : "text-sidebar-foreground/75 hover:bg-sidebar-accent/50 hover:text-sidebar-foreground"
                   )}
-                  title={collapsed ? item.label : undefined}
+                  title={collapsed ? itemLabel : undefined}
                 >
                   {active && !collapsed ? (
                     <span className="absolute left-0 top-1/2 h-6 w-1 -translate-y-1/2 rounded-r-full bg-gradient-to-b from-primary-glow to-primary" />
                   ) : null}
                   <Icon className={cn("h-4 w-4 shrink-0", active && "text-sidebar-primary")} />
-                  {!collapsed ? <span className="flex-1 truncate">{item.label}</span> : null}
+                  {!collapsed ? <span className="flex-1 truncate">{itemLabel}</span> : null}
                 </NavLink>
                 {item.children?.length && !collapsed ? (
                   <button
@@ -160,10 +163,10 @@ export const Sidebar = ({ collapsed, onToggle }: SidebarProps) => {
                     onClick={() =>
                       setExpandedItems((previous) => ({
                         ...previous,
-                        [item.label]: !isExpanded,
+                        [item.labelKey]: !isExpanded,
                       }))
                     }
-                    aria-label={`Toggle ${item.label} submenu`}
+                    aria-label={t("sidebar.toggleSubmenu", { label: itemLabel })}
                     aria-expanded={isExpanded}
                   >
                     <ChevronDown className={cn("h-3.5 w-3.5 transition-transform", !isExpanded && "-rotate-90")} />
@@ -189,7 +192,7 @@ export const Sidebar = ({ collapsed, onToggle }: SidebarProps) => {
                         {childActive ? (
                           <span className="absolute -left-[13px] top-1/2 h-5 w-0.5 -translate-y-1/2 rounded-full bg-sidebar-primary" />
                         ) : null}
-                        <span className="truncate">{child.label}</span>
+                        <span className="truncate">{t(child.labelKey)}</span>
                       </NavLink>
                     );
                   })}
@@ -234,14 +237,14 @@ export const Sidebar = ({ collapsed, onToggle }: SidebarProps) => {
             </DropdownMenuLabel>
             <DropdownMenuSeparator />
             <DropdownMenuItem asChild>
-              <NavLink to="/settings/company"><Building className="mr-2 h-4 w-4" /> Company Profile</NavLink>
+              <NavLink to="/settings/company"><Building className="mr-2 h-4 w-4" /> {t("nav.company")}</NavLink>
             </DropdownMenuItem>
             <DropdownMenuItem asChild>
-              <NavLink to="/settings/users"><UserCog className="mr-2 h-4 w-4" /> Users & Roles</NavLink>
+              <NavLink to="/settings/users"><UserCog className="mr-2 h-4 w-4" /> {t("nav.users")}</NavLink>
             </DropdownMenuItem>
             <DropdownMenuSeparator />
             <DropdownMenuItem className="text-destructive focus:text-destructive" asChild>
-              <NavLink to="/auth/logout"><LogOut className="mr-2 h-4 w-4" /> Sign out</NavLink>
+              <NavLink to="/auth/logout"><LogOut className="mr-2 h-4 w-4" /> {t("account.signOut")}</NavLink>
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
