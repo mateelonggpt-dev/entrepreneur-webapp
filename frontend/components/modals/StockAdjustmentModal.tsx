@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -22,6 +23,7 @@ interface Props {
 const today = () => new Date().toISOString().slice(0, 10);
 
 export const StockAdjustmentModal = ({ open, onOpenChange, item, onSaved }: Props) => {
+  const { t } = useTranslation();
   const { refresh } = useAppData();
   const [adjustmentType, setAdjustmentType] = useState<"increase" | "decrease">("increase");
   const [qty, setQty] = useState("1");
@@ -51,11 +53,11 @@ export const StockAdjustmentModal = ({ open, onOpenChange, item, onSaved }: Prop
 
     const numericQty = Number(qty);
     if (!Number.isFinite(numericQty) || numericQty <= 0) {
-      setError("Adjustment qty must be greater than zero.");
+      setError(t("inventory.validation.adjustmentQtyPositive"));
       return;
     }
     if (!reason.trim()) {
-      setError("Adjustment reason is required.");
+      setError(t("inventory.validation.adjustmentReasonRequired"));
       return;
     }
 
@@ -74,14 +76,14 @@ export const StockAdjustmentModal = ({ open, onOpenChange, item, onSaved }: Prop
       await refresh();
       onSaved?.(result.inventoryItem);
       onOpenChange(false);
-      toast.success(`Stock updated for ${item.sku}`, {
+      toast.success(t("inventory.toast.stockUpdated", { sku: item.sku }), {
         description:
           adjustmentType === "increase"
-            ? `${numericQty} unit(s) were added to inventory.`
-            : `${numericQty} unit(s) were deducted from inventory.`,
+            ? t("inventory.toast.stockIncreased", { qty: numericQty })
+            : t("inventory.toast.stockDecreased", { qty: numericQty }),
       });
     } catch (submitError) {
-      const message = submitError instanceof Error ? submitError.message : "Unable to adjust stock.";
+      const message = submitError instanceof Error ? submitError.message : t("inventory.toast.unableToAdjustStock");
       setError(message);
       toast.error(message);
     } finally {
@@ -98,37 +100,37 @@ export const StockAdjustmentModal = ({ open, onOpenChange, item, onSaved }: Prop
               <SlidersHorizontal className="h-5 w-5" />
             </div>
             <div>
-              <h2 className="font-display text-lg font-bold leading-tight">Stock Adjustment</h2>
+              <h2 className="font-display text-lg font-bold leading-tight">{t("inventory.adjustStock")}</h2>
               <p className="mt-0.5 text-xs text-muted-foreground">
-                Record a controlled inventory increase or decrease for the selected SKU.
+                {t("inventory.modals.stockAdjustmentDescription")}
               </p>
             </div>
           </div>
 
           <div className="space-y-4 bg-background px-6 py-5">
             <div className="rounded-xl border border-border/60 bg-secondary/20 p-4 text-sm">
-              <p className="font-semibold">{item?.name ?? "No product selected"}</p>
+              <p className="font-semibold">{item?.name ?? t("inventory.empty.noProductSelected")}</p>
               <p className="mt-1 font-mono text-xs text-muted-foreground">{item?.sku ?? "-"}</p>
               <p className="mt-2 text-muted-foreground">
-                Current qty: <span className="font-semibold text-foreground">{item?.currentQty ?? 0}</span>
+                {t("inventory.stock.currentQty")}: <span className="font-semibold text-foreground">{item?.currentQty ?? 0}</span>
               </p>
             </div>
 
             <div className="grid gap-4 md:grid-cols-2">
               <div>
-                <Label>Adjustment type</Label>
+                <Label>{t("inventory.stock.adjustmentType")}</Label>
                 <Select value={adjustmentType} onValueChange={(value) => setAdjustmentType(value as typeof adjustmentType)}>
                   <SelectTrigger className="mt-1.5">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="increase">Increase</SelectItem>
-                    <SelectItem value="decrease">Decrease</SelectItem>
+                    <SelectItem value="increase">{t("inventory.stock.increase")}</SelectItem>
+                    <SelectItem value="decrease">{t("inventory.stock.decrease")}</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
               <div>
-                <Label htmlFor="stock-adjustment-qty">Qty</Label>
+                <Label htmlFor="stock-adjustment-qty">{t("inventory.stock.qty")}</Label>
                 <Input
                   id="stock-adjustment-qty"
                   type="number"
@@ -140,17 +142,17 @@ export const StockAdjustmentModal = ({ open, onOpenChange, item, onSaved }: Prop
                 />
               </div>
               <div className="md:col-span-2">
-                <Label htmlFor="stock-adjustment-reason">Reason</Label>
+                <Label htmlFor="stock-adjustment-reason">{t("inventory.stock.reason")}</Label>
                 <Input
                   id="stock-adjustment-reason"
                   className="mt-1.5"
                   value={reason}
                   onChange={(event) => setReason(event.target.value)}
-                  placeholder="Cycle count, damage, opening correction..."
+                  placeholder={t("inventory.stock.reasonPlaceholder")}
                 />
               </div>
               <div>
-                <Label htmlFor="stock-adjustment-date">Effective date</Label>
+                <Label htmlFor="stock-adjustment-date">{t("inventory.stock.effectiveDate")}</Label>
                 <Input
                   id="stock-adjustment-date"
                   type="date"
@@ -160,13 +162,13 @@ export const StockAdjustmentModal = ({ open, onOpenChange, item, onSaved }: Prop
                 />
               </div>
               <div className="md:col-span-2">
-                <Label htmlFor="stock-adjustment-notes">Notes</Label>
+                <Label htmlFor="stock-adjustment-notes">{t("inventory.stock.notes")}</Label>
                 <Textarea
                   id="stock-adjustment-notes"
                   className="mt-1.5 min-h-[120px]"
                   value={notes}
                   onChange={(event) => setNotes(event.target.value)}
-                  placeholder="Optional audit note for the adjustment history."
+                  placeholder={t("inventory.stock.notesPlaceholder")}
                 />
               </div>
             </div>
@@ -176,7 +178,7 @@ export const StockAdjustmentModal = ({ open, onOpenChange, item, onSaved }: Prop
 
           <div className="flex items-center justify-end gap-2 border-t border-border bg-card px-6 py-3.5">
             <Button variant="ghost" onClick={() => onOpenChange(false)} disabled={submitting}>
-              Cancel
+              {t("common.cancel")}
             </Button>
             <Button
               className="border-0 bg-gradient-brand text-primary-foreground shadow-brand"
@@ -184,7 +186,7 @@ export const StockAdjustmentModal = ({ open, onOpenChange, item, onSaved }: Prop
               disabled={submitting || !item}
             >
               {submitting ? <Loader2 className="mr-1.5 h-4 w-4 animate-spin" /> : null}
-              Save Adjustment
+              {t("inventory.actions.saveAdjustment")}
             </Button>
           </div>
         </DialogContent>
@@ -192,8 +194,8 @@ export const StockAdjustmentModal = ({ open, onOpenChange, item, onSaved }: Prop
 
       <ProcessingDialog
         open={submitting}
-        title="Saving stock adjustment..."
-        message="The movement log and inventory balance are being updated in the backend."
+        title={t("inventory.processing.savingStockAdjustment")}
+        message={t("inventory.processing.stockAdjustmentMessage")}
       />
     </>
   );

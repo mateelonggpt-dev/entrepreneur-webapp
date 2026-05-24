@@ -1,4 +1,5 @@
 import { useMemo, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { useNavigate } from "react-router-dom";
 import { AppShell } from "@/components/layout/AppShell";
 import { InventoryActionModal, MasterDataModal } from "@/components/modals/DomainModals";
@@ -39,15 +40,15 @@ type SourceDocuments = Record<SourceDocumentCategory, File[]>;
 
 const sourceDocumentCategories: Array<{
   id: SourceDocumentCategory;
-  en: string;
-  th: string;
+  labelKey: string;
 }> = [
-  { id: "invoiceReceipt", en: "Invoice / Receipt", th: "ใบแจ้งหนี้ / ใบเสร็จรับเงิน" },
-  { id: "paymentEvidence", en: "Payment Evidence", th: "หลักฐานการชำระเงิน" },
-  { id: "deliveryEvidence", en: "Delivery Note / Proof of Delivery", th: "ใบส่งของ / หลักฐานการจัดส่ง" },
+  { id: "invoiceReceipt", labelKey: "inventory.evidence.invoiceReceipt" },
+  { id: "paymentEvidence", labelKey: "inventory.evidence.paymentEvidence" },
+  { id: "deliveryEvidence", labelKey: "inventory.evidence.deliveryEvidence" },
 ];
 
 const Products = () => {
+  const { t } = useTranslation();
   const nav = useNavigate();
   const { data } = useAppData();
   const { products, inventory } = data;
@@ -101,9 +102,9 @@ const Products = () => {
   const handleExport = async () => {
     try {
       await exportResource("products");
-      toast.success("Products exported");
+      toast.success(t("inventory.toast.productsExported"));
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Unable to export products.");
+      toast.error(error instanceof Error ? error.message : t("inventory.toast.unableToExportProducts"));
     }
   };
 
@@ -123,18 +124,18 @@ const Products = () => {
     if (missing.length) {
       const tasks: RemainingTask[] = missing.map((category) => ({
         id: `${selectedProduct.sku}-${explainDecision}-${category.id}`,
-        title: `Please attach ${category.en} for ${selectedProduct.sku}`,
+        title: t("inventory.tasks.attachEvidence", { evidence: t(category.labelKey), sku: selectedProduct.sku }),
         relatedDocumentNumber: selectedProduct.sku,
-        documentType: explainDecision === "can_sell" ? "Can Sell explanation" : "Cannot Sell explanation",
+        documentType: explainDecision === "can_sell" ? t("inventory.saleStatus.canSellExplanation") : t("inventory.saleStatus.cannotSellExplanation"),
         missingEvidenceType: category.id,
         createdDate: new Date().toISOString().slice(0, 10),
         status: "pending",
         documentPath: "/products",
       }));
       upsertRemainingTasks(tasks);
-      toast.warning(`${tasks.length} remaining task${tasks.length > 1 ? "s" : ""} created for missing source documents.`);
+      toast.warning(t("inventory.toast.remainingTasksCreated", { count: tasks.length }));
     } else {
-      toast.success("Explanation record saved with complete source documents.");
+      toast.success(t("inventory.toast.explanationSaved"));
     }
     setExplainOpen(false);
   };
@@ -142,32 +143,39 @@ const Products = () => {
   const handleCopySku = async (sku: string) => {
     try {
       await navigator.clipboard.writeText(sku);
-      toast.success(`${sku} copied`);
+      toast.success(t("inventory.toast.skuCopied", { sku }));
     } catch {
-      toast.error("Unable to copy SKU.");
+      toast.error(t("inventory.toast.unableToCopySku"));
     }
+  };
+
+  const getProductTypeLabel = (product: Product) => {
+    const productType = product.productType ?? "service";
+    if (productType === "stock-counted") return t("inventory.productTypes.stockCounted");
+    if (productType === "non-stock") return t("inventory.productTypes.nonStock");
+    return t("inventory.productTypes.service");
   };
 
   return (
     <AppShell>
       <PageHeader
-        title="Products & Inventory"
-        description="Manage products, services, stock setup, and search-ready catalog actions."
-        breadcrumbs={[{ label: "Contacts & Products" }, { label: "Products" }]}
+        title={t("inventory.title")}
+        description={t("inventory.description")}
+        breadcrumbs={[{ label: t("nav.contacts") }, { label: t("nav.products") }]}
       />
 
       <div className="mb-6 grid grid-cols-1 gap-4 sm:grid-cols-3">
-        <KpiCard label="Total SKUs" value={String(totalSkus)} icon={<Package className="h-4 w-4" />} accent="primary" />
-        <KpiCard label="Stock value" value={fmtTHB(stockValue)} icon={<Boxes className="h-4 w-4" />} accent="success" />
-        <KpiCard label="Low stock" value={String(lowStockCount)} icon={<AlertTriangle className="h-4 w-4" />} hint="reorder soon" accent="warning" />
+        <KpiCard label={t("inventory.kpi.totalSkus")} value={String(totalSkus)} icon={<Package className="h-4 w-4" />} accent="primary" />
+        <KpiCard label={t("inventory.kpi.stockValue")} value={fmtTHB(stockValue)} icon={<Boxes className="h-4 w-4" />} accent="success" />
+        <KpiCard label={t("inventory.kpi.lowStock")} value={String(lowStockCount)} icon={<AlertTriangle className="h-4 w-4" />} hint={t("inventory.kpi.reorderSoon")} accent="warning" />
       </div>
 
       <ListToolbar
-        searchPlaceholder="Search SKU, product name, type..."
+        searchPlaceholder={t("inventory.filters.search")}
         searchValue={search}
         onSearchChange={setSearch}
         primaryAction={{
-          label: "New Product",
+          label: t("inventory.newProduct"),
           onClick: () => {
             setEditingProduct(null);
             setOpen(true);
@@ -181,10 +189,10 @@ const Products = () => {
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">All product types</SelectItem>
-                <SelectItem value="service">Service</SelectItem>
-                <SelectItem value="stock-counted">Stock Counted</SelectItem>
-                <SelectItem value="non-stock">Non-stock</SelectItem>
+                <SelectItem value="all">{t("inventory.filters.allProductTypes")}</SelectItem>
+                <SelectItem value="service">{t("inventory.productTypes.service")}</SelectItem>
+                <SelectItem value="stock-counted">{t("inventory.productTypes.stockCounted")}</SelectItem>
+                <SelectItem value="non-stock">{t("inventory.productTypes.nonStock")}</SelectItem>
               </SelectContent>
             </Select>
 
@@ -193,9 +201,9 @@ const Products = () => {
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">All statuses</SelectItem>
-                <SelectItem value="active">Active</SelectItem>
-                <SelectItem value="inactive">Inactive</SelectItem>
+                <SelectItem value="all">{t("contacts.filters.allStatuses")}</SelectItem>
+                <SelectItem value="active">{t("status.active")}</SelectItem>
+                <SelectItem value="inactive">{t("status.inactive")}</SelectItem>
               </SelectContent>
             </Select>
           </>
@@ -208,13 +216,13 @@ const Products = () => {
             <table className="w-full text-sm">
               <thead className="bg-secondary/50">
                 <tr className="text-xs uppercase tracking-wider text-muted-foreground">
-                  <th className="px-4 py-3 text-left font-semibold">SKU</th>
-                  <th className="px-3 py-3 text-left font-semibold">Name</th>
-                  <th className="px-3 py-3 text-left font-semibold">Type</th>
-                  <th className="px-3 py-3 text-right font-semibold">Price</th>
-                  <th className="px-3 py-3 text-right font-semibold">Stock</th>
-                  <th className="px-3 py-3 text-left font-semibold">Stock Summary</th>
-                  <th className="px-3 py-3 text-left font-semibold">Status</th>
+                  <th className="px-4 py-3 text-left font-semibold">{t("inventory.fields.sku")}</th>
+                  <th className="px-3 py-3 text-left font-semibold">{t("inventory.fields.name")}</th>
+                  <th className="px-3 py-3 text-left font-semibold">{t("inventory.fields.type")}</th>
+                  <th className="px-3 py-3 text-right font-semibold">{t("inventory.fields.price")}</th>
+                  <th className="px-3 py-3 text-right font-semibold">{t("inventory.fields.stock")}</th>
+                  <th className="px-3 py-3 text-left font-semibold">{t("inventory.fields.stockSummary")}</th>
+                  <th className="px-3 py-3 text-left font-semibold">{t("inventory.fields.status")}</th>
                   <th className="w-10 px-3 py-3" />
                 </tr>
               </thead>
@@ -228,7 +236,7 @@ const Products = () => {
                     <td className="px-4 py-3.5 font-mono text-xs font-semibold text-primary">{product.sku}</td>
                     <td className="px-3 py-3.5 font-medium">{product.name}</td>
                     <td className="px-3 py-3.5">
-                      <span className="rounded-md bg-secondary px-2 py-0.5 text-xs">{product.type}</span>
+                      <span className="rounded-md bg-secondary px-2 py-0.5 text-xs">{getProductTypeLabel(product)}</span>
                     </td>
                     <td className="px-3 py-3.5 text-right font-semibold tabular-nums">{fmtTHB(product.price)}</td>
                     <td className="px-3 py-3.5 text-right tabular-nums">
@@ -246,14 +254,14 @@ const Products = () => {
                           </Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">
-                          <DropdownMenuItem onClick={() => void handleCopySku(product.sku)}>Copy SKU</DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => void handleCopySku(product.sku)}>{t("inventory.actions.copySku")}</DropdownMenuItem>
                           <DropdownMenuItem
                             onClick={() => {
                               setEditingProduct(product);
                               setOpen(true);
                             }}
                           >
-                            Edit product
+                            {t("inventory.editProduct")}
                           </DropdownMenuItem>
                           {(product.productType ?? "service") === "stock-counted" ? (
                             <DropdownMenuItem
@@ -263,16 +271,16 @@ const Products = () => {
                                 setAdjustmentOpen(true);
                               }}
                             >
-                              Adjust stock
+                              {t("inventory.adjustStock")}
                             </DropdownMenuItem>
                           ) : null}
                           {(product.productType ?? "service") === "stock-counted" ? (
                             <DropdownMenuItem onClick={() => nav("/inventory")}>
-                              Open inventory
+                              {t("inventory.actions.openInventory")}
                             </DropdownMenuItem>
                           ) : null}
-                          <DropdownMenuItem onClick={() => nav("/sales/invoices/new")}>Create invoice</DropdownMenuItem>
-                          <DropdownMenuItem onClick={() => void handleExport()}>Export products</DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => nav("/sales/invoices/new")}>{t("contacts.actions.createInvoice")}</DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => void handleExport()}>{t("inventory.actions.exportProducts")}</DropdownMenuItem>
                         </DropdownMenuContent>
                       </DropdownMenu>
                     </td>
@@ -283,10 +291,10 @@ const Products = () => {
           </div>
         ) : (
           <EmptyState
-            title="No products match this view"
-            description="Adjust the filters or create a product to start issuing documents from the catalog."
+            title={t("inventory.empty.noProductsTitle")}
+            description={t("inventory.empty.noProductsDescription")}
             action={{
-              label: "New Product",
+              label: t("inventory.newProduct"),
               onClick: () => {
                 setEditingProduct(null);
                 setOpen(true);
@@ -307,34 +315,34 @@ const Products = () => {
                 <SheetDescription>{selectedProduct.sku}</SheetDescription>
               </SheetHeader>
 
-              <div className="mt-6 space-y-4">
-                <div className="rounded-xl border border-border/60 p-4">
-                  <p className="text-xs text-muted-foreground">Type</p>
-                  <p className="mt-1 font-semibold">{selectedProduct.type}</p>
+                <div className="mt-6 space-y-4">
+                  <div className="rounded-xl border border-border/60 p-4">
+                  <p className="text-xs text-muted-foreground">{t("inventory.fields.type")}</p>
+                  <p className="mt-1 font-semibold">{getProductTypeLabel(selectedProduct)}</p>
                 </div>
 
                 <div className="rounded-xl border border-border/60 p-4">
-                  <p className="text-xs text-muted-foreground">Sale price</p>
+                  <p className="text-xs text-muted-foreground">{t("inventory.fields.price")}</p>
                   <p className="mt-1 font-semibold">{fmtTHB(selectedProduct.price)}</p>
                 </div>
 
                 <div className="rounded-xl border border-border/60 p-4">
-                  <p className="text-xs text-muted-foreground">Stock summary</p>
+                  <p className="text-xs text-muted-foreground">{t("inventory.fields.stockSummary")}</p>
                   <p className="mt-1 font-semibold">{selectedProduct.stockSummary ?? "-"}</p>
                   {selectedProduct.productType === "stock-counted" ? (
                     <div className="mt-3 space-y-1 text-sm text-muted-foreground">
-                      <p>Current stock: {selectedProduct.stock ?? 0}</p>
-                      <p>Opening qty: {selectedProduct.openingStockQty ?? 0}</p>
-                      <p>Opening cost: {fmtTHB(selectedProduct.openingCost ?? 0)}</p>
-                      <p>Average cost: {fmtTHB(selectedProduct.averageCost ?? selectedProduct.openingCost ?? 0)}</p>
-                      <p>Opening date: {selectedProduct.openingDate || "-"}</p>
-                      <p>Last movement: {selectedProduct.lastMovementDate || "-"}</p>
+                      <p>{t("inventory.stock.currentStock")}: {selectedProduct.stock ?? 0}</p>
+                      <p>{t("inventory.fields.openingStock")}: {selectedProduct.openingStockQty ?? 0}</p>
+                      <p>{t("inventory.fields.openingCost")}: {fmtTHB(selectedProduct.openingCost ?? 0)}</p>
+                      <p>{t("inventory.fields.averageCost")}: {fmtTHB(selectedProduct.averageCost ?? selectedProduct.openingCost ?? 0)}</p>
+                      <p>{t("inventory.fields.openingDate")}: {selectedProduct.openingDate || "-"}</p>
+                      <p>{t("inventory.fields.lastMovement")}: {selectedProduct.lastMovementDate || "-"}</p>
                     </div>
                   ) : null}
                 </div>
 
                 <div className="rounded-xl border border-border/60 p-4">
-                  <p className="text-xs text-muted-foreground">Status</p>
+                  <p className="text-xs text-muted-foreground">{t("inventory.fields.status")}</p>
                   <div className="mt-2">
                     <StatusBadge status={selectedProduct.status} />
                   </div>
@@ -350,7 +358,7 @@ const Products = () => {
                         setAdjustmentOpen(true);
                       }}
                     >
-                      Adjust Stock
+                      {t("inventory.adjustStock")}
                     </Button>
                   ) : null}
                   <Button
@@ -361,20 +369,20 @@ const Products = () => {
                       setOpen(true);
                     }}
                   >
-                    Edit Product
+                    {t("inventory.editProduct")}
                   </Button>
                   <Button className="flex-1 border-0 bg-gradient-brand text-primary-foreground shadow-brand" onClick={() => nav("/sales/invoices/new")}>
-                    Create Invoice
+                    {t("contacts.actions.createInvoice")}
                   </Button>
                 </div>
                 <div className="rounded-xl border border-border/60 p-4">
-                  <p className="text-xs text-muted-foreground">Explain sale status</p>
+                  <p className="text-xs text-muted-foreground">{t("inventory.saleStatus.title")}</p>
                   <div className="mt-3 grid grid-cols-2 gap-2">
                     <Button type="button" variant="outline" onClick={() => openExplainModal("can_sell")}>
-                      Can Sell
+                      {t("inventory.saleStatus.canSell")}
                     </Button>
                     <Button type="button" variant="outline" onClick={() => openExplainModal("cannot_sell")}>
-                      Cannot Sell
+                      {t("inventory.saleStatus.cannotSell")}
                     </Button>
                   </div>
                 </div>
@@ -388,11 +396,13 @@ const Products = () => {
         <DialogContent className="max-w-4xl">
           <DialogHeader>
             <DialogTitle>
-              {explainDecision === "can_sell" ? "Can Sell" : "Cannot Sell"} source documents
+              {t("inventory.saleStatus.sourceDocumentsTitle", {
+                status: explainDecision === "can_sell" ? t("inventory.saleStatus.canSell") : t("inventory.saleStatus.cannotSell"),
+              })}
             </DialogTitle>
           </DialogHeader>
           <p className="text-sm text-muted-foreground">
-            Attach supporting documents/images. You can save with missing categories; Remaining Tasks will be created.
+            {t("inventory.saleStatus.sourceDocumentsDescription")}
           </p>
           <div className="grid gap-3 md:grid-cols-3">
             {sourceDocumentCategories.map((category) => (
@@ -406,10 +416,10 @@ const Products = () => {
           </div>
           <DialogFooter>
             <Button type="button" variant="outline" onClick={() => setExplainOpen(false)}>
-              Cancel
+              {t("common.cancel")}
             </Button>
             <Button type="button" onClick={saveExplainRecord}>
-              Save explanation record
+              {t("inventory.actions.saveExplanation")}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -439,17 +449,17 @@ const SourceDocumentUploadBox = ({
   files: File[];
   onFilesChange: (category: SourceDocumentCategory, files: FileList | null) => void;
 }) => {
+  const { t } = useTranslation();
   const imageFiles = files.filter((file) => file.type.startsWith("image/"));
 
   return (
     <div className="rounded-xl border border-border/70 bg-background p-3">
       <Label className="text-xs font-semibold">
-        {category.en}
-        <span className="mt-0.5 block text-[11px] font-normal text-muted-foreground">{category.th}</span>
+        {t(category.labelKey)}
       </Label>
       <label className="mt-3 flex min-h-28 cursor-pointer flex-col items-center justify-center rounded-lg border border-dashed border-border bg-secondary/30 px-3 py-4 text-center text-xs text-muted-foreground hover:bg-secondary/50">
         <Upload className="mb-2 h-5 w-5" />
-        <span>Upload one or more files</span>
+        <span>{t("inventory.evidence.uploadFiles")}</span>
         <Input
           type="file"
           multiple
@@ -459,7 +469,7 @@ const SourceDocumentUploadBox = ({
       </label>
       {files.length ? (
         <div className="mt-3 space-y-2">
-          <p className="text-[11px] text-muted-foreground">{files.length} file(s) selected</p>
+          <p className="text-[11px] text-muted-foreground">{t("inventory.evidence.filesSelected", { count: files.length })}</p>
           {imageFiles.length ? (
             <div className="grid grid-cols-3 gap-2">
               {imageFiles.slice(0, 6).map((file) => (
