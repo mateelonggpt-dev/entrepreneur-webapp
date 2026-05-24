@@ -362,6 +362,34 @@ const documentTemplateCss = `
     .sales-doc-table { min-width: 720px; }
   }
 
+  /* PDF export desktop/A4 guard */
+
+  .sales-document-print-root.sales-document-pdf-export .sales-doc-header {
+    grid-template-columns: minmax(0, 1fr) minmax(240px, 288px) !important;
+  }
+
+  .sales-document-print-root.sales-document-pdf-export .document-main-info {
+    grid-template-columns: minmax(0, 1fr) minmax(272px, 310px) !important;
+  }
+
+  .sales-document-print-root.sales-document-pdf-export .sales-doc-bottom-grid {
+    grid-template-columns: minmax(0, 1fr) minmax(242px, 295px) !important;
+  }
+
+  .sales-document-print-root.sales-document-pdf-export .sales-doc-title-zone {
+    text-align: right !important;
+    align-items: flex-end !important;
+  }
+
+  .sales-document-print-root.sales-document-pdf-export .sales-doc-party-grid {
+    grid-template-columns: 76px minmax(0, 1fr) !important;
+  }
+
+  .sales-document-print-root.sales-document-pdf-export .sales-doc-info-row {
+    grid-template-columns: minmax(88px, 34%) minmax(0, 1fr) !important;
+  }
+
+
   @media print {
     @page { size: A4 portrait; margin: 0; }
     .sales-document-print-root { width: 100%; background: #fff; gap: 0; padding: 0; }

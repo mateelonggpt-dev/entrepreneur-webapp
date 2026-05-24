@@ -5056,7 +5056,7 @@ const downloadPreviewDomAsPdf = async (root: HTMLElement, filename: string) => {
         scrollY: 0,
         width: PDF_PAGE_WIDTH_PX,
         height: captureHeight,
-        windowWidth: PDF_PAGE_WIDTH_PX,
+        windowWidth: 1280,
         windowHeight: captureHeight,
       });
 
