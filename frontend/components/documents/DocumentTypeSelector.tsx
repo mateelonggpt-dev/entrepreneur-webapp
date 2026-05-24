@@ -1,4 +1,5 @@
 import { Check, ChevronDown } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import {
   DropdownMenu,
   DropdownMenuCheckboxItem,
@@ -33,10 +34,12 @@ export const DocumentTypeSelector = ({
   selectedValues,
   onSelectedValuesChange,
   language = "en",
-  otherMenuLabel = "More document types",
+  otherMenuLabel,
   disabledReasons = {},
 }: DocumentTypeSelectorProps) => {
+  const { t } = useTranslation();
   const optionLabel = (option: DocumentTypeOption) => (language === "th" ? option.thaiLabel : option.label);
+  const resolvedOtherMenuLabel = otherMenuLabel ?? t("documentTypeSelector.moreDocumentTypes");
   const toggleValue = (value: string) => {
     if (disabledReasons[value]) {
       return;
@@ -104,7 +107,7 @@ export const DocumentTypeSelector = ({
                 </button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="start" className="w-72">
-                <DropdownMenuLabel>{otherMenuLabel}</DropdownMenuLabel>
+                <DropdownMenuLabel>{resolvedOtherMenuLabel}</DropdownMenuLabel>
                 <DropdownMenuSeparator />
                 {option.children.map((child) => {
                   const childDisabledReason = disabledReasons[child.id];

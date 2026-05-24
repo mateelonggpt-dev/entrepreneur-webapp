@@ -154,6 +154,25 @@ const en = {
     toggleSidebar: "Toggle sidebar",
     toggleSubmenu: "Toggle {{label}} submenu",
   },
+  documentTypeSelector: {
+    moreDocumentTypes: "More document types",
+  },
+  incomeCreate: {
+    title: "Income / Create",
+    description:
+      "Create one unified income document with a dynamic title, reference flow, tax behavior, payment behavior, and PDF preview.",
+    documentTypesTitle: "Income document types",
+    documentTypesDescription:
+      "Select one or more compatible document types. The generated title, number prefix, reference options, and preview update automatically.",
+    noDocumentSelected: "No document selected",
+    selectedCount: "{{count}} selected",
+    emptyState: "Select one or more document types to start creating a document.",
+    otherDocuments: "Other income documents",
+    completedWorkflowDisabled: "Completed workflow document types are disabled for this chain.",
+    workflowStepComplete: "This workflow step is already complete for this document chain.",
+    quotationIncompatibility: "Quotation must be selected alone in the Income document workflow.",
+    documentCombinationDisabled: "This document type cannot be combined with the current Income document selection.",
+  },
   status: {
     draft: "Draft",
     sent: "Sent",
@@ -677,6 +696,25 @@ const th = {
   sidebar: {
     toggleSidebar: "ย่อ/ขยายเมนูด้านข้าง",
     toggleSubmenu: "ย่อ/ขยายเมนู {{label}}",
+  },
+  documentTypeSelector: {
+    moreDocumentTypes: "ประเภทเอกสารเพิ่มเติม",
+  },
+  incomeCreate: {
+    title: "รายรับ / สร้างเอกสาร",
+    description:
+      "สร้างเอกสารรายรับแบบรวมศูนย์ พร้อมชื่อเอกสารแบบไดนามิก เอกสารอ้างอิง ภาษี การชำระเงิน และตัวอย่าง PDF",
+    documentTypesTitle: "ประเภทเอกสารรายรับ",
+    documentTypesDescription:
+      "เลือกประเภทเอกสารที่ใช้ร่วมกันได้ ระบบจะอัปเดตชื่อเอกสาร คำนำหน้าเลขที่ ตัวเลือกเอกสารอ้างอิง และตัวอย่างอัตโนมัติ",
+    noDocumentSelected: "ยังไม่ได้เลือกเอกสาร",
+    selectedCount: "เลือกแล้ว {{count}} รายการ",
+    emptyState: "เลือกประเภทเอกสารอย่างน้อยหนึ่งรายการเพื่อเริ่มสร้างเอกสาร",
+    otherDocuments: "เอกสารรายรับอื่น ๆ",
+    completedWorkflowDisabled: "ประเภทเอกสารที่เสร็จแล้วในสายงานนี้จะถูกปิดไว้",
+    workflowStepComplete: "ขั้นตอนนี้เสร็จสมบูรณ์แล้วในสายเอกสารนี้",
+    quotationIncompatibility: "ใบเสนอราคาต้องเลือกเดี่ยวใน workflow เอกสารรายรับ",
+    documentCombinationDisabled: "เอกสารประเภทนี้ใช้ร่วมกับชุดเอกสารรายรับที่เลือกอยู่ไม่ได้",
   },
   status: {
     draft: "ร่าง",
