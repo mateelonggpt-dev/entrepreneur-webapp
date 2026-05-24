@@ -113,6 +113,17 @@ const en = {
     payVendor: "Pay Vendor",
     createWhtCertificate: "Create WHT Certificate",
   },
+  workflow: {
+    nextActions: "Recommended next actions",
+    nextActionsDescription: "Create the next linked document from this workflow chain.",
+    recommended: "Recommended",
+  },
+  workflowWarnings: {
+    transitionNotStandard: "This document transition is outside the standard workflow. Add an override reason if you continue.",
+  },
+  taxWarnings: {
+    taxPointMayBeRequired: "This action may affect VAT tax point or tax invoice timing. Review company tax policy before issuing.",
+  },
   searchDialog: {
     placeholder: "Search routes, invoices, contacts, vendors, or reports...",
     empty: "No matching results.",
@@ -1315,6 +1326,17 @@ const th = {
     markApproved: "ทำเครื่องหมายว่าอนุมัติแล้ว",
     payVendor: "จ่ายเงินผู้ขาย",
     createWhtCertificate: "สร้างหนังสือรับรองหัก ณ ที่จ่าย",
+  },
+  workflow: {
+    nextActions: "เอกสารถัดไปที่แนะนำ",
+    nextActionsDescription: "สร้างเอกสารลำดับถัดไปโดยเชื่อมกับ workflow เดิม",
+    recommended: "แนะนำ",
+  },
+  workflowWarnings: {
+    transitionNotStandard: "การเชื่อมเอกสารนี้อยู่นอก workflow มาตรฐาน กรุณาระบุเหตุผล override หากต้องการดำเนินการต่อ",
+  },
+  taxWarnings: {
+    taxPointMayBeRequired: "การทำรายการนี้อาจมีผลต่อ tax point หรือช่วงเวลาการออกใบกำกับภาษี กรุณาตรวจสอบนโยบายภาษีของบริษัท",
   },
   searchDialog: {
     placeholder: "ค้นหาเมนู ใบแจ้งหนี้ ผู้ติดต่อ ผู้ขาย หรือรายงาน...",

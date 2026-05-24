@@ -25,12 +25,15 @@ from ..services.data_service import (
     create_product,
     create_vendor,
     create_withholding_tax_document,
+    convert_document,
     delete_attachment,
     delete_project,
     confirm_import,
     get_accounting_overview,
     get_branding_asset,
     get_document,
+    get_document_next_actions,
+    get_document_workflow_rules,
     get_bootstrap_data,
     get_company_settings,
     get_expense,
@@ -67,6 +70,9 @@ from ..services.data_service import (
     update_project,
     update_product,
     update_vendor,
+    link_document_records,
+    override_workflow_warning,
+    validate_document_flow,
 )
 from ..services.payroll_service import (
     build_payroll_export,
@@ -655,12 +661,72 @@ def create_document_endpoint(kind: str):
     return jsonify(created), 201
 
 
+@api_blueprint.get("/document-workflow/rules")
+def document_workflow_rules():
+    return jsonify(get_document_workflow_rules())
+
+
+@api_blueprint.post("/documents/<kind>/validate-flow")
+def validate_document_flow_endpoint(kind: str):
+    payload = request.get_json(silent=True) or {}
+    return jsonify(validate_document_flow(kind, payload))
+
+
 @api_blueprint.get("/documents/<kind>/<document_id>")
 def document_detail(kind: str, document_id: str):
     try:
         record = get_document(kind, document_id)
     except ValueError as exc:
         abort(404, description=str(exc))
+    if not record:
+        abort(404, description="Document not found.")
+    return jsonify(record)
+
+
+@api_blueprint.get("/documents/<kind>/<document_id>/next-actions")
+def document_next_actions(kind: str, document_id: str):
+    try:
+        payload = get_document_next_actions(kind, document_id)
+    except ValueError as exc:
+        abort(404, description=str(exc))
+    if not payload:
+        abort(404, description="Document not found.")
+    return jsonify(payload)
+
+
+@api_blueprint.post("/documents/<kind>/<document_id>/convert")
+def convert_document_endpoint(kind: str, document_id: str):
+    payload = request.get_json(silent=True) or {}
+    current_email = getattr(current_user, "email", None) if getattr(current_user, "is_authenticated", False) else None
+    current_email = current_email or (session.get("auth_user") or {}).get("email")
+    try:
+        converted = convert_document(kind, document_id, payload, actor_email=current_email)
+    except ValueError as exc:
+        abort(400, description=str(exc))
+    return jsonify(converted), 201
+
+
+@api_blueprint.post("/documents/<kind>/<document_id>/link")
+def link_document_endpoint(kind: str, document_id: str):
+    payload = request.get_json(silent=True) or {}
+    try:
+        linked = link_document_records(kind, document_id, payload)
+    except ValueError as exc:
+        abort(400, description=str(exc))
+    if not linked:
+        abort(404, description="Document not found.")
+    return jsonify(linked)
+
+
+@api_blueprint.post("/documents/<kind>/<document_id>/override-workflow-warning")
+def override_workflow_warning_endpoint(kind: str, document_id: str):
+    payload = request.get_json(silent=True) or {}
+    current_email = getattr(current_user, "email", None) if getattr(current_user, "is_authenticated", False) else None
+    current_email = current_email or (session.get("auth_user") or {}).get("email")
+    try:
+        record = override_workflow_warning(kind, document_id, payload, actor_email=current_email)
+    except ValueError as exc:
+        abort(400, description=str(exc))
     if not record:
         abort(404, description="Document not found.")
     return jsonify(record)

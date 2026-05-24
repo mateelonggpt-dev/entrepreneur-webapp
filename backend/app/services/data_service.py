@@ -20,6 +20,14 @@ from ..domain import (
     snapshot_exchange_rate,
     validate_cheque_date,
 )
+from ..domain.document_workflow import (
+    canonical_document_kind,
+    get_next_document_actions as build_next_document_actions,
+    link_documents as apply_workflow_link,
+    normalize_workflow_fields,
+    validate_document_transition,
+    workflow_rules_payload,
+)
 from .accounting_policy import (
     SETTINGS_SECTIONS,
     build_policy_snapshot,
@@ -865,6 +873,11 @@ def _normalize_database_shape(data: dict[str, Any]) -> dict[str, Any]:
     data.setdefault("attachments", [])
     data.setdefault("recentActivity", [])
     data.setdefault("reports", deepcopy(SEED_DATABASE["reports"]))
+    for resolved_kind, config in DOCUMENT_CONFIG.items():
+        for item in data.get(config["key"], []):
+            normalize_workflow_fields(item, kind=resolved_kind)
+    for payment in data.get("payments", []):
+        normalize_workflow_fields(payment, kind="supplier_payment")
     _sync_inventory_products(data)
     return data
 
@@ -902,8 +915,14 @@ def _kind_alias(kind: str) -> str:
         "quotation": "quotation",
         "quote": "quotation",
         "invoice": "invoice",
+        "tax_invoice": "invoice",
+        "tax-invoice": "invoice",
         "receipt": "receipt",
         "billing": "billing",
+        "billing_note": "billing",
+        "billing-note": "billing",
+        "combined_billing_note": "billing",
+        "combined-billing-note": "billing",
         "credit-note": "credit_note",
         "credit_note": "credit_note",
         "credit": "credit_note",
@@ -911,10 +930,24 @@ def _kind_alias(kind: str) -> str:
         "debit_note": "debit_note",
         "debit": "debit_note",
         "deposit": "deposit",
+        "deposit_invoice": "deposit",
+        "deposit-invoice": "deposit",
+        "prepayment_tax_invoice": "deposit",
+        "prepayment-tax-invoice": "deposit",
         "receive": "receive",
+        "delivery_note": "receive",
+        "delivery-note": "receive",
+        "goods_receive": "receive",
+        "goods-receive": "receive",
+        "receive_inventory": "receive",
+        "receive-inventory": "receive",
         "expense": "expense",
+        "vendor_invoice": "expense",
+        "vendor-invoice": "expense",
         "withholding-tax": "withholding_tax",
         "withholding_tax": "withholding_tax",
+        "withholding_tax_certificate": "withholding_tax",
+        "withholding-tax-certificate": "withholding_tax",
         "wht": "withholding_tax",
     }
     resolved = aliases.get(kind, kind)
@@ -998,7 +1031,18 @@ def _summarize_document(kind: str, record: dict[str, Any]) -> dict[str, Any]:
         "amount": float(record.get("amount", 0)),
         "status": record.get("status", "draft"),
         "kind": kind,
+        "workflowId": record.get("workflowId", ""),
+        "sourceDocumentIds": list(record.get("sourceDocumentIds", [])),
         "linkedDocumentIds": list(record.get("linkedDocumentIds", [])),
+        "convertedFromId": record.get("convertedFromId"),
+        "convertedToIds": list(record.get("convertedToIds", [])),
+        "workflowMode": record.get("workflowMode", "guided"),
+        "overrideReason": record.get("overrideReason"),
+        "paymentStatus": record.get("paymentStatus", ""),
+        "deliveryStatus": record.get("deliveryStatus", ""),
+        "amountPaid": float(record.get("amountPaid", 0) or 0),
+        "amountDue": float(record.get("amountDue", 0) or 0),
+        "withholdingAmount": float(record.get("withholdingAmount", 0) or 0),
         "documentVariant": record.get("documentVariant", ""),
         "documentTypes": document_types,
         "documentTitle": record.get("documentTitle", "") or ("ใบกำกับภาษี" if is_legacy_tax_invoice else ""),
@@ -1630,7 +1674,7 @@ def _build_document_record(kind: str, payload: dict[str, Any]) -> dict[str, Any]
         base["taxableAmount"] = taxable_amount
         base["amount"] = withheld_amount
 
-    return base
+    return normalize_workflow_fields(base, kind=kind)
 
 
 def list_invoices() -> list[dict[str, Any]]:
@@ -2067,6 +2111,50 @@ def get_document(kind: str, document_id: str) -> dict[str, Any] | None:
     return deepcopy(next((item for item in _db().get(key, []) if item["id"] == document_id), None))
 
 
+def _find_document_by_id(data: dict[str, Any], document_id: str) -> tuple[str, dict[str, Any]] | tuple[None, None]:
+    for collection_name in DOCUMENT_COLLECTION_KEYS:
+        item = next((row for row in data.get(collection_name, []) if row.get("id") == document_id), None)
+        if item:
+            return collection_name, item
+    payment = next((row for row in data.get("payments", []) if row.get("id") == document_id), None)
+    if payment:
+        return "payments", payment
+    return None, None
+
+
+def _coerce_id_list(value: Any) -> list[str]:
+    if value is None:
+        return []
+    if isinstance(value, (list, tuple, set)):
+        raw_values = value
+    else:
+        raw_values = [value]
+    return [str(item) for item in raw_values if item]
+
+
+def _workflow_record_for_kind(
+    data: dict[str, Any],
+    kind: str,
+    document_id: str,
+) -> tuple[str, str, dict[str, Any]] | tuple[None, None, None]:
+    canonical_kind = canonical_document_kind(kind)
+    if canonical_kind in {"supplier_payment", "advance_payment"}:
+        payment = next((row for row in data.get("payments", []) if row.get("id") == document_id), None)
+        return (canonical_kind, "payments", payment) if payment else (None, None, None)
+
+    try:
+        resolved = _kind_alias(kind)
+    except ValueError:
+        collection_name, record = _find_document_by_id(data, document_id)
+        return (canonical_kind, collection_name, record) if record else (None, None, None)
+
+    record = next((item for item in data.get(DOCUMENT_CONFIG[resolved]["key"], []) if item.get("id") == document_id), None)
+    if record:
+        return resolved, DOCUMENT_CONFIG[resolved]["key"], record
+    collection_name, record = _find_document_by_id(data, document_id)
+    return (resolved, collection_name, record) if record else (None, None, None)
+
+
 APPROVAL_TRACKED_DOCUMENT_KINDS = {
     "quotation",
     "invoice",
@@ -2104,6 +2192,24 @@ def create_document(kind: str, payload: dict[str, Any], actor_email: str | None 
     def mutator(data: dict[str, Any]) -> dict[str, Any]:
         record = _build_document_record(resolved, payload)
         record["id"] = payload.get("id") or payload.get("number") or _document_number(data, resolved, record.get("date"))
+        source_ids = _coerce_id_list(payload.get("sourceDocumentIds")) or _coerce_id_list(
+            [
+                payload.get("sourceDocumentId"),
+                payload.get("relatedInvoice"),
+                payload.get("relatedDocument"),
+                payload.get("relatedPurchaseOrderId"),
+                payload.get("sourceBillingId"),
+            ]
+        )
+        first_source = None
+        for source_id in source_ids:
+            _, maybe_source = _find_document_by_id(data, source_id)
+            if maybe_source:
+                first_source = maybe_source
+                break
+        normalize_workflow_fields(record, kind=resolved, source=first_source)
+        if source_ids:
+            record["sourceDocumentIds"] = list(dict.fromkeys([*record.get("sourceDocumentIds", []), *source_ids]))
         collection = data.setdefault(key, [])
         existing_index = next((index for index, item in enumerate(collection) if item.get("id") == record["id"]), None)
         if _document_number_exists(data, record["id"], exclude_key=key):
@@ -2123,6 +2229,7 @@ def create_document(kind: str, payload: dict[str, Any], actor_email: str | None 
             collection[existing_index] = {**collection[existing_index], **record}
             action_label = "updated"
         saved_record = collection[existing_index] if existing_index is not None else record
+        normalize_workflow_fields(saved_record, kind=resolved, source=first_source)
 
         party = saved_record.get("customer") or saved_record.get("vendor") or saved_record.get("receivedFrom") or "System"
         _push_activity(data, party, f"{action_label} {saved_record['id']}", resolved, saved_record.get("amount"))
@@ -2167,9 +2274,10 @@ def create_document(kind: str, payload: dict[str, Any], actor_email: str | None 
             for collection_name in DOCUMENT_COLLECTION_KEYS:
                 for source in data.get(collection_name, []):
                     if source.get("id") in reference_ids:
-                        source.setdefault("linkedDocumentIds", [])
-                        if saved_record["id"] not in source["linkedDocumentIds"]:
-                            source["linkedDocumentIds"].append(saved_record["id"])
+                        apply_workflow_link(source, saved_record, "reference")
+                        source.setdefault("convertedToIds", [])
+                        if saved_record["id"] not in source["convertedToIds"]:
+                            source["convertedToIds"].append(saved_record["id"])
 
         _reconcile_inventory_for_document(data, kind=resolved, record=saved_record)
 
@@ -2178,10 +2286,172 @@ def create_document(kind: str, payload: dict[str, Any], actor_email: str | None 
     return _mutate(mutator)
 
 
+def get_document_workflow_rules() -> dict[str, Any]:
+    return workflow_rules_payload()
+
+
+def get_document_next_actions(kind: str, document_id: str) -> dict[str, Any] | None:
+    data = _db()
+    resolved, _, record = _workflow_record_for_kind(data, kind, document_id)
+    if not record:
+        return None
+    normalized = normalize_workflow_fields(deepcopy(record), kind=resolved)
+    return {
+        "documentId": normalized.get("id"),
+        "kind": normalized.get("kind", resolved),
+        "status": normalized.get("status", "draft"),
+        "nextActions": build_next_document_actions(normalized, data),
+    }
+
+
+def validate_document_flow(kind: str, payload: dict[str, Any]) -> dict[str, Any]:
+    source_kind = payload.get("sourceKind") or kind
+    target_kind = payload.get("targetKind") or payload.get("kind") or kind
+    mode = payload.get("workflowMode") or payload.get("mode") or "guided"
+    override_reason = payload.get("overrideReason")
+    return validate_document_transition(source_kind, target_kind, mode, override_reason)
+
+
+def convert_document(kind: str, document_id: str, payload: dict[str, Any], actor_email: str | None = None) -> dict[str, Any]:
+    data = _db()
+    resolved, source_collection, source = _workflow_record_for_kind(data, kind, document_id)
+    if not source:
+        raise ValueError("Source document not found.")
+    target_kind = payload.get("targetKind") or payload.get("kind")
+    if not target_kind:
+        raise ValueError("targetKind is required.")
+    validation = validate_document_transition(
+        source.get("kind") or resolved,
+        target_kind,
+        payload.get("workflowMode") or source.get("workflowMode") or "guided",
+        payload.get("overrideReason"),
+    )
+    if not validation.get("valid"):
+        raise ValueError((validation.get("warning") or {}).get("messageKey") or "Invalid document transition.")
+    source_kind = source.get("kind") or resolved or kind
+    converted_payload = {
+        **deepcopy(source),
+        **deepcopy(payload.get("overrides", {})),
+        "id": payload.get("id"),
+        "number": payload.get("number"),
+        "sourceDocumentId": source.get("id"),
+        "sourceDocumentIds": [source.get("id")],
+        "convertedFromId": source.get("id"),
+        "linkedDocumentIds": [source.get("id")],
+        "workflowId": source.get("workflowId"),
+        "workflowMode": payload.get("workflowMode") or source.get("workflowMode") or "guided",
+        "overrideReason": payload.get("overrideReason"),
+        "status": payload.get("status", "draft"),
+    }
+    target_kind_text = canonical_document_kind(str(target_kind))
+    if target_kind_text == "tax_invoice":
+        converted_payload["documentTypes"] = ["tax_invoice"]
+        converted_payload["isTaxInvoice"] = True
+        converted_payload["invoiceTaxType"] = "tax"
+    elif target_kind_text in {"delivery_note", "goods_receive", "receive_inventory"}:
+        converted_payload["documentTypes"] = [target_kind_text]
+    elif target_kind_text in {"billing_note", "combined_billing_note"}:
+        converted_payload["documentTypes"] = [target_kind_text]
+    elif target_kind_text in {"deposit_invoice", "prepayment_tax_invoice"}:
+        converted_payload["documentTypes"] = [target_kind_text]
+    converted_payload.pop("createdByEmail", None)
+    converted_payload.pop("createdByRole", None)
+    if target_kind_text in {"supplier_payment", "advance_payment"}:
+        created = create_payment(
+            {
+                **deepcopy(payload.get("overrides", {})),
+                "vendor": source.get("vendor") or source.get("party") or source.get("customer") or "",
+                "amount": converted_payload.get("amount", 0),
+                "currency": converted_payload.get("currency", "THB"),
+                "paymentDate": payload.get("paymentDate") or source.get("paymentDate") or source.get("date") or datetime.now().strftime("%Y-%m-%d"),
+                "paymentMethod": payload.get("paymentMethod") or source.get("paymentMethod") or "Bank transfer",
+                "allocations": [
+                    {
+                        "documentId": source.get("id"),
+                        "documentType": source_kind,
+                        "amount": converted_payload.get("amount", 0),
+                    }
+                ],
+                "sourceDocumentIds": [source.get("id")],
+            }
+        )
+    else:
+        created = create_document(str(target_kind), converted_payload, actor_email=actor_email)
+
+    def mutator(mutable_data: dict[str, Any]) -> dict[str, Any]:
+        _, _, mutable_source = _workflow_record_for_kind(mutable_data, kind, document_id)
+        _, mutable_target = _find_document_by_id(mutable_data, created["id"])
+        if mutable_source and mutable_target:
+            apply_workflow_link(mutable_source, mutable_target, "converted")
+            mutable_source.setdefault("convertedToIds", [])
+            if mutable_target["id"] not in mutable_source["convertedToIds"]:
+                mutable_source["convertedToIds"].append(mutable_target["id"])
+            mutable_target["convertedFromId"] = mutable_source["id"]
+            normalize_workflow_fields(mutable_source, kind=resolved)
+            normalize_workflow_fields(mutable_target, kind=str(target_kind), source=mutable_source)
+            return deepcopy(mutable_target)
+        return created
+
+    return _mutate(mutator)
+
+
+def link_document_records(kind: str, document_id: str, payload: dict[str, Any]) -> dict[str, Any] | None:
+    def mutator(data: dict[str, Any]) -> dict[str, Any] | None:
+        resolved, _, source = _workflow_record_for_kind(data, kind, document_id)
+        target_id = payload.get("targetDocumentId") or payload.get("documentId")
+        if not source or not target_id:
+            return None
+        _, target = _find_document_by_id(data, str(target_id))
+        if not target:
+            return None
+        apply_workflow_link(source, target, payload.get("relationType", "linked"))
+        normalize_workflow_fields(source, kind=resolved)
+        normalize_workflow_fields(target, source=source)
+        return {"source": deepcopy(source), "target": deepcopy(target)}
+
+    return _mutate(mutator)
+
+
+def override_workflow_warning(kind: str, document_id: str, payload: dict[str, Any], actor_email: str | None = None) -> dict[str, Any] | None:
+    reason = str(payload.get("overrideReason") or "").strip()
+    if not reason:
+        raise ValueError("overrideReason is required.")
+
+    def mutator(data: dict[str, Any]) -> dict[str, Any] | None:
+        resolved, _, record = _workflow_record_for_kind(data, kind, document_id)
+        if not record:
+            return None
+        record["overrideReason"] = reason
+        record["workflowMode"] = payload.get("workflowMode") or record.get("workflowMode") or "guided"
+        record.setdefault("workflowOverrides", []).append(
+            {
+                "reason": reason,
+                "user": actor_email or "",
+                "time": datetime.now().isoformat(timespec="seconds"),
+            }
+        )
+        normalize_workflow_fields(record, kind=resolved)
+        return deepcopy(record)
+
+    return _mutate(mutator)
+
+
 def create_expense(payload: dict[str, Any]) -> dict[str, Any]:
     def mutator(data: dict[str, Any]) -> dict[str, Any]:
         record = _build_document_record("expense", payload)
         record["id"] = payload.get("id") or _document_number(data, "expense", record.get("date"))
+        source_ids = _coerce_id_list(payload.get("sourceDocumentIds")) or _coerce_id_list(
+            [payload.get("sourceDocumentId"), payload.get("relatedDocument"), payload.get("relatedPurchaseOrderId")]
+        )
+        first_source = None
+        for source_id in source_ids:
+            _, maybe_source = _find_document_by_id(data, source_id)
+            if maybe_source:
+                first_source = maybe_source
+                break
+        normalize_workflow_fields(record, kind="expense", source=first_source)
+        if source_ids:
+            record["sourceDocumentIds"] = list(dict.fromkeys([*record.get("sourceDocumentIds", []), *source_ids]))
         collection = data.setdefault("expenses", [])
         existing_index = next((index for index, item in enumerate(collection) if item.get("id") == record["id"]), None)
         if _document_number_exists(data, record["id"], exclude_key="expenses"):
@@ -2209,9 +2479,8 @@ def create_expense(payload: dict[str, Any]) -> dict[str, Any]:
         for collection_name in DOCUMENT_COLLECTION_KEYS:
             for source in data.get(collection_name, []):
                 if source.get("id") in reference_ids:
-                    source.setdefault("linkedDocumentIds", [])
-                    if saved["id"] not in source["linkedDocumentIds"]:
-                        source["linkedDocumentIds"].append(saved["id"])
+                    apply_workflow_link(source, saved, "reference")
+        normalize_workflow_fields(saved, kind="expense", source=first_source)
         _push_activity(data, saved.get("vendor") or "System", f"{action_label} {saved['id']}", "expense", saved.get("amount"))
         return deepcopy(saved)
 
@@ -2293,6 +2562,10 @@ def create_payment(payload: dict[str, Any]) -> dict[str, Any]:
         }
 
         _apply_payment_allocations(data, payment_record, allocations)
+        first_source = None
+        if payment_record.get("sourceDocumentIds"):
+            _, first_source = _find_document_by_id(data, payment_record["sourceDocumentIds"][0])
+        normalize_workflow_fields(payment_record, kind="supplier_payment", source=first_source)
         data.setdefault("payments", []).insert(0, payment_record)
 
         related_wht = None

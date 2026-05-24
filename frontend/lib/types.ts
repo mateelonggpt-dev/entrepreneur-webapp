@@ -121,6 +121,39 @@ export interface DocumentSummary {
   };
   attachments?: string[];
   attachmentCount?: number;
+  workflowId?: string;
+  sourceDocumentIds?: string[];
+  convertedFromId?: string | null;
+  convertedToIds?: string[];
+  workflowMode?: "strict" | "guided" | "free";
+  overrideReason?: string | null;
+  paymentStatus?: PaymentStatus | string;
+  deliveryStatus?: string;
+  amountPaid?: number;
+  amountDue?: number;
+  withholdingAmount?: number;
+}
+
+export interface DocumentWorkflowAction {
+  type: string;
+  labelKey: string;
+  targetKind: string;
+  recommended?: boolean;
+  requiresReference?: boolean;
+  warningKey?: string;
+}
+
+export interface DocumentWorkflowNextActions {
+  documentId: string;
+  kind: string;
+  status: string;
+  nextActions: DocumentWorkflowAction[];
+}
+
+export interface DocumentWorkflowRules {
+  workflowModes: Array<"strict" | "guided" | "free">;
+  allowedTransitions: Record<string, string[]>;
+  defaultMode: "strict" | "guided" | "free";
 }
 
 export interface Attachment extends DomainAttachment {}
