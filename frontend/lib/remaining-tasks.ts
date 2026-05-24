@@ -11,7 +11,8 @@ export type RemainingTask = {
     | "inventory"
     | "invoiceReceipt"
     | "paymentEvidence"
-    | "deliveryEvidence";
+    | "deliveryEvidence"
+    | "withholdingTaxEvidence";
   createdDate: string;
   status: RemainingTaskStatus;
   documentPath: string;
@@ -46,6 +47,7 @@ export const completeEvidenceTasks = (documentNumber: string, evidenceType: Rema
     payment: ["payment", "paymentEvidence"],
     tax_invoice: ["tax_invoice", "invoiceReceipt"],
     inventory: ["inventory", "deliveryEvidence"],
+    withholding_tax: ["withholdingTaxEvidence"],
   };
   const matchingTypes = aliases[evidenceType] ?? [evidenceType];
   saveRemainingTasks(

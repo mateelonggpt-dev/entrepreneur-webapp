@@ -40,8 +40,15 @@ import {
 import { toast } from "sonner";
 import { useTranslation } from "react-i18next";
 
-type ExpenseDocType = "purchase_order" | "receive" | "expense" | "supplier_payment" | "withholding_tax";
-type EvidenceType = "invoiceReceipt" | "paymentEvidence" | "deliveryEvidence";
+type ExpenseDocType =
+  | "purchase_order"
+  | "receive"
+  | "vendor_invoice"
+  | "expense"
+  | "supplier_payment"
+  | "advance_payment"
+  | "withholding_tax";
+type EvidenceType = "invoiceReceipt" | "paymentEvidence" | "deliveryEvidence" | "withholdingTaxEvidence";
 
 type ExpenseLine = {
   id: string;
@@ -98,6 +105,10 @@ const sourceDocumentCategoryLabels: Record<EvidenceType, { labelKey: string; mis
     labelKey: "expenseCreate.evidence.deliveryEvidence",
     missingKey: "expenseCreate.evidence.missingDeliveryEvidence",
   },
+  withholdingTaxEvidence: {
+    labelKey: "expenseCreate.evidence.withholdingTaxEvidence",
+    missingKey: "expenseCreate.evidence.missingWithholdingTaxEvidence",
+  },
 };
 
 const documentTitles: Record<
@@ -105,9 +116,11 @@ const documentTitles: Record<
   { en: string; th: string; prefix: string; kind: "purchase_order" | "receive" | "expense" | "withholding_tax" | "supplier_payment" }
 > = {
   expense: { en: "Record Expense", th: "บันทึกรายจ่าย", prefix: "EXP", kind: "expense" },
+  vendor_invoice: { en: "Vendor Invoice", th: "ใบแจ้งหนี้ผู้ขาย", prefix: "VI", kind: "expense" },
   purchase_order: { en: "Purchase Order", th: "ใบสั่งซื้อ", prefix: "PO", kind: "purchase_order" },
   receive: { en: "Goods Receipt", th: "ใบรับสินค้า", prefix: "GRN", kind: "receive" },
   supplier_payment: { en: "Supplier Payment", th: "ชำระเงินผู้ขาย", prefix: "PAY", kind: "supplier_payment" },
+  advance_payment: { en: "Advance Payment", th: "จ่ายเงินล่วงหน้า", prefix: "ADV", kind: "supplier_payment" },
   withholding_tax: { en: "Withholding Tax Certificate", th: "หนังสือรับรองหัก ณ ที่จ่าย", prefix: "WHT", kind: "withholding_tax" },
 };
 
@@ -210,6 +223,7 @@ const PurchaseCreate = () => {
     invoiceReceipt: [],
     paymentEvidence: [],
     deliveryEvidence: [],
+    withholdingTaxEvidence: [],
   });
   const [sourceDocumentModalOpen, setSourceDocumentModalOpen] = useState(false);
   const [paymentModalOpen, setPaymentModalOpen] = useState(false);
@@ -238,7 +252,7 @@ const PurchaseCreate = () => {
     if (effectiveVatEnabled && paymentStatus === "paid") {
       messages.push(t("taxGuidance.paymentBeforeDelivery"));
     }
-    if (effectiveVatEnabled && (selectedType === "expense" || sourceDocumentType === "tax_invoice")) {
+    if (effectiveVatEnabled && (selectedType === "expense" || selectedType === "vendor_invoice" || sourceDocumentType === "tax_invoice")) {
       messages.push(t("taxGuidance.taxInvoiceRecommended"));
     }
     return Array.from(new Set(messages));
@@ -253,8 +267,10 @@ const PurchaseCreate = () => {
           ? data.receives.length + 1
           : selectedType === "withholding_tax"
             ? data.withholdingTaxDocuments.length + 1
-            : selectedType === "supplier_payment"
+          : selectedType === "supplier_payment"
               ? data.vendorPayments.length + 1
+              : selectedType === "advance_payment"
+                ? data.vendorPayments.length + 1
               : data.expenses.length + 1;
     return `${title.prefix}-2026-${String(next).padStart(4, "0")}`;
   }, [data.expenses.length, data.purchaseOrders.length, data.receives.length, data.vendorPayments.length, data.withholdingTaxDocuments.length, selectedType, title]);
@@ -400,6 +416,7 @@ const PurchaseCreate = () => {
       invoiceReceipt: "invoice-receipt",
       paymentEvidence: "payment-evidence",
       deliveryEvidence: "delivery-evidence",
+      withholdingTaxEvidence: "withholding-tax-evidence",
     };
     for (const [type, files] of Object.entries(evidenceFiles) as Array<[EvidenceType, File[]]>) {
       if (files.length) {
@@ -419,7 +436,7 @@ const PurchaseCreate = () => {
       toast.error(t("expenseCreate.toast.selectDocumentType"));
       return;
     }
-    if (selectedType === "supplier_payment" || selectedType === "withholding_tax") {
+    if (selectedType === "supplier_payment" || selectedType === "advance_payment" || selectedType === "withholding_tax") {
       toast.error(t("expenseCreate.toast.useQuickAction"));
       return;
     }
@@ -446,7 +463,7 @@ const PurchaseCreate = () => {
           totalAmount: roundMoney(taxableBase + roundMoney(taxableBase * (vatRate / 100))),
         };
       });
-      if (selectedType === "expense") {
+      if (selectedType === "expense" || selectedType === "vendor_invoice") {
         const created = await createExpense({
           id: documentNumber,
           vendor,
@@ -462,6 +479,9 @@ const PurchaseCreate = () => {
           status: mode === "draft" ? "draft" : paymentStatus === "paid" ? "paid" : "pending",
           sourceDocumentId: reference,
           sourceDocumentType,
+          documentTypes: [selectedType],
+          documentTitle: title.th,
+          documentVariant: title.en,
           transactionType,
           deliveryDate: undefined,
           paymentDate: paymentStatus === "paid" ? issueDate : undefined,
@@ -488,6 +508,7 @@ const PurchaseCreate = () => {
             invoiceReceipt: evidenceFiles.invoiceReceipt.map((file) => file.name),
             paymentEvidence: evidenceFiles.paymentEvidence.map((file) => file.name),
             deliveryEvidence: evidenceFiles.deliveryEvidence.map((file) => file.name),
+            withholdingTaxEvidence: evidenceFiles.withholdingTaxEvidence.map((file) => file.name),
           },
           evidenceStatus: missingEvidence.length ? "missing" : "complete",
         } as Parameters<typeof createExpense>[0]);
@@ -594,11 +615,13 @@ const PurchaseCreate = () => {
 
       {!selectedType ? (
         <Card className="p-8 text-center text-muted-foreground">{t("expenseCreate.emptyState")}</Card>
-      ) : selectedType === "supplier_payment" ? (
+      ) : selectedType === "supplier_payment" || selectedType === "advance_payment" ? (
         <Card className="p-6">
-          <h2 className="font-display text-lg font-semibold">{t("expenseCreate.documentTypes.supplierPayment")}</h2>
+          <h2 className="font-display text-lg font-semibold">
+            {selectedType === "advance_payment" ? t("expenseCreate.documentTypes.advancePayment") : t("expenseCreate.documentTypes.supplierPayment")}
+          </h2>
           <p className="mt-1 text-sm text-muted-foreground">
-            {t("expenseCreate.guidance.supplierPayment")}
+            {selectedType === "advance_payment" ? t("expenseCreate.guidance.advancePayment") : t("expenseCreate.guidance.supplierPayment")}
           </p>
           <div className="mt-5 flex flex-wrap gap-2">
             <Button type="button" onClick={() => setPaymentModalOpen(true)}>

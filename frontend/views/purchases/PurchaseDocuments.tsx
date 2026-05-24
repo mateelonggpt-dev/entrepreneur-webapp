@@ -38,7 +38,14 @@ import { cn } from "@/lib/utils";
 import { Download, FileText, Mail, MoreHorizontal, Paperclip, Printer, RefreshCcw, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 
-type ExpenseDocumentKind = "expense" | "purchase_order" | "receive" | "supplier_payment" | "withholding_tax";
+type ExpenseDocumentKind =
+  | "expense"
+  | "vendor_invoice"
+  | "purchase_order"
+  | "receive"
+  | "supplier_payment"
+  | "advance_payment"
+  | "withholding_tax";
 
 type ExpenseDocumentRow = {
   id: string;
@@ -167,10 +174,11 @@ const PurchaseDocuments = () => {
 
     const expenses = data.expenses.map((document) => {
       const paymentSummary = normalizePaymentSummary(document.amount, document.paymentSummary);
+      const isVendorInvoice = document.documentTypes?.includes("vendor_invoice");
       return {
         id: document.id,
-        kind: "expense" as const,
-        documentType: "Expense",
+        kind: (isVendorInvoice ? "vendor_invoice" : "expense") as ExpenseDocumentKind,
+        documentType: isVendorInvoice ? "Vendor Invoice" : "Expense",
         supplier: document.vendor,
         date: document.date,
         category: document.category,
@@ -596,7 +604,7 @@ const RowActions = ({
   onDrawerAction: (action: DrawerAction, row: ExpenseDocumentRow) => void;
 }) => {
   const isPurchaseOrder = row.kind === "purchase_order";
-  const canPay = row.kind === "expense" || row.kind === "receive";
+  const canPay = row.kind === "expense" || row.kind === "vendor_invoice" || row.kind === "receive";
   const canDelete = !["paid", "completed", "void", "cancelled"].includes(row.status) && row.paidAmount <= 0;
 
   return (

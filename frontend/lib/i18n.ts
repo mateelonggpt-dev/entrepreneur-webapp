@@ -743,6 +743,7 @@ const en = {
       otherDocuments: "Other expense documents",
       purchaseOrder: "Purchase Order",
       receive: "Receive",
+      vendorInvoice: "Vendor Invoice",
       expense: "Expense",
       supplierPayment: "Supplier Payment",
       withholdingTax: "Withholding Tax Certificate",
@@ -752,6 +753,8 @@ const en = {
     guidance: {
       supplierPayment:
         "Record supplier payment from open payable documents. Payments can use cash, bank transfer, cheque, or petty cash, and can create withholding tax where enabled.",
+      advancePayment:
+        "Record a supplier advance payment now and allocate it to a vendor invoice or expense later.",
       withholdingTax:
         "Create a withholding tax certificate from an expense, goods receipt, or supplier payment without leaving Expense / Create.",
     },
@@ -793,9 +796,11 @@ const en = {
       invoiceReceipt: "Invoice / Receipt",
       paymentEvidence: "Payment Evidence",
       deliveryEvidence: "Delivery Note / Proof of Delivery",
+      withholdingTaxEvidence: "Withholding Tax Evidence",
       missingInvoiceReceipt: "Please attach Invoice / Receipt",
       missingPaymentEvidence: "Please attach Payment Evidence",
       missingDeliveryEvidence: "Please attach Delivery Note / Proof of Delivery",
+      missingWithholdingTaxEvidence: "Please attach Withholding Tax Evidence",
       sourceDocuments: "Source documents",
       remainingTasksHelper: "Missing categories will create Remaining Tasks so the team can finish them later.",
       attachSourceDocuments: "Attach source documents",
@@ -1967,6 +1972,7 @@ const th = {
       otherDocuments: "เอกสารรายจ่ายอื่น",
       purchaseOrder: "ใบสั่งซื้อ",
       receive: "รับสินค้า",
+      vendorInvoice: "ใบแจ้งหนี้ผู้ขาย",
       expense: "รายจ่าย",
       supplierPayment: "จ่ายเงินผู้ขาย",
       withholdingTax: "หนังสือรับรองหัก ณ ที่จ่าย",
@@ -1976,6 +1982,8 @@ const th = {
     guidance: {
       supplierPayment:
         "บันทึกจ่ายเงินผู้ขายจากเอกสารเจ้าหนี้คงค้าง รองรับเงินสด โอนธนาคาร เช็ค หรือเงินสดย่อย และสร้างเอกสารหัก ณ ที่จ่ายได้เมื่อเปิดใช้",
+      advancePayment:
+        "บันทึกจ่ายเงินล่วงหน้าให้ผู้ขายตอนนี้ และนำไปตัดกับใบแจ้งหนี้ผู้ขายหรือรายจ่ายภายหลัง",
       withholdingTax:
         "สร้างหนังสือรับรองหัก ณ ที่จ่ายจากรายจ่าย ใบรับสินค้า หรือการจ่ายเงินผู้ขายโดยไม่ต้องออกจากหน้า รายจ่าย / สร้างเอกสาร",
     },
@@ -2017,9 +2025,11 @@ const th = {
       invoiceReceipt: "ใบแจ้งหนี้ / ใบเสร็จ",
       paymentEvidence: "หลักฐานการชำระเงิน",
       deliveryEvidence: "ใบส่งของ / หลักฐานการจัดส่ง",
+      withholdingTaxEvidence: "หลักฐานหัก ณ ที่จ่าย",
       missingInvoiceReceipt: "กรุณาแนบใบแจ้งหนี้ / ใบเสร็จ",
       missingPaymentEvidence: "กรุณาแนบหลักฐานการชำระเงิน",
       missingDeliveryEvidence: "กรุณาแนบใบส่งของ / หลักฐานการจัดส่ง",
+      missingWithholdingTaxEvidence: "กรุณาแนบหลักฐานหัก ณ ที่จ่าย",
       sourceDocuments: "เอกสารอ้างอิง",
       remainingTasksHelper: "หมวดที่ยังขาดจะสร้างงานค้างเพื่อให้ทีมกลับมาทำให้ครบภายหลัง",
       attachSourceDocuments: "แนบเอกสารอ้างอิง",

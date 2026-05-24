@@ -1258,9 +1258,9 @@ def _document_status_from_payment(kind: str, current_status: str, payment_summar
 
 def _allocation_target_collection(document_type: str) -> str | None:
     normalized = str(document_type or "").strip().lower()
-    if normalized in {"expense"}:
+    if normalized in {"expense", "vendor_invoice"}:
         return "expenses"
-    if normalized in {"receive"}:
+    if normalized in {"receive", "goods_receive", "receive_inventory"}:
         return "receives"
     if normalized in {"purchase_order", "purchase-order", "po"}:
         return "purchaseOrders"
@@ -1290,6 +1290,8 @@ def _apply_payment_allocations(
 
         target_amount = round_money(float(target.get("amount", 0) or 0))
         next_summary = _payment_summary_for_amount(target_amount, target.get("paymentSummary"))
+        if allocated_amount > round_money(next_summary["remaining"] + 0.01) and not payment_record.get("allowOverpayment"):
+            raise ValueError("Supplier payment allocation cannot exceed the remaining amount due.")
         next_summary["paid"] = round_money(next_summary["paid"] + allocated_amount)
         next_summary["remaining"] = round_money(max(target_amount - next_summary["paid"], 0))
         next_summary["status"] = (
@@ -1301,13 +1303,17 @@ def _apply_payment_allocations(
         next_summary["lastPaymentMethod"] = payment_record.get("paymentMethod", "")
         next_summary["lastPaymentId"] = payment_record.get("id", "")
         target["paymentSummary"] = next_summary
+        target["amountPaid"] = next_summary["paid"]
+        target["amountDue"] = next_summary["remaining"]
+        target["paymentStatus"] = next_summary["status"]
         target["status"] = _document_status_from_payment(document_type, str(target.get("status", "pending")), next_summary)
         target.setdefault("linkedDocumentIds", [])
         if payment_record["id"] not in target["linkedDocumentIds"]:
             target["linkedDocumentIds"].append(payment_record["id"])
+        normalize_workflow_fields(target, kind=document_type)
         applied_ids.append(document_id)
 
-    payment_record["sourceDocumentIds"] = applied_ids
+    payment_record["sourceDocumentIds"] = list(dict.fromkeys([*payment_record.get("sourceDocumentIds", []), *applied_ids]))
 
 
 def _withholding_tax_number(data: dict[str, Any], date_text: str | None) -> str:
@@ -2552,6 +2558,20 @@ def update_expense(expense_id: str, payload: dict[str, Any]) -> dict[str, Any] |
 
 def create_withholding_tax_document(payload: dict[str, Any]) -> dict[str, Any]:
     def mutator(data: dict[str, Any]) -> dict[str, Any]:
+        related_payment_id = str(payload.get("relatedPaymentId") or "").strip()
+        source_document_id = str(payload.get("sourceDocumentId") or "").strip()
+        if not payload.get("overrideDuplicate"):
+            duplicate = next(
+                (
+                    item
+                    for item in data.get("withholdingTaxDocuments", [])
+                    if (related_payment_id and item.get("relatedPaymentId") == related_payment_id)
+                    or (source_document_id and item.get("sourceDocumentId") == source_document_id and item.get("relatedPaymentId") == related_payment_id)
+                ),
+                None,
+            )
+            if duplicate:
+                raise ValueError("A withholding tax certificate already exists for this payment or source document.")
         record = _build_document_record("withholding_tax", payload)
         record["id"] = payload.get("id") or _withholding_tax_number(data, record.get("date"))
         data.setdefault("withholdingTaxDocuments", []).insert(0, record)
@@ -2560,10 +2580,14 @@ def create_withholding_tax_document(payload: dict[str, Any]) -> dict[str, Any]:
             for collection_name in ("expenses", "receives"):
                 source = next((item for item in data.get(collection_name, []) if item.get("id") == source_document_id), None)
                 if source:
-                    source.setdefault("linkedDocumentIds", [])
-                    if record["id"] not in source["linkedDocumentIds"]:
-                        source["linkedDocumentIds"].append(record["id"])
+                    apply_workflow_link(source, record, "withholding_tax")
                     break
+        if record.get("relatedPaymentId"):
+            payment = next((item for item in data.get("payments", []) if item.get("id") == record.get("relatedPaymentId")), None)
+            if payment:
+                apply_workflow_link(payment, record, "withholding_tax")
+                payment["withholdingTaxId"] = record["id"]
+        normalize_workflow_fields(record, kind="withholding_tax")
         _push_activity(data, record.get("vendor") or "System", f"created {record['id']}", "withholding_tax", record.get("amount"))
         return deepcopy(record)
 
@@ -2605,7 +2629,7 @@ def create_payment(payload: dict[str, Any]) -> dict[str, Any]:
             "chequeDepositDate": str(payload.get("chequeDepositDate") or ""),
             "chequeClearedDate": str(payload.get("chequeClearedDate") or ""),
             "allocations": allocations,
-            "sourceDocumentIds": [],
+            "sourceDocumentIds": _coerce_id_list(payload.get("sourceDocumentIds")),
             "withholdingTaxEnabled": bool(payload.get("autoCreateWht")),
         }
 
@@ -2641,6 +2665,7 @@ def create_payment(payload: dict[str, Any]) -> dict[str, Any]:
             related_wht["id"] = _withholding_tax_number(data, payment_date)
             data.setdefault("withholdingTaxDocuments", []).insert(0, related_wht)
             payment_record["withholdingTaxId"] = related_wht["id"]
+            apply_workflow_link(payment_record, related_wht, "withholding_tax")
 
             related_source = next(
                 (
@@ -2652,9 +2677,8 @@ def create_payment(payload: dict[str, Any]) -> dict[str, Any]:
                 None,
             )
             if related_source:
-                related_source.setdefault("linkedDocumentIds", [])
-                if related_wht["id"] not in related_source["linkedDocumentIds"]:
-                    related_source["linkedDocumentIds"].append(related_wht["id"])
+                apply_workflow_link(related_source, related_wht, "withholding_tax")
+            normalize_workflow_fields(related_wht, kind="withholding_tax")
 
         _push_activity(data, payment_record.get("vendor") or "System", f"recorded payment {payment_id}", "payment", amount)
         if related_wht:

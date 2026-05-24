@@ -376,6 +376,7 @@ export interface PurchaseDocumentRecord
     invoiceReceipt?: string[];
     paymentEvidence?: string[];
     deliveryEvidence?: string[];
+    withholdingTaxEvidence?: string[];
   };
   accountantCategory?: string;
   paymentSummary?: {

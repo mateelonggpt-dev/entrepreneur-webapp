@@ -361,6 +361,7 @@ export const createExpense = (payload: {
     invoiceReceipt?: string[];
     paymentEvidence?: string[];
     deliveryEvidence?: string[];
+    withholdingTaxEvidence?: string[];
   };
   linkedDocumentIds?: string[];
   paymentSummary?: {
