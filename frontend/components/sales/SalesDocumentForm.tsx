@@ -5048,7 +5048,7 @@ const downloadPreviewDomAsPdf = async (root: HTMLElement, filename: string) => {
       );
 
       const canvas = await html2canvas(page, {
-        scale: Math.min(3, Math.max(2, window.devicePixelRatio || 2)),
+        scale: 4,
         backgroundColor: "#ffffff",
         useCORS: true,
         logging: false,
@@ -5056,7 +5056,7 @@ const downloadPreviewDomAsPdf = async (root: HTMLElement, filename: string) => {
         scrollY: 0,
         width: PDF_PAGE_WIDTH_PX,
         height: captureHeight,
-        windowWidth: 1280,
+        windowWidth: PDF_PAGE_WIDTH_PX,
         windowHeight: captureHeight,
       });
 
