@@ -51,10 +51,10 @@ import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 
 const sections = [
-  { id: "company", label: "Company Profile", to: "/settings/company" },
-  { id: "users", label: "Users & Roles", to: "/settings/users" },
-  { id: "documents", label: "Document Settings", to: "/settings/documents" },
-  { id: "currency", label: "Currency", to: "/settings/currency" },
+  { id: "company", labelKey: "settings.tabs.company", to: "/settings/company" },
+  { id: "users", labelKey: "settings.tabs.users", to: "/settings/users" },
+  { id: "documents", labelKey: "settings.tabs.documents", to: "/settings/documents" },
+  { id: "currency", labelKey: "settings.tabs.currency", to: "/settings/currency" },
 ] as const;
 
 const emptyCompanySettings: CompanySettings = {
@@ -685,7 +685,7 @@ const resolveCompanyProfileForm = (company: CompanySettings): CompanyProfileForm
 };
 
 const Settings = () => {
-  const { i18n } = useTranslation();
+  const { t, i18n } = useTranslation();
   const { user } = useAuth();
   const location = useLocation();
   const nav = useNavigate();
@@ -737,7 +737,7 @@ const Settings = () => {
         }
       } catch (error) {
         if (!cancelled) {
-          toast.error(error instanceof Error ? error.message : "Unable to load settings.");
+          toast.error(error instanceof Error ? error.message : t("settings.toast.unableToLoad"));
         }
       } finally {
         if (!cancelled) {
@@ -754,7 +754,8 @@ const Settings = () => {
   }, []);
 
   const activeManagedSection = activeSection;
-  const activeLabel = sections.find((section) => section.id === activeSection)?.label ?? "Settings";
+  const activeLabelKey = sections.find((section) => section.id === activeSection)?.labelKey ?? "settings.title";
+  const activeLabel = t(activeLabelKey);
   const companyLanguage = i18n.language?.startsWith("th") ? "th" : "en";
   const companyText = companyProfileCopy[companyLanguage];
   const documentText = documentSettingsCopy[companyLanguage];
@@ -856,10 +857,10 @@ const Settings = () => {
       await persistSection(
         nonCompanySection,
         payload,
-        activeManagedSection === "users" ? usersText.saved : `${activeLabel} saved`
+        activeManagedSection === "users" ? usersText.saved : t("settings.toast.sectionSaved", { section: activeLabel })
       );
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Unable to save settings.");
+      toast.error(error instanceof Error ? error.message : t("settings.toast.unableToSave"));
     } finally {
       setSaving(false);
     }
@@ -887,7 +888,7 @@ const Settings = () => {
       ...previous,
       [activeManagedSection]: initialSettings[activeManagedSection],
     }));
-    toast.success(activeManagedSection === "users" ? usersText.changesDiscarded : "Changes discarded");
+    toast.success(activeManagedSection === "users" ? usersText.changesDiscarded : t("settings.toast.changesDiscarded"));
   };
 
   const updateCompanyProfileForm = (patch: Partial<CompanyProfileForm>) => {
@@ -946,9 +947,13 @@ const Settings = () => {
       const saved = await uploadBrandingAsset(assetKey, file);
       setSettingsState((previous) => ({ ...previous, branding: saved }));
       setInitialSettings((previous) => ({ ...previous, branding: saved }));
-      toast.success(`${assetKey[0].toUpperCase()}${assetKey.slice(1)} uploaded`);
+      toast.success(t("settings.toast.assetUploaded", { asset: t(`settings.branding.assets.${assetKey}`) }));
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : `Unable to upload ${assetKey}.`);
+      toast.error(
+        error instanceof Error
+          ? error.message
+          : t("settings.toast.unableToUploadAsset", { asset: t(`settings.branding.assets.${assetKey}`) })
+      );
     } finally {
       setAssetUploading(null);
     }
@@ -1697,18 +1702,18 @@ const Settings = () => {
           <div className="grid gap-6 xl:grid-cols-[1fr_0.95fr]">
             <div className="space-y-5">
               <div>
-                <h2 className="mb-1 text-lg font-display font-semibold">Currency</h2>
-                <p className="mb-4 text-sm text-muted-foreground">Control base currency, enabled currencies, and document exchange-rate snapshots.</p>
+                <h2 className="mb-1 text-lg font-display font-semibold">{t("settings.currency.title")}</h2>
+                <p className="mb-4 text-sm text-muted-foreground">{t("settings.currency.description")}</p>
               </div>
               <div>
-                <Label htmlFor="currency-base">Base currency</Label>
+                <Label htmlFor="currency-base">{t("settings.currency.baseCurrency")}</Label>
                 <Input id="currency-base" value={settingsState.currency.baseCurrency} onChange={(event) => updateSection("currency", { baseCurrency: event.target.value.toUpperCase() })} className="mt-1.5" />
               </div>
               <div className="rounded-xl border border-border/60 p-4">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-sm font-semibold">Enable additional currencies</p>
-                    <p className="text-xs text-muted-foreground">Pick the currencies allowed for future multi-currency documents.</p>
+                    <p className="text-sm font-semibold">{t("settings.currency.enableAdditionalCurrencies")}</p>
+                    <p className="text-xs text-muted-foreground">{t("settings.currency.enableAdditionalCurrenciesHelper")}</p>
                   </div>
                   <Switch checked={settingsState.currency.multiCurrencyEnabled} onCheckedChange={(checked) => updateSection("currency", { multiCurrencyEnabled: checked })} />
                 </div>
@@ -1733,15 +1738,15 @@ const Settings = () => {
                 </div>
               </div>
               <div>
-                <Label>Exchange-rate source</Label>
+                <Label>{t("settings.currency.exchangeRateSource")}</Label>
                 <Select value={settingsState.currency.exchangeRateSource} onValueChange={(value) => updateSection("currency", { exchangeRateSource: value as CurrencySettings["exchangeRateSource"] })}>
                   <SelectTrigger className="mt-1.5">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="manual">Manual</SelectItem>
-                    <SelectItem value="bank_of_thailand">Bank of Thailand shell</SelectItem>
-                    <SelectItem value="custom">Custom source shell</SelectItem>
+                    <SelectItem value="manual">{t("settings.currency.sources.manual")}</SelectItem>
+                    <SelectItem value="bank_of_thailand">{t("settings.currency.sources.bankOfThailand")}</SelectItem>
+                    <SelectItem value="custom">{t("settings.currency.sources.custom")}</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -1749,7 +1754,7 @@ const Settings = () => {
 
             <div className="space-y-4">
               <Card className="card-premium p-5">
-                <h3 className="font-display font-semibold">Manual rates</h3>
+                <h3 className="font-display font-semibold">{t("settings.currency.manualRates")}</h3>
                 <div className="mt-4 space-y-3">
                   {Object.entries(settingsState.currency.manualRates).map(([code, rate]) => (
                     <div key={code} className="flex items-center gap-3">
@@ -1769,21 +1774,21 @@ const Settings = () => {
               </Card>
 
               <Card className="card-premium p-5">
-                <h3 className="font-display font-semibold">Document snapshot object</h3>
+                <h3 className="font-display font-semibold">{t("settings.currency.documentSnapshot")}</h3>
                 <div className="mt-4 space-y-4">
                   <div className="flex items-center justify-between rounded-xl border border-border/60 p-4">
                     <div>
-                      <p className="text-sm font-semibold">Use document date for snapshots</p>
-                      <p className="text-xs text-muted-foreground">Applies when creating new foreign-currency documents.</p>
+                      <p className="text-sm font-semibold">{t("settings.currency.useDocumentDateForSnapshots")}</p>
+                      <p className="text-xs text-muted-foreground">{t("settings.currency.useDocumentDateForSnapshotsHelper")}</p>
                     </div>
                     <Switch checked={settingsState.currency.documentSnapshot.useDocumentDate} onCheckedChange={(checked) => updateNestedSection("currency", "documentSnapshot", { useDocumentDate: checked })} />
                   </div>
                   <div>
-                    <Label htmlFor="currency-fallback-rate">Fallback rate</Label>
+                    <Label htmlFor="currency-fallback-rate">{t("settings.currency.fallbackRate")}</Label>
                     <Input id="currency-fallback-rate" type="number" value={settingsState.currency.documentSnapshot.fallbackRate} onChange={(event) => updateNestedSection("currency", "documentSnapshot", { fallbackRate: Number(event.target.value || 0) })} className="mt-1.5" />
                   </div>
                   <div>
-                    <Label htmlFor="currency-snapshot-note">Snapshot note</Label>
+                    <Label htmlFor="currency-snapshot-note">{t("settings.currency.snapshotNote")}</Label>
                     <Textarea id="currency-snapshot-note" value={settingsState.currency.documentSnapshot.note} onChange={(event) => updateNestedSection("currency", "documentSnapshot", { note: event.target.value })} className="mt-1.5 min-h-[84px]" />
                   </div>
                 </div>
@@ -1804,17 +1809,17 @@ const Settings = () => {
             ? documentText.title
             : activeManagedSection === "users"
               ? usersText.title
-              : "Settings"
+              : t("settings.title")
         }
         description={
           activeManagedSection === "documents"
             ? documentText.description
             : activeManagedSection === "users"
               ? usersText.description
-            : "Configure your company, team, document settings, and currency."
+            : t("settings.description")
         }
         breadcrumbs={[
-          { label: "Settings" },
+          { label: t("settings.title") },
           {
             label:
               activeManagedSection === "documents"
@@ -1828,7 +1833,7 @@ const Settings = () => {
 
       <Card className="card-premium p-6">
           {loading ? (
-            <div className="py-10 text-center text-sm text-muted-foreground">Loading settings...</div>
+            <div className="py-10 text-center text-sm text-muted-foreground">{t("settings.loading")}</div>
           ) : (
             <>
               {renderManagedSection()}
@@ -1841,7 +1846,7 @@ const Settings = () => {
                         ? documentText.cancel
                         : activeManagedSection === "users"
                           ? usersText.cancel
-                        : "Cancel"}
+                        : t("common.cancel")}
                   </Button>
                   <Button
                     className="gap-1.5 border-0 bg-gradient-brand text-primary-foreground shadow-brand"
@@ -1855,7 +1860,7 @@ const Settings = () => {
                         ? documentText.save
                         : activeManagedSection === "users"
                           ? usersText.saveChanges
-                        : "Save changes"}
+                        : t("settings.actions.saveChanges")}
                   </Button>
                 </div>
               ) : null}
