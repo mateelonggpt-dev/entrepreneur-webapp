@@ -1244,6 +1244,18 @@ def _payment_summary_for_amount(
     }
 
 
+def _remaining_due_for_document(document: dict[str, Any]) -> float:
+    summary = document.get("paymentSummary") if isinstance(document.get("paymentSummary"), dict) else {}
+    if summary and summary.get("remaining") is not None:
+        return round_money(float(summary.get("remaining", 0) or 0))
+    if document.get("amountDue") is not None:
+        return round_money(float(document.get("amountDue", 0) or 0))
+    amount = round_money(float(document.get("amount", 0) or 0))
+    paid = round_money(float(document.get("amountPaid", 0) or 0))
+    withholding = round_money(float(document.get("totalWithholdingTax", document.get("withholdingAmount", 0)) or 0))
+    return round_money(max(amount - paid - withholding, 0))
+
+
 def _document_status_from_payment(kind: str, current_status: str, payment_summary: dict[str, Any]) -> str:
     remaining = round_money(payment_summary.get("remaining", 0))
     paid = round_money(payment_summary.get("paid", 0))
@@ -2264,6 +2276,15 @@ def create_document(kind: str, payload: dict[str, Any], actor_email: str | None 
         normalize_workflow_fields(record, kind=resolved, source=first_source)
         if source_ids:
             record["sourceDocumentIds"] = list(dict.fromkeys([*record.get("sourceDocumentIds", []), *source_ids]))
+        if resolved in {"credit_note", "debit_note"} and not record.get("sourceDocumentIds"):
+            raise ValueError("Credit note and debit note require an original source document.")
+        if resolved == "receipt" and record.get("relatedInvoice"):
+            invoice = next((item for item in data.get("invoices", []) if item["id"] == record["relatedInvoice"]), None)
+            if invoice:
+                receipt_amount = round_money(float(record.get("amount", 0) or 0))
+                invoice_remaining = _remaining_due_for_document(invoice)
+                if receipt_amount > round_money(invoice_remaining + 0.01) and not record.get("allowOverpayment"):
+                    raise ValueError("Receipt amount cannot exceed the remaining amount due.")
         collection = data.setdefault(key, [])
         existing_index = next((index for index, item in enumerate(collection) if item.get("id") == record["id"]), None)
         if _document_number_exists(data, record["id"], exclude_key=key):
@@ -2291,9 +2312,24 @@ def create_document(kind: str, payload: dict[str, Any], actor_email: str | None 
         if resolved == "receipt" and saved_record.get("relatedInvoice"):
             invoice = next((item for item in data.get("invoices", []) if item["id"] == saved_record["relatedInvoice"]), None)
             if invoice:
-                invoice_amount = round_money(float(invoice.get("amount", 0) or 0))
                 receipt_amount = round_money(float(saved_record.get("amount", 0) or 0))
-                invoice["status"] = "paid" if receipt_amount >= invoice_amount else "partial"
+                invoice_amount = round_money(
+                    float(invoice.get("amount", 0) or 0)
+                    - float(invoice.get("totalWithholdingTax", invoice.get("withholdingAmount", 0)) or 0)
+                )
+                summary = _payment_summary_for_amount(max(invoice_amount, 0), invoice.get("paymentSummary"))
+                summary["paid"] = round_money(summary["paid"] + receipt_amount)
+                summary["remaining"] = round_money(max(invoice_amount - summary["paid"], 0))
+                summary["status"] = PaymentStatus.PAID.value if summary["remaining"] <= 0 else PaymentStatus.PARTIAL.value
+                summary["lastPaymentDate"] = saved_record.get("date", "")
+                summary["lastPaymentMethod"] = saved_record.get("paymentMethod", "")
+                summary["lastPaymentId"] = saved_record.get("id", "")
+                invoice["paymentSummary"] = summary
+                invoice["amountPaid"] = summary["paid"]
+                invoice["amountDue"] = summary["remaining"]
+                invoice["paymentStatus"] = summary["status"]
+                invoice["status"] = "paid" if summary["remaining"] <= 0 else "partial"
+                normalize_workflow_fields(invoice, kind="invoice")
                 _push_activity(data, party, f"paid {invoice['id']}", "paid", min(receipt_amount, invoice_amount))
 
         if resolved in {"expense", "receive", "withholding_tax"}:
