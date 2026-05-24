@@ -124,6 +124,16 @@ const en = {
   taxWarnings: {
     taxPointMayBeRequired: "This action may affect VAT tax point or tax invoice timing. Review company tax policy before issuing.",
   },
+  taxGuidance: {
+    title: "Tax guidance",
+    deliveryMayCreateTaxPoint: "Delivery may create a VAT tax point. Please review tax invoice requirements.",
+    paymentBeforeDelivery: "Payment was received before delivery. Please review prepayment tax invoice requirements.",
+    companyNotVatRegistered: "This company is not VAT registered and should not issue a full tax invoice.",
+    taxInvoiceRecommended: "A VAT tax point is recorded. Review whether a tax invoice is required for this transaction.",
+    vatPeriod: "VAT period",
+    taxPointDate: "Tax point date",
+    taxPointReason: "Reason",
+  },
   searchDialog: {
     placeholder: "Search routes, invoices, contacts, vendors, or reports...",
     empty: "No matching results.",
@@ -1337,6 +1347,16 @@ const th = {
   },
   taxWarnings: {
     taxPointMayBeRequired: "การทำรายการนี้อาจมีผลต่อ tax point หรือช่วงเวลาการออกใบกำกับภาษี กรุณาตรวจสอบนโยบายภาษีของบริษัท",
+  },
+  taxGuidance: {
+    title: "คำแนะนำด้านภาษี",
+    deliveryMayCreateTaxPoint: "การส่งมอบสินค้าอาจทำให้เกิดจุดรับรู้ภาษี กรุณาตรวจสอบการออกใบกำกับภาษี",
+    paymentBeforeDelivery: "มีการรับเงินก่อนส่งมอบ ระบบแนะนำให้ตรวจสอบเอกสารภาษีสำหรับเงินรับล่วงหน้า",
+    companyNotVatRegistered: "บริษัทนี้ไม่ได้จด VAT จึงไม่ควรออกใบกำกับภาษีเต็มรูปแบบ",
+    taxInvoiceRecommended: "ระบบบันทึก tax point แล้ว กรุณาตรวจสอบว่าต้องออกใบกำกับภาษีสำหรับรายการนี้หรือไม่",
+    vatPeriod: "งวด VAT",
+    taxPointDate: "วันที่ tax point",
+    taxPointReason: "เหตุผล",
   },
   searchDialog: {
     placeholder: "ค้นหาเมนู ใบแจ้งหนี้ ผู้ติดต่อ ผู้ขาย หรือรายงาน...",

@@ -28,6 +28,7 @@ from ..domain.document_workflow import (
     validate_document_transition,
     workflow_rules_payload,
 )
+from ..domain.tax_policy import apply_tax_point_policy
 from .accounting_policy import (
     SETTINGS_SECTIONS,
     build_policy_snapshot,
@@ -1043,6 +1044,13 @@ def _summarize_document(kind: str, record: dict[str, Any]) -> dict[str, Any]:
         "amountPaid": float(record.get("amountPaid", 0) or 0),
         "amountDue": float(record.get("amountDue", 0) or 0),
         "withholdingAmount": float(record.get("withholdingAmount", 0) or 0),
+        "taxPointDate": record.get("taxPointDate"),
+        "taxPointReason": record.get("taxPointReason"),
+        "taxInvoiceRequired": bool(record.get("taxInvoiceRequired", False)),
+        "vatReportingPeriod": record.get("vatReportingPeriod"),
+        "taxGuidance": deepcopy(record.get("taxGuidance", [])),
+        "vatAuditSnapshot": deepcopy(record.get("vatAuditSnapshot", {})),
+        "transactionType": record.get("transactionType", ""),
         "documentVariant": record.get("documentVariant", ""),
         "documentTypes": document_types,
         "documentTitle": record.get("documentTitle", "") or ("ใบกำกับภาษี" if is_legacy_tax_invoice else ""),
@@ -1307,6 +1315,32 @@ def _withholding_tax_number(data: dict[str, Any], date_text: str | None) -> str:
     year = issue_date[:4] if len(issue_date) >= 4 else datetime.now().strftime("%Y")
     sequence = next_counter(data, "withholdingTax", 1)
     return f"WHT-{year}-{sequence:04d}"
+
+
+def _document_requests_full_tax_invoice(record: dict[str, Any]) -> bool:
+    document_types = {str(item).replace("-", "_") for item in record.get("documentTypes", []) or []}
+    return bool(
+        record.get("isTaxInvoice")
+        or record.get("invoiceTaxType") == "tax"
+        or document_types.intersection({"tax_invoice", "short_tax_invoice", "cash_sale"})
+    )
+
+
+def _apply_tax_policy_to_record(
+    record: dict[str, Any],
+    settings: dict[str, Any],
+    *,
+    kind: str,
+    strict_validation: bool = True,
+) -> dict[str, Any]:
+    company_vat_registered = _is_company_vat_registered(settings)
+    taxes = merge_settings_section("taxes", settings.get("taxes"))
+    allow_override = bool(taxes.get("allowTaxInvoiceOverride") or taxes.get("allowNonVatTaxInvoiceOverride"))
+    if strict_validation and not company_vat_registered and _document_requests_full_tax_invoice(record):
+        if not allow_override or not str(record.get("taxOverrideReason") or record.get("overrideReason") or "").strip():
+            raise ValueError("This company is not VAT registered and should not issue a full tax invoice without an approved override reason.")
+    is_sales = kind in {"quotation", "invoice", "receipt", "billing", "credit_note", "debit_note", "deposit"}
+    return apply_tax_point_policy(record, settings, sales=is_sales)
 
 
 def _build_document_record(kind: str, payload: dict[str, Any]) -> dict[str, Any]:
@@ -1597,6 +1631,19 @@ def _build_document_record(kind: str, payload: dict[str, Any]) -> dict[str, Any]
         "amountDue",
         "amountInWordsThai",
         "amountInWordsEnglish",
+        "transactionType",
+        "deliveryDate",
+        "ownershipTransferDate",
+        "serviceCompletedDate",
+        "paymentDate",
+        "taxPointDate",
+        "taxPointReason",
+        "taxInvoiceRequired",
+        "vatReportingPeriod",
+        "taxGuidance",
+        "vatAuditSnapshot",
+        "taxPointSourceEvents",
+        "taxOverrideReason",
     }
     for key in passthrough_keys:
         if key in payload and payload.get(key) is not None:
@@ -1674,6 +1721,7 @@ def _build_document_record(kind: str, payload: dict[str, Any]) -> dict[str, Any]
         base["taxableAmount"] = taxable_amount
         base["amount"] = withheld_amount
 
+    base = _apply_tax_policy_to_record(base, settings, kind=kind)
     return normalize_workflow_fields(base, kind=kind)
 
 

@@ -1163,6 +1163,7 @@ def build_vat_summary(data: dict[str, Any]) -> dict[str, Any]:
     policy = build_policy_snapshot(data.get("settings"))
     output_tax = 0.0
     input_tax = 0.0
+    reporting_periods: set[str] = set()
 
     for invoice in data.get("invoices", []):
         status = str(invoice.get("status", "draft")).lower()
@@ -1173,6 +1174,8 @@ def build_vat_summary(data: dict[str, Any]) -> dict[str, Any]:
             output_tax += _invoice_status_amount(invoice) * (tax_amount / total) if total else 0
         else:
             output_tax += tax_amount
+        if invoice.get("vatReportingPeriod"):
+            reporting_periods.add(str(invoice.get("vatReportingPeriod")))
 
     for expense in data.get("expenses", []):
         status = str(expense.get("status", "pending")).lower()
@@ -1180,11 +1183,14 @@ def build_vat_summary(data: dict[str, Any]) -> dict[str, Any]:
             continue
         _, tax_amount, _ = _invoice_breakdown(expense, policy)
         input_tax += tax_amount
+        if expense.get("vatReportingPeriod"):
+            reporting_periods.add(str(expense.get("vatReportingPeriod")))
 
     today = _today(data)
     return {
         "vatRegistered": policy["vatRegistered"],
         "filingPeriod": today.strftime("%B %Y"),
+        "sourceReportingPeriods": sorted(reporting_periods),
         "outputTax": _round_money(output_tax),
         "inputTax": _round_money(input_tax),
         "netVatPayable": _round_money(output_tax - input_tax),

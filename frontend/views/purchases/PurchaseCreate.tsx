@@ -223,6 +223,26 @@ const PurchaseCreate = () => {
   const documentSettings = data.policySummary?.documents;
   const perLineWithholdingTax = Boolean(documentSettings?.perLineWithholdingTax);
   const effectiveVatEnabled = companyVatRegistered && vatEnabled;
+  const transactionType = useMemo(
+    () => (lines.length > 0 && lines.every((line) => line.unit.toLowerCase().includes("service")) ? "service" : "goods"),
+    [lines]
+  );
+  const taxGuidanceMessages = useMemo(() => {
+    const messages: string[] = [];
+    if (!companyVatRegistered) {
+      messages.push(t("taxGuidance.companyNotVatRegistered"));
+    }
+    if (effectiveVatEnabled && selectedType === "receive") {
+      messages.push(t("taxGuidance.deliveryMayCreateTaxPoint"));
+    }
+    if (effectiveVatEnabled && paymentStatus === "paid") {
+      messages.push(t("taxGuidance.paymentBeforeDelivery"));
+    }
+    if (effectiveVatEnabled && (selectedType === "expense" || sourceDocumentType === "tax_invoice")) {
+      messages.push(t("taxGuidance.taxInvoiceRecommended"));
+    }
+    return Array.from(new Set(messages));
+  }, [companyVatRegistered, effectiveVatEnabled, paymentStatus, selectedType, sourceDocumentType, t]);
 
   const documentNumber = useMemo(() => {
     if (!selectedType || !title) return "";
@@ -442,6 +462,10 @@ const PurchaseCreate = () => {
           status: mode === "draft" ? "draft" : paymentStatus === "paid" ? "paid" : "pending",
           sourceDocumentId: reference,
           sourceDocumentType,
+          transactionType,
+          deliveryDate: undefined,
+          paymentDate: paymentStatus === "paid" ? issueDate : undefined,
+          serviceCompletedDate: transactionType === "service" ? issueDate : undefined,
           paymentSummary: {
             paid: paymentStatus === "paid" ? grandTotal : 0,
             remaining: paymentStatus === "paid" ? 0 : grandTotal,
@@ -490,6 +514,10 @@ const PurchaseCreate = () => {
         documentTypes: [selectedType],
         documentTitle: title.th,
         documentVariant: title.en,
+        transactionType,
+        deliveryDate: selectedType === "receive" ? issueDate : undefined,
+        paymentDate: paymentStatus === "paid" ? issueDate : undefined,
+        serviceCompletedDate: transactionType === "service" ? issueDate : undefined,
         amount: grandTotal,
         subtotal: amountBeforeVat,
         taxAmount: vatAmount,
@@ -707,6 +735,20 @@ const PurchaseCreate = () => {
               ) : null}
             </div>
           </div>
+
+          {taxGuidanceMessages.length ? (
+            <Alert className="mt-4 border-amber-300 bg-amber-50 text-amber-950">
+              <AlertTriangle className="h-4 w-4" />
+              <AlertDescription>
+                <p className="font-semibold">{t("taxGuidance.title")}</p>
+                <ul className="mt-1 list-disc space-y-1 pl-4">
+                  {taxGuidanceMessages.map((message) => (
+                    <li key={message}>{message}</li>
+                  ))}
+                </ul>
+              </AlertDescription>
+            </Alert>
+          ) : null}
 
           <div className="mt-5 grid gap-4 md:grid-cols-2">
             <PaperField label={t("expenseCreate.fields.vendorRequired")}>
