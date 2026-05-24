@@ -332,17 +332,17 @@ const defaultRemarkTemplates: RemarkTemplate[] = [
   },
   {
     id: "default-th-payment",
-    name: "à¹€à¸‡à¸·à¹ˆà¸­à¸™à¹„à¸‚à¸à¸²à¸£à¸Šà¸³à¸£à¸°à¹€à¸‡à¸´à¸™",
-    content: "à¸à¸£à¸¸à¸“à¸²à¸Šà¸³à¸£à¸°à¹€à¸‡à¸´à¸™à¸•à¸²à¸¡à¹€à¸‡à¸·à¹ˆà¸­à¸™à¹„à¸‚à¸—à¸µà¹ˆà¸£à¸°à¸šà¸¸à¹ƒà¸™à¹€à¸­à¸à¸ªà¸²à¸£à¸™à¸µà¹‰",
+    name: "เงื่อนไขการชำระเงิน",
+    content: "กรุณาชำระเงินตามเงื่อนไขที่ระบุในเอกสารนี้",
     language: "th",
     documentTypes: ["all"],
   },
 ];
 
 const copyOptions: Array<{ value: CopyGeneration; en: string; th: string }> = [
-  { value: "both", en: "Original + Copy", th: "à¸•à¹‰à¸™à¸‰à¸šà¸±à¸š + à¸ªà¸³à¹€à¸™à¸²" },
-  { value: "original", en: "Original only", th: "à¸•à¹‰à¸™à¸‰à¸šà¸±à¸šà¹€à¸—à¹ˆà¸²à¸™à¸±à¹‰à¸™" },
-  { value: "copy", en: "Copy only", th: "à¸ªà¸³à¹€à¸™à¸²à¹€à¸—à¹ˆà¸²à¸™à¸±à¹‰à¸™" },
+  { value: "both", en: "Original + Copy", th: "ต้นฉบับ + สำเนา" },
+  { value: "original", en: "Original only", th: "ต้นฉบับเท่านั้น" },
+  { value: "copy", en: "Copy only", th: "สำเนาเท่านั้น" },
 ];
 
 const docLabels = {
@@ -472,16 +472,16 @@ const docLabels = {
     cancelled: "Cancelled",
   },
   th: {
-    required: "à¸ˆà¸³à¹€à¸›à¹‡à¸™",
-    seller: "à¸œà¸¹à¹‰à¸‚à¸²à¸¢",
-    customer: "à¸¥à¸¹à¸à¸„à¹‰à¸²",
-    loadedFromSettings: "à¹‚à¸«à¸¥à¸”à¸ˆà¸²à¸à¸à¸²à¸£à¸•à¸±à¹‰à¸‡à¸„à¹ˆà¸²à¸šà¸£à¸´à¸©à¸±à¸—",
-    companyIncomplete: "à¸‚à¹‰à¸­à¸¡à¸¹à¸¥à¸šà¸£à¸´à¸©à¸±à¸—à¹„à¸¡à¹ˆà¸„à¸£à¸šà¸–à¹‰à¸§à¸™",
-    settings: "à¸•à¸±à¹‰à¸‡à¸„à¹ˆà¸²",
-    createNew: "à¸ªà¸£à¹‰à¸²à¸‡à¹ƒà¸«à¸¡à¹ˆ",
-    searchCustomer: "à¸„à¹‰à¸™à¸«à¸²/à¹€à¸¥à¸·à¸­à¸à¸¥à¸¹à¸à¸„à¹‰à¸²",
-    expandCustomer: "à¸‚à¸¢à¸²à¸¢à¹€à¸žà¸·à¹ˆà¸­à¸”à¸¹à¸—à¸µà¹ˆà¸­à¸¢à¸¹à¹ˆ à¹€à¸¥à¸‚à¸ à¸²à¸©à¸µ à¸ªà¸²à¸‚à¸² à¸œà¸¹à¹‰à¸•à¸´à¸”à¸•à¹ˆà¸­ à¹‚à¸—à¸£à¸¨à¸±à¸žà¸—à¹Œ à¹à¸¥à¸°à¸­à¸µà¹€à¸¡à¸¥",
-    documentDetails: "à¸‚à¹‰à¸­à¸¡à¸¹à¸¥à¹€à¸­à¸à¸ªà¸²à¸£",
+    required: "จำเป็น",
+    seller: "ผู้ขาย",
+    customer: "ลูกค้า",
+    loadedFromSettings: "โหลดจากการตั้งค่าบริษัท",
+    companyIncomplete: "ข้อมูลบริษัทไม่ครบถ้วน",
+    settings: "ตั้งค่า",
+    createNew: "สร้างใหม่",
+    searchCustomer: "ค้นหา/เลือกลูกค้า",
+    expandCustomer: "ขยายเพื่อดูที่อยู่ เลขภาษี สาขา ผู้ติดต่อ โทรศัพท์ และอีเมล",
+    documentDetails: "ข้อมูลเอกสาร",
     invoiceType: "ประเภทใบแจ้งหนี้",
     normalInvoice: "ใบวางบิล/ใบแจ้งหนี้",
     taxInvoice: "ใบกำกับภาษี",
@@ -511,10 +511,10 @@ const docLabels = {
     remainingPercent: "เปอร์เซ็นต์คงเหลือ",
     setupPaymentSchedule: "ตั้งค่าตารางชำระ",
     applyDepositLine: "ใช้รายการมัดจำ",
-    issueDate: "à¸§à¸±à¸™à¸—à¸µà¹ˆà¸­à¸­à¸",
-    dueDate: "à¸§à¸±à¸™à¸„à¸£à¸šà¸à¸³à¸«à¸™à¸”",
-    creditTerm: "à¹€à¸„à¸£à¸”à¸´à¸•",
-    customDays: "à¸ˆà¸³à¸™à¸§à¸™à¸§à¸±à¸™",
+    issueDate: "วันที่ออก",
+    dueDate: "วันครบกำหนด",
+    creditTerm: "เครดิต",
+    customDays: "จำนวนวัน",
     reference: "เลขที่อ้างอิง",
     internalReferenceDocument: "เอกสารอ้างอิงในระบบ",
     customerReference: "เลขที่ PO ลูกค้า / เลขอ้างอิง",
@@ -531,64 +531,64 @@ const docLabels = {
     relatedDocuments: "เอกสารที่เกี่ยวข้อง",
     referencedInvoices: "ใบแจ้งหนี้ที่อ้างอิง",
     referencedQuotations: "ใบเสนอราคาที่อ้างอิง",
-    documentContact: "à¸œà¸¹à¹‰à¸‚à¸²à¸¢",
-    currency: "à¸ªà¸à¸¸à¸¥à¹€à¸‡à¸´à¸™",
-    code: "à¸£à¸«à¸±à¸ª",
-    descriptionDetail: "à¸„à¸³à¸­à¸˜à¸´à¸šà¸²à¸¢ / à¸£à¸²à¸¢à¸¥à¸°à¹€à¸­à¸µà¸¢à¸”",
-    description: "à¸„à¸³à¸­à¸˜à¸´à¸šà¸²à¸¢",
-    detail: "à¸£à¸²à¸¢à¸¥à¸°à¹€à¸­à¸µà¸¢à¸”à¹€à¸žà¸´à¹ˆà¸¡à¹€à¸•à¸´à¸¡",
-    quantity: "à¸ˆà¸³à¸™à¸§à¸™",
-    unit: "à¸«à¸™à¹ˆà¸§à¸¢",
-    unitPrice: "à¸£à¸²à¸„à¸²",
-    discount: "à¸ªà¹ˆà¸§à¸™à¸¥à¸”",
+    documentContact: "ผู้ขาย",
+    currency: "สกุลเงิน",
+    code: "รหัส",
+    descriptionDetail: "คำอธิบาย / รายละเอียด",
+    description: "คำอธิบาย",
+    detail: "รายละเอียดเพิ่มเติม",
+    quantity: "จำนวน",
+    unit: "หน่วย",
+    unitPrice: "ราคา",
+    discount: "ส่วนลด",
     vat: "ภาษีมูลค่าเพิ่ม",
     wht: "หัก ณ ที่จ่าย",
     whtAmount: "ยอดหัก ณ ที่จ่าย",
     totalWithholdingTax: "รวมภาษีหัก ณ ที่จ่าย",
     amountAfterWithholding: "ยอดชำระหลังหัก ณ ที่จ่าย",
     vatDisabledMessage: "ปิดการตั้งค่า VAT เพราะบริษัทนี้ไม่ได้จดทะเบียนภาษีมูลค่าเพิ่ม",
-    total: "à¸£à¸§à¸¡",
-    addLine: "à¹€à¸žà¸´à¹ˆà¸¡à¸£à¸²à¸¢à¸à¸²à¸£",
-    payment: "à¸à¸²à¸£à¸Šà¸³à¸£à¸°à¹€à¸‡à¸´à¸™",
-    paymentMethod: "à¸§à¸´à¸˜à¸µà¸Šà¸³à¸£à¸°à¹€à¸‡à¸´à¸™",
-    paymentNote: "à¸«à¸¡à¸²à¸¢à¹€à¸«à¸•à¸¸/à¸­à¹‰à¸²à¸‡à¸­à¸´à¸‡à¸à¸²à¸£à¸Šà¸³à¸£à¸°à¹€à¸‡à¸´à¸™",
-    companyBankAccount: "à¸šà¸±à¸à¸Šà¸µà¸˜à¸™à¸²à¸„à¸²à¸£à¸šà¸£à¸´à¸©à¸±à¸—",
-    bankScope: "à¸à¸²à¸£à¹€à¸žà¸´à¹ˆà¸¡à¸šà¸±à¸à¸Šà¸µà¸˜à¸™à¸²à¸„à¸²à¸£à¸—à¸µà¹ˆà¸™à¸µà¹ˆà¸ˆà¸°à¸­à¸±à¸›à¹€à¸”à¸•à¸à¸²à¸£à¸•à¸±à¹‰à¸‡à¸„à¹ˆà¸²à¸šà¸£à¸´à¸©à¸±à¸—à¸ªà¸³à¸«à¸£à¸±à¸šà¹€à¸­à¸à¸ªà¸²à¸£à¹ƒà¸™à¸­à¸™à¸²à¸„à¸•",
-    addBank: "à¹€à¸žà¸´à¹ˆà¸¡à¸šà¸±à¸à¸Šà¸µà¸˜à¸™à¸²à¸„à¸²à¸£",
-    noBank: "à¸¢à¸±à¸‡à¹„à¸¡à¹ˆà¸¡à¸µà¸šà¸±à¸à¸Šà¸µà¸˜à¸™à¸²à¸„à¸²à¸£ à¹€à¸žà¸´à¹ˆà¸¡à¸šà¸±à¸à¸Šà¸µà¹€à¸žà¸·à¹ˆà¸­à¹à¸ªà¸”à¸‡à¸‚à¹‰à¸­à¸¡à¸¹à¸¥à¸Šà¸³à¸£à¸°à¹€à¸‡à¸´à¸™à¸šà¸™à¹€à¸­à¸à¸ªà¸²à¸£",
-    paymentTerms: "à¹€à¸‡à¸·à¹ˆà¸­à¸™à¹„à¸‚/à¸„à¸³à¹à¸™à¸°à¸™à¸³à¸à¸²à¸£à¸Šà¸³à¸£à¸°à¹€à¸‡à¸´à¸™",
-    notes: "à¸«à¸¡à¸²à¸¢à¹€à¸«à¸•à¸¸",
+    total: "รวม",
+    addLine: "เพิ่มรายการ",
+    payment: "การชำระเงิน",
+    paymentMethod: "วิธีชำระเงิน",
+    paymentNote: "หมายเหตุ/อ้างอิงการชำระเงิน",
+    companyBankAccount: "บัญชีธนาคารบริษัท",
+    bankScope: "การเพิ่มบัญชีธนาคารที่นี่จะอัปเดตการตั้งค่าบริษัทสำหรับเอกสารในอนาคต",
+    addBank: "เพิ่มบัญชีธนาคาร",
+    noBank: "ยังไม่มีบัญชีธนาคาร เพิ่มบัญชีเพื่อแสดงข้อมูลชำระเงินบนเอกสาร",
+    paymentTerms: "เงื่อนไข/คำแนะนำการชำระเงิน",
+    notes: "หมายเหตุ",
     customerNote: "หมายเหตุถึงลูกค้า",
-    internalNote: "à¸«à¸¡à¸²à¸¢à¹€à¸«à¸•à¸¸à¸ à¸²à¸¢à¹ƒà¸™",
-    summary: "à¸ªà¸£à¸¸à¸›à¸¢à¸­à¸”",
-    withholding: "à¸ à¸²à¸©à¸µà¸«à¸±à¸ à¸“ à¸—à¸µà¹ˆà¸ˆà¹ˆà¸²à¸¢ %",
-    amountPaid: "à¸¢à¸­à¸”à¸—à¸µà¹ˆà¸Šà¸³à¸£à¸°à¹à¸¥à¹‰à¸§",
-    amountWords: "à¸ˆà¸³à¸™à¸§à¸™à¹€à¸‡à¸´à¸™à¸•à¸±à¸§à¸­à¸±à¸à¸©à¸£",
-    customerAck: "à¸à¸²à¸£à¸£à¸±à¸šà¸—à¸£à¸²à¸šà¸‚à¸­à¸‡à¸¥à¸¹à¸à¸„à¹‰à¸²",
-    customerAcceptance: "à¸¥à¸¹à¸à¸„à¹‰à¸²à¸¥à¸‡à¸™à¸²à¸¡à¸£à¸±à¸šà¸—à¸£à¸²à¸š",
-    issuer: "à¸œà¸¹à¹‰à¸­à¸­à¸à¹€à¸­à¸à¸ªà¸²à¸£",
-    approver: "à¸œà¸¹à¹‰à¸­à¸™à¸¸à¸¡à¸±à¸•à¸´ / à¸œà¸¹à¹‰à¸¡à¸µà¸­à¸³à¸™à¸²à¸ˆà¸¥à¸‡à¸™à¸²à¸¡",
-    preview: "à¸”à¸¹à¸•à¸±à¸§à¸­à¸¢à¹ˆà¸²à¸‡à¹€à¸­à¸à¸ªà¸²à¸£",
-    editedCustomer: "à¸„à¸¸à¸“à¹„à¸”à¹‰à¹à¸à¹‰à¹„à¸‚à¸‚à¹‰à¸­à¸¡à¸¹à¸¥à¸¥à¸¹à¸à¸„à¹‰à¸² à¸•à¹‰à¸­à¸‡à¸à¸²à¸£à¹ƒà¸Šà¹‰à¹€à¸‰à¸žà¸²à¸°à¹€à¸­à¸à¸ªà¸²à¸£à¸™à¸µà¹‰à¸«à¸£à¸·à¸­à¸­à¸±à¸›à¹€à¸”à¸•à¸‚à¹‰à¸­à¸¡à¸¹à¸¥à¸¥à¸¹à¸à¸„à¹‰à¸²à¹ƒà¸™à¸£à¸°à¸šà¸š?",
-    editedSeller: "à¸„à¸¸à¸“à¹„à¸”à¹‰à¹à¸à¹‰à¹„à¸‚à¸‚à¹‰à¸­à¸¡à¸¹à¸¥à¸šà¸£à¸´à¸©à¸±à¸— à¸•à¹‰à¸­à¸‡à¸à¸²à¸£à¹ƒà¸Šà¹‰à¹€à¸‰à¸žà¸²à¸°à¹€à¸­à¸à¸ªà¸²à¸£à¸™à¸µà¹‰à¸«à¸£à¸·à¸­à¸­à¸±à¸›à¹€à¸”à¸•à¸‚à¹‰à¸­à¸¡à¸¹à¸¥à¸šà¸£à¸´à¸©à¸±à¸—à¹ƒà¸™à¸£à¸°à¸šà¸š?",
-    docOnly: "à¹ƒà¸Šà¹‰à¹€à¸‰à¸žà¸²à¸°à¹€à¸­à¸à¸ªà¸²à¸£à¸™à¸µà¹‰",
-    updateCustomerProfile: "à¸­à¸±à¸›à¹€à¸”à¸•à¸‚à¹‰à¸­à¸¡à¸¹à¸¥à¸¥à¸¹à¸à¸„à¹‰à¸²à¹ƒà¸™à¸£à¸°à¸šà¸š",
-    updateCompanyProfile: "à¸­à¸±à¸›à¹€à¸”à¸•à¸‚à¹‰à¸­à¸¡à¸¹à¸¥à¸šà¸£à¸´à¸©à¸±à¸—à¹ƒà¸™à¸£à¸°à¸šà¸š",
-    editCustomer: "à¹à¸à¹‰à¹„à¸‚à¸¥à¸¹à¸à¸„à¹‰à¸²",
-    editSeller: "à¹à¸à¹‰à¹„à¸‚à¸œà¸¹à¹‰à¸‚à¸²à¸¢",
-    createCustomer: "à¸ªà¸£à¹‰à¸²à¸‡à¸¥à¸¹à¸à¸„à¹‰à¸²",
-    project: "à¹‚à¸„à¸£à¸‡à¸à¸²à¸£",
-    createProject: "à¸ªà¸£à¹‰à¸²à¸‡à¹‚à¸„à¸£à¸‡à¸à¸²à¸£",
-    projectName: "à¸Šà¸·à¹ˆà¸­à¹‚à¸„à¸£à¸‡à¸à¸²à¸£",
-    projectCode: "à¸£à¸«à¸±à¸ªà¹‚à¸„à¸£à¸‡à¸à¸²à¸£",
-    startDate: "à¸§à¸±à¸™à¸—à¸µà¹ˆà¹€à¸£à¸´à¹ˆà¸¡",
-    endDate: "à¸§à¸±à¸™à¸—à¸µà¹ˆà¸ªà¸´à¹‰à¸™à¸ªà¸¸à¸”",
-    status: "à¸ªà¸–à¸²à¸™à¸°",
+    internalNote: "หมายเหตุภายใน",
+    summary: "สรุปยอด",
+    withholding: "ภาษีหัก ณ ที่จ่าย %",
+    amountPaid: "ยอดที่ชำระแล้ว",
+    amountWords: "จำนวนเงินตัวอักษร",
+    customerAck: "การรับทราบของลูกค้า",
+    customerAcceptance: "ลูกค้าลงนามรับทราบ",
+    issuer: "ผู้ออกเอกสาร",
+    approver: "ผู้อนุมัติ / ผู้มีอำนาจลงนาม",
+    preview: "ดูตัวอย่างเอกสาร",
+    editedCustomer: "คุณได้แก้ไขข้อมูลลูกค้า ต้องการใช้เฉพาะเอกสารนี้หรืออัปเดตข้อมูลลูกค้าในระบบ?",
+    editedSeller: "คุณได้แก้ไขข้อมูลบริษัท ต้องการใช้เฉพาะเอกสารนี้หรืออัปเดตข้อมูลบริษัทในระบบ?",
+    docOnly: "ใช้เฉพาะเอกสารนี้",
+    updateCustomerProfile: "อัปเดตข้อมูลลูกค้าในระบบ",
+    updateCompanyProfile: "อัปเดตข้อมูลบริษัทในระบบ",
+    editCustomer: "แก้ไขลูกค้า",
+    editSeller: "แก้ไขผู้ขาย",
+    createCustomer: "สร้างลูกค้า",
+    project: "โครงการ",
+    createProject: "สร้างโครงการ",
+    projectName: "ชื่อโครงการ",
+    projectCode: "รหัสโครงการ",
+    startDate: "วันที่เริ่ม",
+    endDate: "วันที่สิ้นสุด",
+    status: "สถานะ",
     chooseRemark: "เลือกเทมเพลต",
-    saveRemarkTemplate: "à¸šà¸±à¸™à¸—à¸¶à¸à¹€à¸›à¹‡à¸™à¹€à¸—à¸¡à¹€à¸žà¸¥à¸•",
-    customerFacingNote: "à¹à¸ªà¸”à¸‡à¸šà¸™à¹€à¸­à¸à¸ªà¸²à¸£",
-    internalOnlyNote: "à¹ƒà¸Šà¹‰à¸ à¸²à¸¢à¹ƒà¸™à¹€à¸—à¹ˆà¸²à¸™à¸±à¹‰à¸™ à¹„à¸¡à¹ˆà¹à¸ªà¸”à¸‡à¸šà¸™ PDF à¸¥à¸¹à¸à¸„à¹‰à¸²",
-    missingRequired: "à¸Šà¹ˆà¸­à¸‡à¸ˆà¸³à¹€à¸›à¹‡à¸™à¸¢à¸±à¸‡à¹„à¸¡à¹ˆà¸„à¸£à¸š",
+    saveRemarkTemplate: "บันทึกเป็นเทมเพลต",
+    customerFacingNote: "แสดงบนเอกสาร",
+    internalOnlyNote: "ใช้ภายในเท่านั้น ไม่แสดงบน PDF ลูกค้า",
+    missingRequired: "ช่องจำเป็นยังไม่ครบ",
     approved: "อนุมัติแล้ว",
     draft: "แบบร่าง",
     pendingApproval: "รออนุมัติ",
@@ -629,7 +629,7 @@ const windows1252SpecialBytes: Record<number, number> = {
 };
 
 const repairMojibake = (value: string) => {
-  if (!/[àÂ]/.test(value)) return value;
+  if (!/[\u00e0\u00c2]/.test(value)) return value;
   try {
     const bytes = Array.from(value, (char) => {
       const code = char.charCodeAt(0);
@@ -855,8 +855,8 @@ const summarizeLines = (
   };
 };
 
-const thaiDigits = ["à¸¨à¸¹à¸™à¸¢à¹Œ", "à¸«à¸™à¸¶à¹ˆà¸‡", "à¸ªà¸­à¸‡", "à¸ªà¸²à¸¡", "à¸ªà¸µà¹ˆ", "à¸«à¹‰à¸²", "à¸«à¸", "à¹€à¸ˆà¹‡à¸”", "à¹à¸›à¸”", "à¹€à¸à¹‰à¸²"];
-const thaiPlaces = ["", "à¸ªà¸´à¸š", "à¸£à¹‰à¸­à¸¢", "à¸žà¸±à¸™", "à¸«à¸¡à¸·à¹ˆà¸™", "à¹à¸ªà¸™"];
+const thaiDigits = ["ศูนย์", "หนึ่ง", "สอง", "สาม", "สี่", "ห้า", "หก", "เจ็ด", "แปด", "เก้า"];
+const thaiPlaces = ["", "สิบ", "ร้อย", "พัน", "หมื่น", "แสน"];
 
 const thaiUnderMillion = (value: number): string => {
   if (value === 0) return "";
@@ -866,9 +866,9 @@ const thaiUnderMillion = (value: number): string => {
     .map((digit, index, digits) => {
       if (digit === 0) return "";
       const place = digits.length - index - 1;
-      if (place === 1 && digit === 1) return "à¸ªà¸´à¸š";
-      if (place === 1 && digit === 2) return "à¸¢à¸µà¹ˆà¸ªà¸´à¸š";
-      if (place === 0 && digit === 1 && digits.length > 1) return "à¹€à¸­à¹‡à¸”";
+      if (place === 1 && digit === 1) return "สิบ";
+      if (place === 1 && digit === 2) return "ยี่สิบ";
+      if (place === 0 && digit === 1 && digits.length > 1) return "เอ็ด";
       return `${thaiDigits[digit]}${thaiPlaces[place]}`;
     })
     .join("");
@@ -880,8 +880,8 @@ const amountInThaiWords = (value: number) => {
   const satang = Math.round((safeValue - baht) * 100);
   const million = Math.floor(baht / 1_000_000);
   const rest = baht % 1_000_000;
-  const bahtText = `${million ? `${thaiUnderMillion(million)}à¸¥à¹‰à¸²à¸™` : ""}${thaiUnderMillion(rest) || "à¸¨à¸¹à¸™à¸¢à¹Œ"}à¸šà¸²à¸—`;
-  return satang ? `${bahtText}${thaiUnderMillion(satang)}à¸ªà¸•à¸²à¸‡à¸„à¹Œ` : `${bahtText}à¸–à¹‰à¸§à¸™`;
+  const bahtText = `${million ? `${thaiUnderMillion(million)}ล้าน` : ""}${thaiUnderMillion(rest) || "ศูนย์"}บาท`;
+  return satang ? `${bahtText}${thaiUnderMillion(satang)}สตางค์` : `${bahtText}ถ้วน`;
 };
 
 const amountInEnglishWords = (value: number, currency: string) => `${currency} ${formatNumber(value)} only`;
@@ -1501,7 +1501,7 @@ export const SalesDocumentForm = ({
       toast.error("Add a customer-facing remark before saving it as a template.");
       return;
     }
-    const name = window.prompt(documentLanguage === "th" ? "à¸Šà¸·à¹ˆà¸­à¹€à¸—à¸¡à¹€à¸žà¸¥à¸•" : "Template name", notes.trim().slice(0, 40));
+    const name = window.prompt(documentLanguage === "th" ? "ชื่อเทมเพลต" : "Template name", notes.trim().slice(0, 40));
     if (!name?.trim()) return;
     const next: RemarkTemplate[] = [
       ...remarkTemplates,
@@ -1515,7 +1515,7 @@ export const SalesDocumentForm = ({
     ];
     setRemarkTemplates(next);
     window.localStorage.setItem("matter.sales.remarkTemplates", JSON.stringify(next));
-    toast.success(documentLanguage === "th" ? "à¸šà¸±à¸™à¸—à¸¶à¸à¹€à¸—à¸¡à¹€à¸žà¸¥à¸•à¸«à¸¡à¸²à¸¢à¹€à¸«à¸•à¸¸à¹à¸¥à¹‰à¸§" : "Remark template saved");
+    toast.success(documentLanguage === "th" ? "บันทึกเทมเพลตหมายเหตุแล้ว" : "Remark template saved");
   };
 
   const selectBankAccount = (accountId: string) => {
@@ -2048,7 +2048,7 @@ export const SalesDocumentForm = ({
           setCustomer(customerDraft);
         }
         await refresh();
-        toast.success(documentLanguage === "th" ? "à¸­à¸±à¸›à¹€à¸”à¸•à¸‚à¹‰à¸­à¸¡à¸¹à¸¥à¸¥à¸¹à¸à¸„à¹‰à¸²à¹à¸¥à¹‰à¸§" : "Customer profile updated");
+        toast.success(documentLanguage === "th" ? "อัปเดตข้อมูลลูกค้าแล้ว" : "Customer profile updated");
       } else if (customerMode === "new") {
         const created = await saveCustomerSnapshot(customerDraft, data.customers, data.vendors, "new", "", "profile");
         if (created) {
@@ -2057,11 +2057,11 @@ export const SalesDocumentForm = ({
           setCustomerMode("existing");
           setCustomerExpanded(false);
           await refresh();
-          toast.success(documentLanguage === "th" ? "à¸ªà¸£à¹‰à¸²à¸‡à¸¥à¸¹à¸à¸„à¹‰à¸²à¹ƒà¸«à¸¡à¹ˆà¹à¸¥à¹‰à¸§" : "Customer created");
+          toast.success(documentLanguage === "th" ? "สร้างลูกค้าใหม่แล้ว" : "Customer created");
         }
       } else {
         setCustomer(customerDraft);
-        toast.success(documentLanguage === "th" ? "à¹ƒà¸Šà¹‰à¸‚à¹‰à¸­à¸¡à¸¹à¸¥à¸¥à¸¹à¸à¸„à¹‰à¸²à¸™à¸µà¹‰à¹€à¸‰à¸žà¸²à¸°à¹€à¸­à¸à¸ªà¸²à¸£à¸™à¸µà¹‰" : "Customer changes applied to this document");
+        toast.success(documentLanguage === "th" ? "ใช้ข้อมูลลูกค้านี้เฉพาะเอกสารนี้" : "Customer changes applied to this document");
       }
       setCustomerExpanded(false);
       setCustomerModalOpen(false);
@@ -2093,11 +2093,11 @@ export const SalesDocumentForm = ({
         });
         setBranding(savedBranding);
         await refresh();
-        toast.success(documentLanguage === "th" ? "à¸­à¸±à¸›à¹€à¸”à¸•à¸‚à¹‰à¸­à¸¡à¸¹à¸¥à¸šà¸£à¸´à¸©à¸±à¸—à¹à¸¥à¹‰à¸§" : "Company profile updated");
+        toast.success(documentLanguage === "th" ? "อัปเดตข้อมูลบริษัทแล้ว" : "Company profile updated");
       } else {
         setSeller(sellerDraft);
         setBranding(brandingDraft);
-        toast.success(documentLanguage === "th" ? "à¹ƒà¸Šà¹‰à¸‚à¹‰à¸­à¸¡à¸¹à¸¥à¸šà¸£à¸´à¸©à¸±à¸—à¸™à¸µà¹‰à¹€à¸‰à¸žà¸²à¸°à¹€à¸­à¸à¸ªà¸²à¸£à¸™à¸µà¹‰" : "Seller changes applied to this document");
+        toast.success(documentLanguage === "th" ? "ใช้ข้อมูลบริษัทนี้เฉพาะเอกสารนี้" : "Seller changes applied to this document");
       }
       setSellerExpanded(false);
       setSellerEditOpen(false);
@@ -3172,7 +3172,7 @@ export const SalesDocumentForm = ({
           </div>
           <div className="grid gap-3 rounded-xl border border-primary/20 bg-card p-4 shadow-sm">
             <div>
-              <Label>à¸•à¹‰à¸™à¸‰à¸šà¸±à¸š / à¸ªà¸³à¹€à¸™à¸²</Label>
+              <Label>ต้นฉบับ / สำเนา</Label>
               <Select value={copyGeneration} onValueChange={(value) => setCopyGeneration(value as CopyGeneration)}>
                 <SelectTrigger className="mt-1.5 bg-card"><SelectValue /></SelectTrigger>
                 <SelectContent>
@@ -3606,13 +3606,13 @@ export const SalesDocumentForm = ({
             <div className="grid gap-4 md:grid-cols-2">
               <div className="rounded-lg border border-dashed border-border bg-secondary/20 p-4 text-center text-sm text-muted-foreground">
                 <div className="mx-auto mb-3 w-48 border-t border-slate-500" />
-                <p className="font-semibold text-foreground">{documentLanguage === "th" ? "à¸œà¸¹à¹‰à¸£à¸±à¸šà¹€à¸­à¸à¸ªà¸²à¸£" : "Received by"}</p>
-                <p className="mt-1 text-xs">{documentLanguage === "th" ? "à¸§à¸±à¸™à¸—à¸µà¹ˆ ____ / ____ / ____" : "Date ____ / ____ / ____"}</p>
+                <p className="font-semibold text-foreground">{documentLanguage === "th" ? "ผู้รับเอกสาร" : "Received by"}</p>
+                <p className="mt-1 text-xs">{documentLanguage === "th" ? "วันที่ ____ / ____ / ____" : "Date ____ / ____ / ____"}</p>
               </div>
               <div className="rounded-lg border border-dashed border-border bg-secondary/20 p-4 text-center text-sm text-muted-foreground">
                 <div className="mx-auto mb-3 w-48 border-t border-slate-500" />
-                <p className="font-semibold text-foreground">{documentLanguage === "th" ? "à¸œà¸¹à¹‰à¸­à¸™à¸¸à¸¡à¸±à¸•à¸´" : "Approved by"}</p>
-                <p className="mt-1 text-xs">{documentLanguage === "th" ? "à¸§à¸±à¸™à¸—à¸µà¹ˆ ____ / ____ / ____" : "Date ____ / ____ / ____"}</p>
+                <p className="font-semibold text-foreground">{documentLanguage === "th" ? "ผู้อนุมัติ" : "Approved by"}</p>
+                <p className="mt-1 text-xs">{documentLanguage === "th" ? "วันที่ ____ / ____ / ____" : "Date ____ / ____ / ____"}</p>
               </div>
             </div>
           </Section>
@@ -3846,7 +3846,7 @@ export const SalesDocumentForm = ({
         <DialogContent className="max-w-xl">
           <DialogHeader>
             <DialogTitle>
-              {documentLanguage === "th" ? "à¸¢à¸·à¸™à¸¢à¸±à¸™à¹€à¸­à¸à¸ªà¸²à¸£à¸­à¹‰à¸²à¸‡à¸­à¸´à¸‡" : "Confirm reference document"}
+              {documentLanguage === "th" ? "ยืนยันเอกสารอ้างอิง" : "Confirm reference document"}
             </DialogTitle>
           </DialogHeader>
           {pendingReference ? (
@@ -3854,7 +3854,7 @@ export const SalesDocumentForm = ({
               <div className="rounded-lg border border-slate-200 bg-slate-50 p-3">
                 <p className="font-semibold">{pendingReference.id}</p>
                 <p className="mt-1 text-muted-foreground">
-                  {formatReferenceKind(pendingReference.kind, documentLanguage)} Â· {pendingReference.party} Â· {pendingReference.date} Â· {formatMoney(pendingReference.amount, currency)}
+                  {formatReferenceKind(pendingReference.kind, documentLanguage)} · {pendingReference.party} · {pendingReference.date} · {formatMoney(pendingReference.amount, currency)}
                 </p>
                 {!pendingReference.suggested ? (
                   <p className="mt-2 rounded border border-amber-300 bg-amber-50 px-2 py-1 text-xs text-amber-950">
@@ -4307,27 +4307,27 @@ const ContactFields = ({
 
   return (
     <div className="space-y-4">
-      <PaperBlock title={isThai ? "à¸›à¸£à¸°à¹€à¸ à¸—à¸‚à¹‰à¸­à¸¡à¸¹à¸¥à¸•à¸´à¸”à¸•à¹ˆà¸­" : "Basic contact type"}>
+      <PaperBlock title={isThai ? "ประเภทข้อมูลติดต่อ" : "Basic contact type"}>
         <div className="grid gap-4 md:grid-cols-3">
           <div>
-            <Label>{isThai ? "à¸›à¸£à¸°à¹€à¸ à¸—à¸˜à¸¸à¸£à¸à¸´à¸ˆ" : "Business Type"}</Label>
+            <Label>{isThai ? "ประเภทธุรกิจ" : "Business Type"}</Label>
             <Select value={contact.businessType ?? "corporation"} onValueChange={(value) => onChange("businessType", value as PartyInfo["businessType"])}>
               <SelectTrigger className="mt-1.5"><SelectValue /></SelectTrigger>
               <SelectContent>
-                <SelectItem value="corporation">{isThai ? "à¸™à¸´à¸•à¸´à¸šà¸¸à¸„à¸„à¸¥" : "Corporation"}</SelectItem>
-                <SelectItem value="individual">{isThai ? "à¸šà¸¸à¸„à¸„à¸¥à¸˜à¸£à¸£à¸¡à¸”à¸²" : "Individual"}</SelectItem>
+                <SelectItem value="corporation">{isThai ? "นิติบุคคล" : "Corporation"}</SelectItem>
+                <SelectItem value="individual">{isThai ? "บุคคลธรรมดา" : "Individual"}</SelectItem>
               </SelectContent>
             </Select>
           </div>
           <div>
-            <Label>{isThai ? "à¸›à¸£à¸°à¹€à¸ à¸—à¸œà¸¹à¹‰à¸•à¸´à¸”à¸•à¹ˆà¸­" : "Contact Type"}</Label>
+            <Label>{isThai ? "ประเภทผู้ติดต่อ" : "Contact Type"}</Label>
             <div className="mt-2 flex flex-wrap gap-3 text-sm">
-              <label className="flex items-center gap-2"><input type="checkbox" checked={contactTypes.includes("client")} onChange={(event) => setContactType("client", event.target.checked)} /> {isThai ? "à¸¥à¸¹à¸à¸„à¹‰à¸²" : "Client"}</label>
-              <label className="flex items-center gap-2"><input type="checkbox" checked={contactTypes.includes("supplier")} onChange={(event) => setContactType("supplier", event.target.checked)} /> {isThai ? "à¸œà¸¹à¹‰à¸‚à¸²à¸¢" : "Supplier"}</label>
+              <label className="flex items-center gap-2"><input type="checkbox" checked={contactTypes.includes("client")} onChange={(event) => setContactType("client", event.target.checked)} /> {isThai ? "ลูกค้า" : "Client"}</label>
+              <label className="flex items-center gap-2"><input type="checkbox" checked={contactTypes.includes("supplier")} onChange={(event) => setContactType("supplier", event.target.checked)} /> {isThai ? "ผู้ขาย" : "Supplier"}</label>
             </div>
           </div>
           <div>
-            <Label>{isThai ? "à¸—à¸µà¹ˆà¸•à¸±à¹‰à¸‡" : "Location"}</Label>
+            <Label>{isThai ? "ที่ตั้ง" : "Location"}</Label>
             <Select value={contact.location ?? "thailand"} onValueChange={(value) => onChange("location", value as PartyInfo["location"])}>
               <SelectTrigger className="mt-1.5"><SelectValue /></SelectTrigger>
               <SelectContent>
@@ -4336,63 +4336,63 @@ const ContactFields = ({
               </SelectContent>
             </Select>
           </div>
-          <TextField label={isThai ? "à¹€à¸„à¸£à¸”à¸´à¸• (à¸§à¸±à¸™)" : "Credit Days"} value={contact.creditDays ?? 0} onChange={(value) => onChange("creditDays", Number(value) || 0)} type="number" />
-          <TextField label={isThai ? "à¸£à¸«à¸±à¸ªà¸œà¸¹à¹‰à¸•à¸´à¸”à¸•à¹ˆà¸­" : "Contact ID"} value={contact.code} onChange={(value) => onChange("code", value)} />
-          <TextField label={contact.businessType === "individual" ? (isThai ? "à¸Šà¸·à¹ˆà¸­à¸šà¸¸à¸„à¸„à¸¥" : "Contact Name") : (isThai ? "à¸Šà¸·à¹ˆà¸­à¸˜à¸¸à¸£à¸à¸´à¸ˆ" : "Business Name")} value={contact.name} onChange={(value) => onChange("name", value)} />
+          <TextField label={isThai ? "เครดิต (วัน)" : "Credit Days"} value={contact.creditDays ?? 0} onChange={(value) => onChange("creditDays", Number(value) || 0)} type="number" />
+          <TextField label={isThai ? "รหัสผู้ติดต่อ" : "Contact ID"} value={contact.code} onChange={(value) => onChange("code", value)} />
+          <TextField label={contact.businessType === "individual" ? (isThai ? "ชื่อบุคคล" : "Contact Name") : (isThai ? "ชื่อธุรกิจ" : "Business Name")} value={contact.name} onChange={(value) => onChange("name", value)} />
         </div>
       </PaperBlock>
 
-      <PaperBlock title={isThai ? "à¸—à¸µà¹ˆà¸­à¸¢à¸¹à¹ˆà¹à¸¥à¸°à¸ à¸²à¸©à¸µ" : "Address and tax"}>
+      <PaperBlock title={isThai ? "ที่อยู่และภาษี" : "Address and tax"}>
         <div className="grid gap-4 md:grid-cols-3">
           <div className="md:col-span-3">
-            <Label>{isThai ? "à¸—à¸µà¹ˆà¸­à¸¢à¸¹à¹ˆ" : "Address"}</Label>
+            <Label>{isThai ? "ที่อยู่" : "Address"}</Label>
             <Textarea value={contact.address} onChange={(event) => onChange("address", event.target.value)} className="mt-1.5 min-h-[88px]" />
           </div>
-          <TextField label={isThai ? "à¸£à¸«à¸±à¸ªà¹„à¸›à¸£à¸©à¸“à¸µà¸¢à¹Œ" : "Zip Code"} value={contact.zipCode ?? ""} onChange={(value) => onChange("zipCode", value)} />
-          <TextField label={isThai ? "à¹€à¸¥à¸‚à¸›à¸£à¸°à¸ˆà¸³à¸•à¸±à¸§à¸œà¸¹à¹‰à¹€à¸ªà¸µà¸¢à¸ à¸²à¸©à¸µ" : "Tax ID"} value={contact.taxId} onChange={(value) => onChange("taxId", value)} className="font-mono" />
+          <TextField label={isThai ? "รหัสไปรษณีย์" : "Zip Code"} value={contact.zipCode ?? ""} onChange={(value) => onChange("zipCode", value)} />
+          <TextField label={isThai ? "เลขประจำตัวผู้เสียภาษี" : "Tax ID"} value={contact.taxId} onChange={(value) => onChange("taxId", value)} className="font-mono" />
           <div>
-            <Label>{isThai ? "à¸ªà¸²à¸‚à¸²" : "Branch"}</Label>
+            <Label>{isThai ? "สาขา" : "Branch"}</Label>
             <Select value={contact.branchType ?? "head_office"} onValueChange={(value) => onChange("branchType", value as PartyInfo["branchType"])}>
               <SelectTrigger className="mt-1.5"><SelectValue /></SelectTrigger>
               <SelectContent>
-                <SelectItem value="head_office">{isThai ? "à¸ªà¸³à¸™à¸±à¸à¸‡à¸²à¸™à¹ƒà¸«à¸à¹ˆ" : "Head Office"}</SelectItem>
-                <SelectItem value="branch">{isThai ? "à¸ªà¸²à¸‚à¸²" : "Branch"}</SelectItem>
+                <SelectItem value="head_office">{isThai ? "สำนักงานใหญ่" : "Head Office"}</SelectItem>
+                <SelectItem value="branch">{isThai ? "สาขา" : "Branch"}</SelectItem>
               </SelectContent>
             </Select>
           </div>
           {contact.branchType === "branch" ? (
             <>
-              <TextField label={isThai ? "à¸£à¸«à¸±à¸ªà¸ªà¸²à¸‚à¸²" : "Branch Code"} value={contact.branchCode ?? ""} onChange={(value) => onChange("branchCode", value)} />
-              <TextField label={isThai ? "à¸Šà¸·à¹ˆà¸­à¸ªà¸²à¸‚à¸²" : "Branch Name"} value={contact.branchName ?? ""} onChange={(value) => onChange("branchName", value)} />
+              <TextField label={isThai ? "รหัสสาขา" : "Branch Code"} value={contact.branchCode ?? ""} onChange={(value) => onChange("branchCode", value)} />
+              <TextField label={isThai ? "ชื่อสาขา" : "Branch Name"} value={contact.branchName ?? ""} onChange={(value) => onChange("branchName", value)} />
             </>
           ) : null}
         </div>
       </PaperBlock>
 
-      <PaperBlock title={isThai ? "à¸œà¸¹à¹‰à¸•à¸´à¸”à¸•à¹ˆà¸­" : "Contact person detail"}>
+      <PaperBlock title={isThai ? "ผู้ติดต่อ" : "Contact person detail"}>
         <div className="grid gap-4 md:grid-cols-3">
-          <TextField label={isThai ? "à¸Šà¸·à¹ˆà¸­à¸œà¸¹à¹‰à¸•à¸´à¸”à¸•à¹ˆà¸­" : "Contact Person Name"} value={contact.contactPerson} onChange={(value) => onChange("contactPerson", value)} />
+          <TextField label={isThai ? "ชื่อผู้ติดต่อ" : "Contact Person Name"} value={contact.contactPerson} onChange={(value) => onChange("contactPerson", value)} />
           <TextField label="Email" value={contact.email} onChange={(value) => onChange("email", value)} type="email" />
-          <TextField label={isThai ? "à¸¡à¸·à¸­à¸–à¸·à¸­" : "Mobile"} value={contact.mobile ?? ""} onChange={(value) => onChange("mobile", value)} />
-          <TextField label={isThai ? "à¹‚à¸—à¸£à¸¨à¸±à¸žà¸—à¹Œ" : "Phone"} value={contact.phone} onChange={(value) => onChange("phone", value)} />
-          <TextField label={isThai ? "à¸•à¸³à¹à¸«à¸™à¹ˆà¸‡" : "Position/Role"} value={contact.position ?? ""} onChange={(value) => onChange("position", value)} />
+          <TextField label={isThai ? "มือถือ" : "Mobile"} value={contact.mobile ?? ""} onChange={(value) => onChange("mobile", value)} />
+          <TextField label={isThai ? "โทรศัพท์" : "Phone"} value={contact.phone} onChange={(value) => onChange("phone", value)} />
+          <TextField label={isThai ? "ตำแหน่ง" : "Position/Role"} value={contact.position ?? ""} onChange={(value) => onChange("position", value)} />
         </div>
       </PaperBlock>
 
-      <PaperBlock title={isThai ? "à¸‚à¹‰à¸­à¸¡à¸¹à¸¥à¸˜à¸™à¸²à¸„à¸²à¸£" : "Bank information"}>
+      <PaperBlock title={isThai ? "ข้อมูลธนาคาร" : "Bank information"}>
         <div className="grid gap-4 md:grid-cols-3">
-          <TextField label={isThai ? "à¸˜à¸™à¸²à¸„à¸²à¸£" : "Bank"} value={contact.bankName ?? ""} onChange={(value) => onChange("bankName", value)} />
-          <TextField label={isThai ? "à¸Šà¸·à¹ˆà¸­à¸šà¸±à¸à¸Šà¸µ" : "Account Name"} value={contact.bankAccountName ?? ""} onChange={(value) => onChange("bankAccountName", value)} />
-          <TextField label={isThai ? "à¹€à¸¥à¸‚à¸—à¸µà¹ˆà¸šà¸±à¸à¸Šà¸µ" : "Account Number"} value={contact.bankAccountNumber ?? ""} onChange={(value) => onChange("bankAccountNumber", value)} />
-          <TextField label={isThai ? "à¸£à¸«à¸±à¸ªà¸ªà¸²à¸‚à¸²à¸˜à¸™à¸²à¸„à¸²à¸£" : "Branch Code"} value={contact.bankBranchCode ?? ""} onChange={(value) => onChange("bankBranchCode", value)} />
-          <TextField label={isThai ? "à¸Šà¸·à¹ˆà¸­à¸ªà¸²à¸‚à¸²à¸˜à¸™à¸²à¸„à¸²à¸£" : "Branch Name"} value={contact.bankBranchName ?? ""} onChange={(value) => onChange("bankBranchName", value)} />
+          <TextField label={isThai ? "ธนาคาร" : "Bank"} value={contact.bankName ?? ""} onChange={(value) => onChange("bankName", value)} />
+          <TextField label={isThai ? "ชื่อบัญชี" : "Account Name"} value={contact.bankAccountName ?? ""} onChange={(value) => onChange("bankAccountName", value)} />
+          <TextField label={isThai ? "เลขที่บัญชี" : "Account Number"} value={contact.bankAccountNumber ?? ""} onChange={(value) => onChange("bankAccountNumber", value)} />
+          <TextField label={isThai ? "รหัสสาขาธนาคาร" : "Branch Code"} value={contact.bankBranchCode ?? ""} onChange={(value) => onChange("bankBranchCode", value)} />
+          <TextField label={isThai ? "ชื่อสาขาธนาคาร" : "Branch Name"} value={contact.bankBranchName ?? ""} onChange={(value) => onChange("bankBranchName", value)} />
           <div>
-            <Label>{isThai ? "à¸›à¸£à¸°à¹€à¸ à¸—à¸šà¸±à¸à¸Šà¸µ" : "Account Type"}</Label>
+            <Label>{isThai ? "ประเภทบัญชี" : "Account Type"}</Label>
             <Select value={contact.bankAccountType ?? "savings"} onValueChange={(value) => onChange("bankAccountType", value as PartyInfo["bankAccountType"])}>
               <SelectTrigger className="mt-1.5"><SelectValue /></SelectTrigger>
               <SelectContent>
-                <SelectItem value="savings">{isThai ? "à¸­à¸­à¸¡à¸—à¸£à¸±à¸žà¸¢à¹Œ" : "Savings Account"}</SelectItem>
-                <SelectItem value="current">{isThai ? "à¸à¸£à¸°à¹à¸ªà¸£à¸²à¸¢à¸§à¸±à¸™" : "Current Account"}</SelectItem>
+                <SelectItem value="savings">{isThai ? "ออมทรัพย์" : "Savings Account"}</SelectItem>
+                <SelectItem value="current">{isThai ? "กระแสรายวัน" : "Current Account"}</SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -4407,14 +4407,14 @@ const ContactFields = ({
       <PaperBlock>
         <label className="flex items-center gap-2 text-sm font-medium">
           <input type="checkbox" checked={Boolean(contact.hasForeignBankInfo) || contact.location === "foreign"} onChange={(event) => onChange("hasForeignBankInfo", event.target.checked)} />
-          {isThai ? "à¸‚à¹‰à¸­à¸¡à¸¹à¸¥à¹€à¸žà¸´à¹ˆà¸¡à¹€à¸•à¸´à¸¡à¸ªà¸³à¸«à¸£à¸±à¸šà¸˜à¸™à¸²à¸„à¸²à¸£à¸•à¹ˆà¸²à¸‡à¸›à¸£à¸°à¹€à¸—à¸¨" : "More Information For Foreign Bank"}
+          {isThai ? "ข้อมูลเพิ่มเติมสำหรับธนาคารต่างประเทศ" : "More Information For Foreign Bank"}
         </label>
         {(contact.hasForeignBankInfo || contact.location === "foreign") ? (
           <div className="mt-4 grid gap-4 md:grid-cols-2">
             <TextField label="Swift Code" value={contact.swiftCode ?? ""} onChange={(value) => onChange("swiftCode", value)} />
-            <TextField label={isThai ? "à¸—à¸µà¹ˆà¸­à¸¢à¸¹à¹ˆà¸˜à¸™à¸²à¸„à¸²à¸£" : "Bank Address"} value={contact.bankAddress ?? ""} onChange={(value) => onChange("bankAddress", value)} />
+            <TextField label={isThai ? "ที่อยู่ธนาคาร" : "Bank Address"} value={contact.bankAddress ?? ""} onChange={(value) => onChange("bankAddress", value)} />
             <TextField label="IBAN" value={contact.iban ?? ""} onChange={(value) => onChange("iban", value)} />
-            <TextField label={isThai ? "à¸›à¸£à¸°à¹€à¸—à¸¨" : "Country"} value={contact.bankCountry ?? ""} onChange={(value) => onChange("bankCountry", value)} />
+            <TextField label={isThai ? "ประเทศ" : "Country"} value={contact.bankCountry ?? ""} onChange={(value) => onChange("bankCountry", value)} />
           </div>
         ) : null}
       </PaperBlock>
@@ -4422,22 +4422,22 @@ const ContactFields = ({
       <PaperBlock>
         <Button type="button" variant="ghost" size="sm" onClick={() => onAdvancedOpenChange(!advancedOpen)}>
           {advancedOpen ? <ChevronUp className="mr-1.5 h-4 w-4" /> : <ChevronDown className="mr-1.5 h-4 w-4" />}
-          {isThai ? "à¸•à¸±à¸§à¹€à¸¥à¸·à¸­à¸à¹€à¸žà¸´à¹ˆà¸¡à¹€à¸•à¸´à¸¡" : "More Option"}
+          {isThai ? "ตัวเลือกเพิ่มเติม" : "More Option"}
         </Button>
         {advancedOpen ? (
           <div className="mt-4 grid gap-4 md:grid-cols-3">
             <TextField label="Website" value={contact.website ?? ""} onChange={(value) => onChange("website", value)} />
             <TextField label="Line ID" value={contact.lineId ?? ""} onChange={(value) => onChange("lineId", value)} />
-            <TextField label={isThai ? "à¹à¸—à¹‡à¸" : "Tags"} value={contact.tags ?? ""} onChange={(value) => onChange("tags", value)} />
-            <TextField label={isThai ? "à¸ªà¸à¸¸à¸¥à¹€à¸‡à¸´à¸™à¹€à¸£à¸´à¹ˆà¸¡à¸•à¹‰à¸™" : "Default currency"} value={contact.defaultCurrency ?? "THB"} onChange={(value) => onChange("defaultCurrency", value)} />
-            <TextField label={isThai ? "à¹€à¸‡à¸·à¹ˆà¸­à¸™à¹„à¸‚à¸Šà¸³à¸£à¸°à¹€à¸‡à¸´à¸™" : "Payment terms"} value={contact.defaultPaymentTerms ?? ""} onChange={(value) => onChange("defaultPaymentTerms", value)} />
-            <TextField label={isThai ? "à¸ à¸²à¸©à¸µà¸«à¸±à¸ à¸“ à¸—à¸µà¹ˆà¸ˆà¹ˆà¸²à¸¢à¹€à¸£à¸´à¹ˆà¸¡à¸•à¹‰à¸™" : "Default withholding tax"} value={contact.defaultWithholdingTax ?? ""} onChange={(value) => onChange("defaultWithholdingTax", value)} />
+            <TextField label={isThai ? "แท็ก" : "Tags"} value={contact.tags ?? ""} onChange={(value) => onChange("tags", value)} />
+            <TextField label={isThai ? "สกุลเงินเริ่มต้น" : "Default currency"} value={contact.defaultCurrency ?? "THB"} onChange={(value) => onChange("defaultCurrency", value)} />
+            <TextField label={isThai ? "เงื่อนไขชำระเงิน" : "Payment terms"} value={contact.defaultPaymentTerms ?? ""} onChange={(value) => onChange("defaultPaymentTerms", value)} />
+            <TextField label={isThai ? "ภาษีหัก ณ ที่จ่ายเริ่มต้น" : "Default withholding tax"} value={contact.defaultWithholdingTax ?? ""} onChange={(value) => onChange("defaultWithholdingTax", value)} />
             <div className="md:col-span-3">
-              <Label>{isThai ? "à¸«à¸¡à¸²à¸¢à¹€à¸«à¸•à¸¸" : "Notes"}</Label>
+              <Label>{isThai ? "หมายเหตุ" : "Notes"}</Label>
               <Textarea value={contact.note ?? ""} onChange={(event) => onChange("note", event.target.value)} className="mt-1.5" />
             </div>
             <div className="md:col-span-3">
-              <Label>{isThai ? "à¸«à¸¡à¸²à¸¢à¹€à¸«à¸•à¸¸à¸ à¸²à¸¢à¹ƒà¸™" : "Internal remark"}</Label>
+              <Label>{isThai ? "หมายเหตุภายใน" : "Internal remark"}</Label>
               <Textarea value={contact.internalRemark ?? ""} onChange={(event) => onChange("internalRemark", event.target.value)} className="mt-1.5" />
             </div>
           </div>
@@ -5601,4 +5601,3 @@ const getExistingDocumentIds = (kind: DocumentKind, data: ReturnType<typeof useA
 const resolveSalesDocumentRoute = (kind: DocumentKind, id: string) => {
   return `/income/documents/${encodeURIComponent(id)}?type=${encodeURIComponent(kind === "billing" ? "billing_note" : kind)}`;
 };
-
