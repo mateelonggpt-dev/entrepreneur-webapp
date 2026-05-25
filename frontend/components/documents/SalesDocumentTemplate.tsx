@@ -207,13 +207,13 @@ const documentTemplateCss = `
     height: 1123px !important;
     min-height: 1123px !important;
     margin: 0 !important;
-    padding: 42px 56px !important;
+    padding: 38px 50px !important;
     border: 0 !important;
     border-radius: 0 !important;
     box-shadow: none !important;
     overflow: visible !important;
-    font-size: 10.2px !important;
-    line-height: 1.32 !important;
+    font-size: 10.7px !important;
+    line-height: 1.34 !important;
     page-break-after: always;
     break-after: page;
   }
@@ -224,8 +224,8 @@ const documentTemplateCss = `
   }
 
   .sales-document-print-root.sales-document-pdf-export .sales-doc-header {
-    gap: 32px !important;
-    padding-bottom: 26px !important;
+    gap: 28px !important;
+    padding-bottom: 24px !important;
   }
 
   .sales-document-print-root.sales-document-pdf-export .sales-doc-logo {
@@ -281,15 +281,15 @@ const documentTemplateCss = `
   }
 
   .sales-document-print-root.sales-document-pdf-export .document-main-info {
-    gap: 24px !important;
-    margin-top: 28px !important;
-    font-size: 9.7px !important;
-    line-height: 1.25 !important;
+    gap: 22px !important;
+    margin-top: 24px !important;
+    font-size: 10px !important;
+    line-height: 1.28 !important;
   }
 
   .sales-document-print-root.sales-document-pdf-export .sales-doc-party,
   .sales-document-print-root.sales-document-pdf-export .sales-doc-info-box {
-    padding: 18px !important;
+    padding: 16px !important;
     border-radius: 12px !important;
     box-shadow: none !important;
   }
@@ -311,12 +311,12 @@ const documentTemplateCss = `
 
   .sales-document-print-root.sales-document-pdf-export .sales-doc-table-zone {
     min-height: 150px !important;
-    margin-top: 28px !important;
+    margin-top: 24px !important;
     overflow: visible !important;
   }
 
   .sales-document-print-root.sales-document-pdf-export .sales-doc-table {
-    font-size: 9.3px !important;
+    font-size: 9.6px !important;
     border-radius: 10px !important;
   }
 
@@ -335,10 +335,10 @@ const documentTemplateCss = `
   }
 
   .sales-document-print-root.sales-document-pdf-export .sales-doc-bottom-grid {
-    padding-top: 22px !important;
-    gap: 24px !important;
-    font-size: 9.5px !important;
-    line-height: 1.25 !important;
+    padding-top: 20px !important;
+    gap: 22px !important;
+    font-size: 9.8px !important;
+    line-height: 1.28 !important;
   }
 
   .sales-document-print-root.sales-document-pdf-export .sales-doc-summary-words {
@@ -369,14 +369,14 @@ const documentTemplateCss = `
   }
 
   .sales-document-print-root.sales-document-pdf-export .sales-doc-payment-notes {
-    font-size: 9.5px !important;
-    line-height: 1.25 !important;
+    font-size: 9.8px !important;
+    line-height: 1.28 !important;
   }
 
   .sales-document-print-root.sales-document-pdf-export .sales-doc-bank-card,
   .sales-document-print-root.sales-document-pdf-export .sales-doc-payment-block,
   .sales-document-print-root.sales-document-pdf-export .sales-doc-note-block {
-    padding: 13px !important;
+    padding: 12px !important;
     border-radius: 12px !important;
     box-shadow: none !important;
   }
@@ -426,7 +426,7 @@ const documentTemplateCss = `
   }
 
   .sales-document-print-root.sales-document-pdf-export .sales-doc-bottom {
-    margin-top: 28px !important;
+    margin-top: 24px !important;
     flex-shrink: 0 !important;
   }
 
