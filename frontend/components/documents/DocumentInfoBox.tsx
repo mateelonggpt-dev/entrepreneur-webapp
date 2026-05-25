@@ -24,21 +24,51 @@ const labels = {
   },
 };
 
+const referenceKindLabels = {
+  en: {
+    quotation: "Quotation",
+    delivery_note: "Delivery Note",
+    invoice: "Invoice",
+    tax_invoice: "Tax Invoice",
+    receipt: "Receipt",
+    billing_note: "Billing Note",
+    combined_receipt: "Combined Receipt",
+    credit_note: "Credit Note",
+    debit_note: "Debit Note",
+  },
+  th: {
+    quotation: "ใบเสนอราคา",
+    delivery_note: "ใบส่งของ",
+    invoice: "ใบแจ้งหนี้",
+    tax_invoice: "ใบกำกับภาษี",
+    receipt: "ใบเสร็จรับเงิน",
+    billing_note: "ใบวางบิล",
+    combined_receipt: "ใบเสร็จรวม",
+    credit_note: "ใบลดหนี้",
+    debit_note: "ใบเพิ่มหนี้",
+  },
+} as const;
+
+const formatReferenceKind = (kind: string | undefined, language: "th" | "en") => {
+  const normalized = String(kind ?? "").trim();
+  if (!normalized) return "";
+  const mapped = referenceKindLabels[language][normalized as keyof (typeof referenceKindLabels)["th"]];
+  return mapped ?? normalized.replace(/_/g, " ");
+};
+
+
 export const DocumentInfoBox = ({ data }: { data: SalesDocumentTemplateData }) => {
   const t = labels[data.language];
-  const referenceRows = (data.referenceDocuments ?? []).map((reference) =>
-    [
-      reference.type || reference.kind,
-      reference.number || reference.id,
-      reference.party,
-      reference.date,
-      formatDocumentMoney(reference.total ?? reference.amount ?? 0, data.currency),
-      reference.status,
-    ]
-      .filter(Boolean)
-      .join(" · ")
-  );
-  const reference = referenceRows.length ? referenceRows.join("\n") : data.relatedDocument || data.reference || "-";
+  const referenceRows = (data.referenceDocuments ?? []).map((reference) => {
+    const kindLabel = formatReferenceKind(reference.type || reference.kind, data.language);
+    const numberLabel = reference.number || reference.id;
+    const amountValue = reference.total ?? reference.amount;
+    const amountLabel = typeof amountValue === "number" && amountValue > 0 ? formatDocumentMoney(amountValue, data.currency) : "";
+    const firstLine = [kindLabel, numberLabel].filter(Boolean).join(" · ");
+    const secondLine = [reference.party, reference.date, amountLabel, reference.status].filter(Boolean).join(" · ");
+    return [firstLine, secondLine].filter(Boolean).join("\n");
+  });
+  const reference = referenceRows.length ? referenceRows.join("\n\n") : data.relatedDocument || data.reference || "-";
   const sellerValue = data.sellerUser?.name
     ? `${data.sellerUser.name}${data.sellerUser.email ? ` (${data.sellerUser.email})` : ""}`
     : data.documentContact?.trim() || data.seller.contactPerson || data.seller.name || "-";
@@ -57,9 +87,13 @@ export const DocumentInfoBox = ({ data }: { data: SalesDocumentTemplateData }) =
   );
 };
 
-const InfoRow = ({ label, value, multiline = false }: { label: string; value: string; multiline?: boolean }) => (
-  <div className="sales-doc-info-row">
-    <span>{label}</span>
-    <strong className={multiline ? "sales-doc-preline" : undefined}>{value}</strong>
-  </div>
-);
+const InfoRow = ({ label, value, multiline = false }: { label: string; value: string; multiline?: boolean }) => {
+  const valueClassName = ["sales-doc-info-value", multiline ? "sales-doc-preline" : ""].filter(Boolean).join(" ");
+
+  return (
+    <div className="sales-doc-info-row">
+      <span>{label}</span>
+      <strong className={valueClassName} title={value}>{value}</strong>
+    </div>
+  );
+};
