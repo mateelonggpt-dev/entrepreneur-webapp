@@ -12,8 +12,10 @@ from backend.app.services.data_service import (
     create_withholding_tax_document,
     get_document,
     get_document_next_actions,
+    list_document_summaries,
     get_expense,
     override_workflow_warning,
+    remove_document,
     save_settings_section,
 )
 from backend.app.services.storage_service import DB_PATH, save_database
@@ -68,6 +70,102 @@ class WorkflowTaxRegressionTests(unittest.TestCase):
         self.assertEqual([], invoice["sourceDocumentIds"])
         self.assertEqual("unpaid", invoice["paymentStatus"])
         self.assertEqual(1070.0, invoice["amountDue"])
+
+    def test_draft_document_soft_delete_hides_from_summaries(self):
+        quotation = create_document(
+            "quotation",
+            {
+                "id": "QT-2026-050010",
+                "customer": "Bangkok Foods Co., Ltd.",
+                "date": "2026-05-24",
+                "status": "draft",
+                "lines": [self._line()],
+            },
+        )
+
+        removed = remove_document("quotation", quotation["id"], {"mode": "delete"}, actor_email="niran@example.com")
+
+        self.assertEqual("inactive", removed["status"])
+        self.assertEqual("delete", removed["removeMode"])
+        self.assertTrue(removed["timeline"])
+        self.assertNotIn(quotation["id"], [item["id"] for item in list_document_summaries("quotation")])
+
+    def test_issued_document_void_hides_from_summaries(self):
+        invoice = create_document(
+            "invoice",
+            {
+                "id": "INV-2026-050010",
+                "customer": "Bangkok Foods Co., Ltd.",
+                "date": "2026-05-24",
+                "status": "approved",
+                "lines": [self._line()],
+            },
+        )
+
+        removed = remove_document("invoice", invoice["id"], {"mode": "void"}, actor_email="niran@example.com")
+
+        self.assertEqual("void", removed["status"])
+        self.assertEqual("void", removed["removeMode"])
+        self.assertNotIn(invoice["id"], [item["id"] for item in list_document_summaries("invoice")])
+
+    def test_linked_document_blocks_normal_delete(self):
+        invoice = create_document(
+            "invoice",
+            {
+                "id": "INV-2026-050011",
+                "customer": "Bangkok Foods Co., Ltd.",
+                "date": "2026-05-24",
+                "status": "draft",
+                "lines": [self._line()],
+            },
+        )
+        create_document(
+            "receipt",
+            {
+                "id": "RC-2026-050011",
+                "customer": "Bangkok Foods Co., Ltd.",
+                "date": "2026-05-25",
+                "relatedInvoice": invoice["id"],
+                "lines": [self._line(500.0)],
+            },
+        )
+
+        with self.assertRaises(ValueError):
+            remove_document("invoice", invoice["id"], {"mode": "delete"}, actor_email="niran@example.com")
+
+    def test_owner_remove_requires_reason_for_linked_document(self):
+        invoice = create_document(
+            "invoice",
+            {
+                "id": "INV-2026-050012",
+                "customer": "Bangkok Foods Co., Ltd.",
+                "date": "2026-05-24",
+                "status": "draft",
+                "lines": [self._line()],
+            },
+        )
+        create_document(
+            "receipt",
+            {
+                "id": "RC-2026-050012",
+                "customer": "Bangkok Foods Co., Ltd.",
+                "date": "2026-05-25",
+                "relatedInvoice": invoice["id"],
+                "lines": [self._line(500.0)],
+            },
+        )
+
+        with self.assertRaises(ValueError):
+            remove_document("invoice", invoice["id"], {"mode": "remove"}, actor_email="aimmy@example.com")
+
+        removed = remove_document(
+            "invoice",
+            invoice["id"],
+            {"mode": "remove", "reason": "Owner override after audit review."},
+            actor_email="aimmy@example.com",
+        )
+        self.assertEqual("inactive", removed["status"])
+        self.assertEqual("Owner override after audit review.", removed["removeReason"])
 
     def test_create_tax_invoice_from_delivery_note_links_documents(self):
         delivery = create_document(

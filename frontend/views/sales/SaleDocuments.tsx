@@ -13,7 +13,7 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { createDocument, downloadDocumentPdf, fetchDocument } from "@/lib/api";
+import { createDocument, downloadDocumentPdf, fetchDocument, removeDocument as removeDocumentApi } from "@/lib/api";
 import { useAppData } from "@/lib/app-data";
 import { useAuth } from "@/lib/auth";
 import {
@@ -82,6 +82,7 @@ const SaleDocuments = () => {
         ...data.debitNotes,
         ...data.deposits,
       ]
+        .filter((summary) => !["inactive", "void", "cancelled"].includes(String(summary.status).toLowerCase()))
         .map((summary) => ({
           ...summary,
           documentVariant: summary.documentTitle ?? summary.documentVariant ?? SALES_DOCUMENT_KIND_LABELS[summary.kind],
@@ -173,24 +174,6 @@ const SaleDocuments = () => {
     }
   };
 
-  const removeDocument = async (document: DocumentSummary) => {
-    const detail = await fetchDocument<SalesDocumentRecord>(document.kind, document.id);
-    await createDocument(document.kind, {
-      ...detail,
-      status: "inactive",
-      timeline: [
-        ...(detail.timeline ?? []),
-        {
-          who: user?.email ?? user?.name ?? "owner",
-          what: "removed document",
-          time: new Date().toISOString(),
-          type: "remove",
-        },
-      ],
-    });
-    await refresh();
-  };
-
   const isWorkflowAction = (action: SalesDocumentActionId) =>
     [
       "create_invoice",
@@ -248,14 +231,6 @@ const SaleDocuments = () => {
       case "view_evidence":
         setEvidenceDocument(document);
         return;
-      case "remove_document":
-        if (!canRemoveDocuments) {
-          toast.error(activeLanguage === "th" ? "เฉพาะเจ้าของเท่านั้นที่ลบเอกสารได้" : "Only owners can remove documents.");
-          return;
-        }
-        await removeDocument(document);
-        toast.success(activeLanguage === "th" ? "ลบเอกสารแล้ว" : "Document removed", { description: document.id });
-        return;
       case "create_revision":
         nav(createFromDocumentPath(document, getSalesDocumentActionType(document), { revisionFromDocumentId: document.id }));
         return;
@@ -308,10 +283,14 @@ const SaleDocuments = () => {
         await updateDocumentStatus(document, "rejected", "Document rejected");
         break;
       case "cancel_void":
-        await updateDocumentStatus(document, "void", "Document voided");
+        await removeDocumentApi(document.kind, document.id, { mode: "void", preserveAuditTrail: true });
+        await refresh();
+        toast.success(activeLanguage === "th" ? "ยกเลิกเอกสารแล้ว" : "Document voided", { description: document.id });
         break;
       case "delete":
-        await updateDocumentStatus(document, "inactive", "Document soft deleted");
+        await removeDocumentApi(document.kind, document.id, { mode: "delete", preserveAuditTrail: true });
+        await refresh();
+        toast.success(activeLanguage === "th" ? "ลบเอกสารแล้ว" : "Document deleted", { description: document.id });
         break;
       default:
         toast.info(`${document.id}: action is not available yet.`);
@@ -444,8 +423,39 @@ const SaleDocuments = () => {
       <ConfigurableActionModal
         open={Boolean(commonAction)}
         onOpenChange={(open) => !open && setCommonAction(null)}
-        title="Document Action"
-        description="Confirm this action for the selected Income Document. Important actions are kept in the document activity/audit trail."
+        title={
+          commonAction?.action === "delete"
+            ? activeLanguage === "th"
+              ? "ลบเอกสารนี้?"
+              : "Delete this document?"
+            : commonAction?.action === "cancel_void"
+              ? activeLanguage === "th"
+                ? "ยกเลิก/ทำให้เอกสารเป็นโมฆะ?"
+                : "Void this document?"
+              : "Document Action"
+        }
+        description={
+          commonAction?.action === "delete"
+            ? activeLanguage === "th"
+              ? "การดำเนินการนี้จะซ่อนเอกสารออกจากรายการหลัก แต่ยังเก็บประวัติไว้เพื่อการตรวจสอบ"
+              : "This will remove the document from active lists while keeping an audit trail."
+            : commonAction?.action === "cancel_void"
+              ? activeLanguage === "th"
+                ? "เอกสารที่ออกแล้วจะถูกเก็บไว้ในประวัติและไม่แสดงในรายการหลัก"
+                : "The issued document will be kept for audit history and removed from active lists."
+              : "Confirm this action for the selected Income Document. Important actions are kept in the document activity/audit trail."
+        }
+        confirmLabel={
+          commonAction?.action === "delete"
+            ? activeLanguage === "th"
+              ? "ลบเอกสาร"
+              : "Delete document"
+            : commonAction?.action === "cancel_void"
+              ? activeLanguage === "th"
+                ? "ยกเลิกเอกสาร"
+                : "Void document"
+              : undefined
+        }
         onConfirm={executeCommonAction}
       >
           <div className="space-y-2 text-sm">

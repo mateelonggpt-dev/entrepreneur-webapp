@@ -1366,7 +1366,9 @@ export const SalesDocumentForm = ({
   const companyBankAccounts = companySettings?.bankAccounts ?? [];
   const selectedBankAccount = companyBankAccounts.find((account) => account.id === paymentDetails.selectedBankAccountId) ?? null;
   const selectedSellerUser = internalUsers.find((user) => user.id === sellerUserId) ?? null;
-  const showPoAttachmentBox = realTypes.some((type) => type === "invoice" || type === "tax_invoice");
+  const showPoAttachmentBox = realTypes.some((type) =>
+    ["invoice", "tax_invoice", "delivery_note", "billing_note"].includes(type)
+  );
   const stockWarningCount = lines.filter(stockWarning).length;
   const validationErrors = useMemo(
     () =>
@@ -2354,7 +2356,7 @@ export const SalesDocumentForm = ({
         customerInfo: { ...customer, code: savedCustomer?.id ?? customer.code },
       });
 
-      if (showPoAttachmentBox && poAttachmentFiles.length > 0) {
+      if (poAttachmentFiles.length > 0) {
         await uploadAttachments({
           entityType: kind,
           entityId: created.id,
@@ -2370,7 +2372,7 @@ export const SalesDocumentForm = ({
       setPoAttachmentFiles([]);
       toast.success(submitMode === "draft" ? `Draft ${created.id} saved` : `Document ${created.id} created`, {
         description:
-          showPoAttachmentBox && poAttachmentFiles.length > 0
+          poAttachmentFiles.length > 0
             ? `${documentTitleTh} - ${poAttachmentFiles.length} PO file(s) attached`
             : documentTitleTh,
       });
@@ -2466,7 +2468,7 @@ export const SalesDocumentForm = ({
   }
 
   return (
-    <form className="space-y-6">
+    <form className="space-y-6 pb-28 sm:pb-24">
       <Card className="mx-auto max-w-6xl bg-white p-6 text-slate-950 shadow-xl">
         <div className="flex items-start justify-between gap-6 border-b border-slate-200 pb-6">
           <div className="flex min-w-0 gap-4">
@@ -2689,14 +2691,15 @@ export const SalesDocumentForm = ({
                 />
               </div>
 
-              {/* PO_ATTACHMENT_BOX_VISIBLE_HOTFIX */}
-              <div className="mt-3">
-                <PoAttachmentBox
-                  files={poAttachmentFiles}
-                  onFilesChange={setPoAttachmentFiles}
-                  disabled={Boolean(submitting)}
-                />
-              </div>
+              {showPoAttachmentBox ? (
+                <div className="mt-3">
+                  <PoAttachmentBox
+                    files={poAttachmentFiles}
+                    onFilesChange={setPoAttachmentFiles}
+                    disabled={Boolean(submitting)}
+                  />
+                </div>
+              ) : null}
             </div>
           </div>
         </div>
@@ -3672,14 +3675,6 @@ export const SalesDocumentForm = ({
             </div>
           </Section>
 
-          {showPoAttachmentBox ? (
-            <PoAttachmentBox
-              files={poAttachmentFiles}
-              onFilesChange={setPoAttachmentFiles}
-              disabled={Boolean(submitting)}
-            />
-          ) : null}
-
         <div className="hidden">
           <Card className="card-premium sticky top-20 overflow-hidden">
             <div className="border-b border-border bg-card p-5">
@@ -3709,9 +3704,9 @@ export const SalesDocumentForm = ({
       </div>
       </div>
 
-      <div className="sticky bottom-0 z-20 -mx-2 rounded-t-xl border border-border bg-card/95 p-3 shadow-lg backdrop-blur">
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          <div className="flex flex-wrap items-center gap-3 text-sm">
+      <div className="sticky bottom-0 z-20 -mx-2 rounded-t-xl border border-border bg-card/95 p-2 shadow-lg backdrop-blur sm:p-3">
+        <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between sm:gap-3">
+          <div className="flex min-w-0 flex-wrap items-center gap-2 text-sm sm:gap-3">
             <div>
               <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Grand total</p>
               <p className="font-display text-lg font-bold text-primary">{formatMoney(totals.remainingDue, currency)}</p>
@@ -3727,7 +3722,7 @@ export const SalesDocumentForm = ({
               </span>
             ) : null}
           </div>
-          <Button type="button" className="border-0 bg-gradient-brand text-primary-foreground shadow-brand" onClick={previewDocument}>
+          <Button type="button" className="w-full border-0 bg-gradient-brand text-primary-foreground shadow-brand sm:w-auto" onClick={previewDocument}>
             <Eye className="mr-1.5 h-4 w-4" /> {labels.preview}
           </Button>
         </div>

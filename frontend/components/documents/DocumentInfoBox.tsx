@@ -1,3 +1,4 @@
+import type { ReactNode } from "react";
 import type { SalesDocumentTemplateData } from "@/components/documents/types";
 import { formatDocumentMoney } from "@/components/documents/document-utils";
 
@@ -56,19 +57,9 @@ const formatReferenceKind = (kind: string | undefined, language: "th" | "en") =>
   return mapped ?? normalized.replace(/_/g, " ");
 };
 
-
 export const DocumentInfoBox = ({ data }: { data: SalesDocumentTemplateData }) => {
   const t = labels[data.language];
-  const referenceRows = (data.referenceDocuments ?? []).map((reference) => {
-    const kindLabel = formatReferenceKind(reference.type || reference.kind, data.language);
-    const numberLabel = reference.number || reference.id;
-    const amountValue = reference.total ?? reference.amount;
-    const amountLabel = typeof amountValue === "number" && amountValue > 0 ? formatDocumentMoney(amountValue, data.currency) : "";
-    const firstLine = [kindLabel, numberLabel].filter(Boolean).join(" · ");
-    const secondLine = [reference.party, reference.date, amountLabel, reference.status].filter(Boolean).join(" · ");
-    return [firstLine, secondLine].filter(Boolean).join("\n");
-  });
-  const reference = referenceRows.length ? referenceRows.join("\n\n") : data.relatedDocument || data.reference || "-";
+  const referenceDocuments = data.referenceDocuments ?? [];
   const sellerValue = data.sellerUser?.name
     ? `${data.sellerUser.name}${data.sellerUser.email ? ` (${data.sellerUser.email})` : ""}`
     : data.documentContact?.trim() || data.seller.contactPerson || data.seller.name || "-";
@@ -77,7 +68,33 @@ export const DocumentInfoBox = ({ data }: { data: SalesDocumentTemplateData }) =
     <aside className="sales-doc-info-stack sales-doc-avoid-break">
       <div className="sales-doc-info-box">
         <InfoRow label={`${t.documentNo}:`} value={data.documentNumber || "-"} />
-        <InfoRow label={`${referenceRows.length ? t.referenceDocuments : t.reference}:`} value={reference} multiline={referenceRows.length > 0} />
+        {referenceDocuments.length ? (
+          <InfoRow label={`${t.referenceDocuments}:`}>
+            <div className="sales-doc-reference-list">
+              {referenceDocuments.map((reference, index) => {
+                const kindLabel = formatReferenceKind(reference.type || reference.kind, data.language);
+                const numberLabel = reference.number || reference.id;
+                const amountValue = reference.total ?? reference.amount;
+                const amountLabel =
+                  typeof amountValue === "number" && amountValue > 0
+                    ? formatDocumentMoney(amountValue, data.currency)
+                    : "";
+                const secondLine = [reference.party, reference.date].filter(Boolean).join(" · ");
+                const thirdLine = [amountLabel, reference.status].filter(Boolean).join(" · ");
+
+                return (
+                  <div className="sales-doc-reference-item" key={`${reference.id || reference.number || index}-${index}`}>
+                    <p className="sales-doc-reference-primary">{[kindLabel, numberLabel].filter(Boolean).join(" · ") || "-"}</p>
+                    {secondLine ? <p>{secondLine}</p> : null}
+                    {thirdLine ? <p>{thirdLine}</p> : null}
+                  </div>
+                );
+              })}
+            </div>
+          </InfoRow>
+        ) : (
+          <InfoRow label={`${t.reference}:`} value={data.relatedDocument || data.reference || "-"} />
+        )}
         <InfoRow label={`${t.issueDate}:`} value={data.issueDate || "-"} />
         <InfoRow label={`${t.creditTerm}:`} value={`${data.creditTerms || 0} ${t.days}`} />
         <InfoRow label={`${t.dueDate}:`} value={data.dueDate || "-"} />
@@ -87,13 +104,13 @@ export const DocumentInfoBox = ({ data }: { data: SalesDocumentTemplateData }) =
   );
 };
 
-const InfoRow = ({ label, value, multiline = false }: { label: string; value: string; multiline?: boolean }) => {
-  const valueClassName = ["sales-doc-info-value", multiline ? "sales-doc-preline" : ""].filter(Boolean).join(" ");
-
-  return (
-    <div className="sales-doc-info-row">
-      <span>{label}</span>
-      <strong className={valueClassName} title={value}>{value}</strong>
-    </div>
-  );
-};
+const InfoRow = ({ label, value, children }: { label: string; value?: string; children?: ReactNode }) => (
+  <div className="sales-doc-info-row">
+    <span>{label}</span>
+    {children ?? (
+      <strong className="sales-doc-info-value" title={value}>
+        {value}
+      </strong>
+    )}
+  </div>
+);

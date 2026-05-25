@@ -74,11 +74,11 @@ const LABELS: Partial<Record<SalesDocumentActionId, string>> = {
   duplicate: "Duplicate / คัดลอกเอกสาร",
   duplicate_recreate: "Duplicate / Recreate / คัดลอกเอกสาร",
   submit_for_approval: "Submit for Approval / ส่งอนุมัติ",
-  delete: "Delete / ลบ",
+  delete: "Delete document / ลบเอกสาร",
   cancel_request: "Cancel Request / ยกเลิกคำขอ",
   approve: "Approve / อนุมัติ",
   reject: "Reject / ปฏิเสธ",
-  cancel_void: "Cancel / Void / ยกเลิก",
+  cancel_void: "Void document / ยกเลิกหรือทำให้เป็นโมฆะ",
   create_revision: "Create Revision / สร้างฉบับแก้ไข",
   create_invoice: "Create Invoice / สร้างใบแจ้งหนี้",
   create_deposit_invoice: "Create Deposit Invoice / สร้างใบแจ้งหนี้เงินมัดจำ",
@@ -97,6 +97,9 @@ const LABELS: Partial<Record<SalesDocumentActionId, string>> = {
   view_receipt: "View Receipt / ดูใบเสร็จรับเงิน",
   view_payment_history: "View Payment History / ดูประวัติการชำระเงิน",
   view_payment_details: "View Payment Details / ดูรายละเอียดการชำระเงิน",
+  attach_evidence: "Attach evidence / แนบหลักฐาน",
+  view_evidence: "View evidence / ดูหลักฐานแนบ",
+  remove_document: "Remove from system / นำออกจากระบบ",
   apply_to_invoice: "Apply to Invoice / นำไปใช้กับใบแจ้งหนี้",
   view_application_history: "View Application History / ดูประวัติการใช้งาน",
 };
@@ -131,6 +134,9 @@ const GROUPS: Partial<Record<SalesDocumentActionId, SalesDocumentActionGroup>> =
   view_receipt: "related",
   view_payment_history: "related",
   view_payment_details: "related",
+  attach_evidence: "related",
+  view_evidence: "related",
+  remove_document: "danger",
   apply_to_invoice: "workflow",
   view_application_history: "related",
 };
@@ -142,22 +148,19 @@ const action = (id: SalesDocumentActionId): SalesDocumentAction => ({
 });
 
 const baseOpenActions = (includeEdit: boolean) =>
-  [
-    "view",
-    includeEdit ? "edit" : "create_revision",
-    "download_pdf",
-    "duplicate",
-  ].map((id) => action(id as SalesDocumentActionId));
+  ["view", includeEdit ? "edit" : "create_revision", "download_pdf", "duplicate"].map((id) =>
+    action(id as SalesDocumentActionId)
+  );
 
-const normalizeStatus = (status: string): SalesDocumentStatusGroup => {
+export const normalizeSalesDocumentStatus = (status: string): SalesDocumentStatusGroup => {
   const value = status.toLowerCase().replace(/[\s-]+/g, "_");
   if (["cancelled", "canceled", "void", "inactive", "rejected"].includes(value)) return "cancelled";
-  if (["draft"].includes(value)) return "draft";
+  if (value === "draft") return "draft";
   if (["pending", "pending_approval"].includes(value)) return "pending";
   if (["partial", "partially_paid"].includes(value)) return "partial";
-  if (["paid"].includes(value)) return "paid";
+  if (value === "paid") return "paid";
   if (["completed", "converted", "billed", "invoiced"].includes(value)) return "completed";
-  if (["applied"].includes(value)) return "applied";
+  if (value === "applied") return "applied";
   return "approved";
 };
 
@@ -182,12 +185,19 @@ export const getActionSourceKind = (document: DocumentSummary): DocumentKind => 
   return document.kind;
 };
 
+export const getRemovalActionForDocument = (document: DocumentSummary): "delete" | "void" | null => {
+  const status = normalizeSalesDocumentStatus(document.status);
+  if (status === "draft" || status === "pending") return "delete";
+  if (status === "cancelled") return null;
+  return "void";
+};
+
 export const getSalesDocumentActions = (
   document: DocumentSummary,
   options: { canApprove?: boolean; allowApprovedEdit?: boolean } = {}
 ) => {
   const type = getSalesDocumentActionType(document);
-  const status = normalizeStatus(document.status);
+  const status = normalizeSalesDocumentStatus(document.status);
   const canApprove = options.canApprove ?? true;
   const allowApprovedEdit = options.allowApprovedEdit ?? true;
 
@@ -209,6 +219,7 @@ export const getSalesDocumentActions = (
       action("duplicate"),
       action("cancel_request"),
       ...(canApprove ? [action("approve"), action("reject")] : []),
+      action("delete"),
     ];
   }
 
@@ -242,21 +253,8 @@ export const getSalesDocumentActions = (
   }
 
   if (status === "paid" || status === "completed" || status === "applied") {
-    if (type === "quotation") {
-      return [
-        action("view"),
-        action("download_pdf"),
-        action("duplicate"),
-        action("view_related_documents"),
-      ];
-    }
-    if (type === "delivery_note") {
-      return [
-        action("view"),
-        action("download_pdf"),
-        action("duplicate"),
-        action("view_related_documents"),
-      ];
+    if (type === "quotation" || type === "delivery_note") {
+      return [action("view"), action("download_pdf"), action("duplicate"), action("view_related_documents")];
     }
     if (["invoice", "tax_invoice"].includes(type)) {
       return [
@@ -279,13 +277,7 @@ export const getSalesDocumentActions = (
       ];
     }
     if (type === "receipt") {
-      return [
-        action("view"),
-        action("download_pdf"),
-        action("duplicate"),
-        action("view_related_invoice"),
-        action("view_payment_details"),
-      ];
+      return [action("view"), action("download_pdf"), action("duplicate"), action("view_related_invoice"), action("view_payment_details")];
     }
     if (["credit_note", "debit_note"].includes(type)) {
       return [
@@ -343,13 +335,7 @@ export const getSalesDocumentActions = (
   }
 
   if (type === "receipt") {
-    return [
-      action("view"),
-      action("download_pdf"),
-      action("duplicate"),
-      action("view_related_invoice"),
-      action("cancel_void"),
-    ];
+    return [action("view"), action("download_pdf"), action("duplicate"), action("view_related_invoice"), action("cancel_void")];
   }
 
   return [

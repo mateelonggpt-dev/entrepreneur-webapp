@@ -259,6 +259,19 @@ export const createDocument = (kind: DocumentKind, payload: CreateDocumentPayloa
 export const fetchDocument = <T>(kind: DocumentKind, id: string) =>
   fetchJson<T>(`/api/documents/${kind}/${id}`);
 
+export const removeDocument = (
+  kind: DocumentKind,
+  id: string,
+  payload: { mode: "delete" | "void" | "remove"; reason?: string; preserveAuditTrail?: boolean }
+) =>
+  fetchJson<Invoice | DocumentSummary>(`/api/documents/${encodeURIComponent(kind)}/${encodeURIComponent(id)}/remove`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(payload),
+  });
+
 export const fetchDocumentWorkflowRules = () =>
   fetchJson<DocumentWorkflowRules>("/api/document-workflow/rules");
 

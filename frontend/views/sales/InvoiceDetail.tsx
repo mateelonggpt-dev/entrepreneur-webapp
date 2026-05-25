@@ -4,7 +4,7 @@ import { useTranslation } from "react-i18next";
 import { AppShell } from "@/components/layout/AppShell";
 import { BrandMark } from "@/components/brand/BrandMark";
 import { DocumentNextActions } from "@/components/documents/DocumentNextActions";
-import { EvidenceAttachmentModal, MasterDataModal } from "@/components/modals/DomainModals";
+import { ConfigurableActionModal, EvidenceAttachmentModal, MasterDataModal } from "@/components/modals/DomainModals";
 import { SalesDocumentActionsMenu } from "@/components/sales/SalesDocumentActionsMenu";
 import { CombinedReceiptModal } from "@/components/modals/CombinedReceiptModal";
 import { CreditNoteModal } from "@/components/modals/CreditNoteModal";
@@ -20,10 +20,10 @@ import {
   deleteAttachment,
   downloadAttachment,
   downloadDocumentPdf,
-  createDocument,
   fetchAttachments,
   fetchDocument,
   fetchInvoiceDetail,
+  removeDocument,
   sendInvoiceToCustomer,
 } from "@/lib/api";
 import { fmtTHB } from "@/lib/demo-data";
@@ -67,6 +67,11 @@ const fallbackLines = [
   { id: "4", desc: "Premium Support Add-on", qty: 3, price: 4800, tax: 7, amount: 14400 },
 ];
 
+const isCustomerPoAttachment = (attachment: Attachment) =>
+  attachment.category === "customer_po" ||
+  attachment.category === "customer-po" ||
+  (attachment.tags ?? []).some((tag) => ["customer_po", "customer-po"].includes(tag));
+
 const InvoiceDetail = ({ id: propId }: { id?: string } = {}) => {
   const { id: routeId } = useParams();
   const id = propId ?? routeId;
@@ -81,6 +86,7 @@ const InvoiceDetail = ({ id: propId }: { id?: string } = {}) => {
   const [creditNoteOpen, setCreditNoteOpen] = useState(false);
   const [debitNoteOpen, setDebitNoteOpen] = useState(false);
   const [customerModalOpen, setCustomerModalOpen] = useState(false);
+  const [removalAction, setRemovalAction] = useState<"delete" | "void" | null>(null);
 
   const fallbackInvoice = data.invoices.find((item) => item.id === id) || null;
   const invoice = invoiceDetail ?? fallbackInvoice;
@@ -135,6 +141,8 @@ const InvoiceDetail = ({ id: propId }: { id?: string } = {}) => {
     () => (invoice ? collectLinkedSummaries(data, invoice.id) : []),
     [data, invoice]
   );
+  const customerPoAttachments = useMemo(() => attachments.filter(isCustomerPoAttachment), [attachments]);
+  const genericAttachments = useMemo(() => attachments.filter((attachment) => !isCustomerPoAttachment(attachment)), [attachments]);
   const timeline = useMemo(
     () =>
       invoice
@@ -216,26 +224,21 @@ const InvoiceDetail = ({ id: propId }: { id?: string } = {}) => {
       setEvidenceOpen(true);
       return;
     }
-    if (action === "remove_document") {
-      if (!canRemoveDocuments) {
-        toast.error("Only owners can remove documents.");
-        return;
-      }
-      await createDocument("invoice", {
-        ...invoice,
-        status: "inactive",
-        timeline: [
-          ...(invoice.timeline ?? []),
-          {
-            who: user?.email ?? user?.name ?? "owner",
-            what: "removed document",
-            time: new Date().toISOString(),
-            type: "remove",
-          },
-        ],
-      });
+    if (action === "delete" || action === "cancel_void") {
+      setRemovalAction(action === "delete" ? "delete" : "void");
+    }
+  };
+
+  const executeRemoval = async () => {
+    if (!removalAction) return;
+    try {
+      await removeDocument("invoice", invoice.id, { mode: removalAction, preserveAuditTrail: true });
       await refresh();
-      toast.success("Document removed", { description: invoice.id });
+      toast.success(removalAction === "delete" ? "Document deleted" : "Document voided", { description: invoice.id });
+      setRemovalAction(null);
+      nav("/income/documents");
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Unable to update document.");
     }
   };
 
@@ -467,30 +470,20 @@ const InvoiceDetail = ({ id: propId }: { id?: string } = {}) => {
                     {t("common.attachEvidence")}
                   </Button>
                 </div>
-                {attachments.map((attachment) => (
-                  <div key={attachment.id} className="flex items-center justify-between rounded-xl border border-border/60 p-3">
-                    <div className="min-w-0">
-                      <p className="truncate text-sm font-medium">{attachment.name}</p>
-                      <p className="text-xs text-muted-foreground">
-                        {attachment.category} • {attachment.uploadedAt}
-                      </p>
-                    </div>
-                    <div className="flex items-center gap-1">
-                      <Button variant="ghost" size="sm" onClick={() => void handleDownloadAttachment(attachment)}>
-                        {t("common.download")}
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="h-8 w-8 text-muted-foreground hover:text-destructive"
-                        onClick={() => void handleDeleteAttachment(attachment)}
-                        aria-label={`Remove ${attachment.name}`}
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
-                    </div>
-                  </div>
-                ))}
+                <AttachmentGroup
+                  title="Customer PO / เอกสาร PO ลูกค้า"
+                  attachments={customerPoAttachments}
+                  onDownload={handleDownloadAttachment}
+                  onDelete={handleDeleteAttachment}
+                  downloadLabel={t("common.download")}
+                />
+                <AttachmentGroup
+                  title="Generic evidence / หลักฐานอื่น"
+                  attachments={genericAttachments}
+                  onDownload={handleDownloadAttachment}
+                  onDelete={handleDeleteAttachment}
+                  downloadLabel={t("common.download")}
+                />
               </TabsContent>
 
               <TabsContent value="notes" className="mt-4">
@@ -636,11 +629,71 @@ const InvoiceDetail = ({ id: propId }: { id?: string } = {}) => {
         onOpenChange={setCustomerModalOpen}
         customer={customer}
       />
+      <ConfigurableActionModal
+        open={Boolean(removalAction)}
+        onOpenChange={(open) => !open && setRemovalAction(null)}
+        title={removalAction === "delete" ? "Delete this document?" : "Void this document?"}
+        description={
+          removalAction === "delete"
+            ? "This will remove the document from active lists while keeping an audit trail."
+            : "The issued document will be kept for audit history and removed from active lists."
+        }
+        confirmLabel={removalAction === "delete" ? "Delete document" : "Void document"}
+        onConfirm={executeRemoval}
+      >
+        <p className="text-sm font-medium">{invoice.id}</p>
+      </ConfigurableActionModal>
     </AppShell>
   );
 };
 
 export default InvoiceDetail;
+
+const AttachmentGroup = ({
+  title,
+  attachments,
+  onDownload,
+  onDelete,
+  downloadLabel,
+}: {
+  title: string;
+  attachments: Attachment[];
+  onDownload: (attachment: Attachment) => void | Promise<void>;
+  onDelete: (attachment: Attachment) => void | Promise<void>;
+  downloadLabel: string;
+}) => {
+  if (!attachments.length) return null;
+
+  return (
+    <section className="space-y-2">
+      <h4 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">{title}</h4>
+      {attachments.map((attachment) => (
+        <div key={attachment.id} className="flex items-center justify-between gap-3 rounded-xl border border-border/60 p-3">
+          <div className="min-w-0">
+            <p className="truncate text-sm font-medium">{attachment.name}</p>
+            <p className="text-xs text-muted-foreground">
+              {attachment.category} · {attachment.uploadedAt}
+            </p>
+          </div>
+          <div className="flex shrink-0 items-center gap-1">
+            <Button variant="ghost" size="sm" onClick={() => void onDownload(attachment)}>
+              {downloadLabel}
+            </Button>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-8 w-8 text-muted-foreground hover:text-destructive"
+              onClick={() => void onDelete(attachment)}
+              aria-label={`Remove ${attachment.name}`}
+            >
+              <Trash2 className="h-4 w-4" />
+            </Button>
+          </div>
+        </div>
+      ))}
+    </section>
+  );
+};
 
 const GenericIncomeDocumentDetail = ({ summary }: { summary: ReturnType<typeof collectSalesWorkflowDocuments>[number] }) => {
   const nav = useNavigate();
@@ -650,7 +703,10 @@ const GenericIncomeDocumentDetail = ({ summary }: { summary: ReturnType<typeof c
   const [attachments, setAttachments] = useState<Attachment[]>([]);
   const [detail, setDetail] = useState<SalesDocumentRecord | null>(null);
   const [evidenceOpen, setEvidenceOpen] = useState(false);
+  const [removalAction, setRemovalAction] = useState<"delete" | "void" | null>(null);
   const canRemoveDocuments = user?.role === "owner";
+  const customerPoAttachments = useMemo(() => attachments.filter(isCustomerPoAttachment), [attachments]);
+  const genericAttachments = useMemo(() => attachments.filter((attachment) => !isCustomerPoAttachment(attachment)), [attachments]);
 
   useEffect(() => {
     void fetchAttachments(summary.kind === "billing" ? "billing" : summary.kind, summary.id)
@@ -697,31 +753,21 @@ const GenericIncomeDocumentDetail = ({ summary }: { summary: ReturnType<typeof c
       setEvidenceOpen(true);
       return;
     }
-    if (action === "remove_document") {
-      if (!canRemoveDocuments) {
-        toast.error("Only owners can remove documents.");
-        return;
-      }
-      await createDocument(summary.kind, {
-        ...(detail ?? {}),
-        id: summary.id,
-        customer: detail?.customer ?? summary.party,
-        date: detail?.date ?? summary.date,
-        status: "inactive",
-        amount: detail?.amount ?? summary.amount,
-        documentTypes: detail?.documentTypes ?? summary.documentTypes,
-        timeline: [
-          ...(detail?.timeline ?? []),
-          {
-            who: user?.email ?? user?.name ?? "owner",
-            what: "removed document",
-            time: new Date().toISOString(),
-            type: "remove",
-          },
-        ],
-      });
+    if (action === "delete" || action === "cancel_void") {
+      setRemovalAction(action === "delete" ? "delete" : "void");
+    }
+  };
+
+  const executeRemoval = async () => {
+    if (!removalAction) return;
+    try {
+      await removeDocument(summary.kind, summary.id, { mode: removalAction, preserveAuditTrail: true });
       await refresh();
-      toast.success("Document removed", { description: summary.id });
+      toast.success(removalAction === "delete" ? "Document deleted" : "Document voided", { description: summary.id });
+      setRemovalAction(null);
+      nav("/income/documents");
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Unable to update document.");
     }
   };
 
@@ -824,6 +870,36 @@ const GenericIncomeDocumentDetail = ({ summary }: { summary: ReturnType<typeof c
           </div>
         </div>
       </Card>
+      {attachments.length ? (
+        <Card className="card-premium mt-4 p-5">
+          <div className="space-y-4">
+            <AttachmentGroup
+              title="Customer PO / เอกสาร PO ลูกค้า"
+              attachments={customerPoAttachments}
+              onDownload={downloadAttachment}
+              onDelete={async (attachment) => {
+                await deleteAttachment(attachment);
+                const next = await fetchAttachments(summary.kind === "billing" ? "billing" : summary.kind, summary.id);
+                setAttachments(next);
+                await refresh();
+              }}
+              downloadLabel={t("common.download")}
+            />
+            <AttachmentGroup
+              title="Generic evidence / หลักฐานอื่น"
+              attachments={genericAttachments}
+              onDownload={downloadAttachment}
+              onDelete={async (attachment) => {
+                await deleteAttachment(attachment);
+                const next = await fetchAttachments(summary.kind === "billing" ? "billing" : summary.kind, summary.id);
+                setAttachments(next);
+                await refresh();
+              }}
+              downloadLabel={t("common.download")}
+            />
+          </div>
+        </Card>
+      ) : null}
       <EvidenceAttachmentModal
         open={evidenceOpen}
         onOpenChange={setEvidenceOpen}
@@ -835,6 +911,20 @@ const GenericIncomeDocumentDetail = ({ summary }: { summary: ReturnType<typeof c
           await refresh();
         }}
       />
+      <ConfigurableActionModal
+        open={Boolean(removalAction)}
+        onOpenChange={(open) => !open && setRemovalAction(null)}
+        title={removalAction === "delete" ? "Delete this document?" : "Void this document?"}
+        description={
+          removalAction === "delete"
+            ? "This will remove the document from active lists while keeping an audit trail."
+            : "The issued document will be kept for audit history and removed from active lists."
+        }
+        confirmLabel={removalAction === "delete" ? "Delete document" : "Void document"}
+        onConfirm={executeRemoval}
+      >
+        <p className="text-sm font-medium">{summary.id}</p>
+      </ConfigurableActionModal>
     </AppShell>
   );
 };

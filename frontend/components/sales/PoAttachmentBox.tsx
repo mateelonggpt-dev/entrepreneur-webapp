@@ -12,16 +12,19 @@ interface PoAttachmentBoxProps {
   disabled?: boolean;
 }
 
-const acceptedPoTypes = "application/pdf,image/*";
+const acceptedPoTypes = "application/pdf,image/jpeg,image/png";
+const allowedMimeTypes = new Set(["application/pdf", "image/jpeg", "image/png"]);
 
 export const PoAttachmentBox = ({ files, onFilesChange, disabled }: PoAttachmentBoxProps) => {
   const inputRef = useRef<HTMLInputElement>(null);
   const { i18n } = useTranslation();
-  const isThai = i18n.language === "th";
+  const isThai = i18n.language?.startsWith("th");
 
   const addFiles = (incoming: FileList | null) => {
     if (!incoming?.length) return;
-    onFilesChange([...files, ...Array.from(incoming)]);
+    const nextFiles = Array.from(incoming).filter((file) => allowedMimeTypes.has(file.type));
+    if (!nextFiles.length) return;
+    onFilesChange([...files, ...nextFiles]);
   };
 
   const removeFile = (index: number) => {
@@ -29,24 +32,30 @@ export const PoAttachmentBox = ({ files, onFilesChange, disabled }: PoAttachment
   };
 
   return (
-    <Card className="border-dashed border-sky-200 bg-sky-50/50 p-5 shadow-none">
+    <Card className="border-dashed border-sky-200 bg-sky-50/50 p-4 shadow-none sm:p-5">
       <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
-        <div className="flex gap-3">
+        <div className="flex min-w-0 gap-3">
           <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-sky-100 text-sky-700">
             <Paperclip className="h-5 w-5" />
           </div>
-          <div>
-            <h3 className="font-display text-sm font-semibold">{isThai ? "PO ลูกค้า / เอกสารอ้างอิงจากลูกค้า" : "Customer PO / Customer reference evidence"}</h3>
-            <p className="text-sm font-medium text-slate-700">{isThai ? "แนบใบสั่งซื้อหรือเอกสารยืนยันจากลูกค้า" : "Attach the purchase order or confirmation from your customer"}</p>
+          <div className="min-w-0">
+            <h3 className="font-display text-sm font-semibold">
+              {isThai ? "PO ลูกค้า / เอกสารอ้างอิงจากลูกค้า" : "Customer PO / Customer reference evidence"}
+            </h3>
+            <p className="text-sm font-medium text-slate-700">
+              {isThai ? "แนบใบสั่งซื้อหรือเอกสารยืนยันจากลูกค้า" : "Attach the purchase order or confirmation from your customer"}
+            </p>
             <p className="mt-1 max-w-2xl text-xs text-muted-foreground">
-              {isThai ? "ไฟล์นี้ใช้เป็นหลักฐานภายในเท่านั้น และจะไม่แสดงบนเอกสารพิมพ์หรือ PDF" : "These files are internal evidence only and will not appear on the printed document or PDF."}
+              {isThai
+                ? "ไฟล์นี้ใช้เป็นหลักฐานภายในเท่านั้น และจะไม่แสดงบนเอกสารพิมพ์หรือ PDF"
+                : "These files are internal evidence only and will not appear on the printed document or PDF."}
             </p>
           </div>
         </div>
         <Button
           type="button"
           variant="outline"
-          className="gap-1.5 bg-white"
+          className="w-full gap-1.5 bg-white sm:w-auto"
           disabled={disabled}
           onClick={() => inputRef.current?.click()}
         >

@@ -1,10 +1,22 @@
-import { Image } from "lucide-react";
 import type { SalesDocumentCopyKind, SalesDocumentTemplateData } from "@/components/documents/types";
 import { getCopyLabel, resolveDocumentAssetUrl } from "@/components/documents/document-utils";
 
 const sellerLabel = {
   en: "Seller",
   th: "ผู้ขาย",
+};
+
+const taxIdLabel = {
+  en: "Tax ID",
+  th: "เลขที่ภาษี",
+};
+
+const initialsFor = (name: string) => {
+  const trimmed = name.trim();
+  if (!trimmed) return "MA";
+  const latin = trimmed.match(/[A-Za-z0-9]/g);
+  if (latin?.length) return latin.slice(0, 2).join("").toUpperCase();
+  return Array.from(trimmed).slice(0, 2).join("");
 };
 
 export const DocumentHeader = ({
@@ -20,16 +32,16 @@ export const DocumentHeader = ({
         {data.branding.logoUrl ? (
           <img src={resolveDocumentAssetUrl(data.branding.logoUrl)} alt="Company logo" />
         ) : (
-          <Image size={24} />
+          <span className="sales-doc-logo-fallback">{initialsFor(data.seller.name || "")}</span>
         )}
       </div>
       <div className="sales-doc-seller-copy">
         <p className="sales-doc-company-name">
-          <span>{sellerLabel[data.language]} :</span> {data.seller.name || "-"}
+          <span>{sellerLabel[data.language]}:</span> {data.seller.name || "-"}
         </p>
         <p>{data.seller.address || "-"}</p>
         <p>
-          {data.language === "th" ? "เลขที่ภาษี" : "Tax ID"}: {data.seller.taxId || "-"}
+          {taxIdLabel[data.language]}: {data.seller.taxId || "-"}
           {data.seller.branch ? ` (${data.seller.branch})` : ""}
         </p>
         <p>

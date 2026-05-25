@@ -65,6 +65,12 @@ const documentTemplateCss = `
     box-shadow: 0 28px 90px rgba(15, 23, 42, 0.18);
   }
 
+  .sales-document-page,
+  .sales-document-page * {
+    box-sizing: border-box;
+    min-width: 0;
+  }
+
   .sales-document-page:last-child { page-break-after: auto; break-after: auto; }
 
   .sales-doc-avoid-break,
@@ -81,19 +87,20 @@ const documentTemplateCss = `
 
   .sales-doc-header { display: grid; grid-template-columns: minmax(0, 1fr) minmax(64mm, 76mm); gap: 9mm; align-items: start; padding-bottom: 9mm; border-bottom: 2px solid var(--doc-brand); }
   .sales-doc-seller-head { display: flex; gap: 5mm; align-items: flex-start; min-width: 0; }
-  .sales-doc-logo { width: 64px; height: 64px; display: flex; align-items: center; justify-content: center; color: #94a3b8; flex: 0 0 auto; border: 1px solid #e2e8f0; border-radius: 16px; background: #f8fafc; }
+  .sales-doc-logo { width: 64px; height: 64px; display: flex; align-items: center; justify-content: center; color: var(--doc-brand); flex: 0 0 auto; border: 1px solid #ccfbf1; border-radius: 16px; background: var(--doc-brand-soft); overflow: hidden; }
   .sales-doc-logo img { max-width: 86%; max-height: 86%; object-fit: contain; }
-  .sales-doc-seller-copy { font-size: 10.6px; line-height: 1.42; color: #334155; max-width: 112mm; }
+  .sales-doc-logo-fallback { font-size: 18px; font-weight: 950; line-height: 1; }
+  .sales-doc-seller-copy { font-size: 10.6px; line-height: 1.42; color: #334155; max-width: 112mm; overflow-wrap: anywhere; word-break: break-word; }
   .sales-doc-seller-copy p { margin: 0; }
   .sales-doc-company-name { font-size: 15.6px; line-height: 1.28; font-weight: 800; color: #020617; margin: 0 0 4px !important; }
   .sales-doc-company-name span { color: var(--doc-brand); }
   .sales-doc-title-zone { text-align: right; }
   .sales-doc-copy-label { display: inline-flex; border: 1px solid #ccfbf1; background: var(--doc-brand-soft); color: var(--doc-brand); font-size: 10px; font-weight: 800; min-height: 26px; padding: 4px 12px; margin: 0 0 7px; border-radius: 999px; letter-spacing: 0.08em; text-transform: uppercase; }
-  .sales-doc-title-zone h1 { color: var(--doc-brand); font-size: 34px; line-height: 1.02; font-weight: 900; margin: 0; letter-spacing: -0.04em; overflow-wrap: anywhere; }
+  .sales-doc-title-zone h1 { color: var(--doc-brand); font-size: 34px; line-height: 1.02; font-weight: 900; margin: 0; letter-spacing: 0; overflow-wrap: anywhere; word-break: break-word; }
   .sales-doc-title-en { color: var(--doc-muted); font-size: 11.2px; font-weight: 700; margin: 2mm 0 0; letter-spacing: 0.04em; text-transform: uppercase; }
 
   .document-main-info { display: grid; grid-template-columns: minmax(0, 1fr) minmax(72mm, 82mm); gap: 7mm; margin-top: 8mm; font-size: 10.8px; line-height: 1.42; }
-  .left-info-column, .right-info-column { display: flex; flex-direction: column; gap: 5px; }
+  .left-info-column, .right-info-column { display: flex; flex-direction: column; gap: 5px; min-width: 0; }
   .sales-doc-party, .sales-doc-info-box { border: 1px solid var(--doc-border); border-radius: 16px; background: #fff; padding: 5mm; box-shadow: 0 10px 26px rgba(15, 23, 42, 0.045); }
   .sales-doc-party { border-left: 4px solid var(--doc-brand); }
   .sales-doc-section-label { color: var(--doc-brand); font-weight: 900; margin: 0 0 3mm; font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase; }
@@ -105,7 +112,7 @@ const documentTemplateCss = `
   .sales-doc-info-row, .sales-doc-summary-line { display: grid; gap: 12px; align-items: start; min-height: 21px; padding: 2px 0; }
   .sales-doc-info-row { grid-template-columns: minmax(76px, 34%) minmax(0, 1fr); }
   .sales-doc-summary-line { grid-template-columns: minmax(0, 1fr) auto; }
-  .sales-doc-info-row span { min-width: 0; }
+  .sales-doc-info-row span { min-width: 0; overflow-wrap: anywhere; word-break: break-word; }
   .sales-doc-info-row strong, .sales-doc-summary-line strong { text-align: right; font-weight: 800; color: #0f172a; }
   .sales-doc-info-value {
     min-width: 0;
@@ -119,11 +126,34 @@ const documentTemplateCss = `
     white-space: pre-wrap;
     line-height: 1.35;
   }
+  .sales-doc-reference-list {
+    display: grid;
+    gap: 6px;
+    max-width: 100%;
+    min-width: 0;
+    text-align: left;
+  }
+  .sales-doc-reference-item {
+    max-width: 100%;
+    min-width: 0;
+    overflow-wrap: anywhere;
+    word-break: break-word;
+  }
+  .sales-doc-reference-item p {
+    margin: 0;
+    color: #334155;
+    font-weight: 650;
+    line-height: 1.32;
+  }
+  .sales-doc-reference-primary {
+    color: #0f172a !important;
+    font-weight: 900 !important;
+  }
 
   .sales-doc-table-zone { flex: 0 0 auto; min-height: 0; margin-top: 8mm; overflow-x: auto; }
   .sales-doc-table { width: 100%; border-collapse: separate; border-spacing: 0; table-layout: fixed; font-size: 10.4px; border: 1px solid var(--doc-border); border-radius: 16px; overflow: hidden; }
   .sales-doc-table th { background: #f1f5f9; border-bottom: 1px solid #b8c4d4; color: #0f172a; padding: 8px 7px; text-align: center; font-weight: 900; }
-  .sales-doc-table td { border-bottom: 1px solid #edf2f7; padding: 7px; vertical-align: top; text-align: right; overflow-wrap: anywhere; color: #1e293b; }
+  .sales-doc-table td { border-bottom: 1px solid #edf2f7; padding: 7px; vertical-align: top; text-align: right; overflow-wrap: anywhere; word-break: break-word; color: #1e293b; }
   .sales-doc-table tbody tr:nth-child(even) td { background: #fbfdff; }
   .sales-doc-text-left { text-align: left !important; }
   .sales-doc-line-title { font-weight: 850; margin: 0; color: #0f172a; }
@@ -133,14 +163,14 @@ const documentTemplateCss = `
   .sales-doc-bottom-grid { border-top: 1px solid #b8c4d4; padding-top: 8mm; display: grid; grid-template-columns: minmax(0, 1fr) minmax(64mm, 78mm); gap: 7mm; font-size: 10.6px; line-height: 1.4; }
   .sales-doc-summary-words { border: 1px solid var(--doc-border); border-radius: 14px; margin-top: 5mm; padding: 4mm; background: #f8fafc; }
   .sales-doc-summary-words span { display: block; color: var(--doc-brand); font-weight: 900; font-size: 9.8px; text-transform: uppercase; }
-  .sales-doc-summary-words p { margin: 2mm 0 0; color: #334155; line-height: 1.42; white-space: pre-line; }
+  .sales-doc-summary-words p { margin: 2mm 0 0; color: #334155; line-height: 1.42; white-space: pre-line; overflow-wrap: anywhere; word-break: break-word; }
   .sales-doc-grand-total { background: linear-gradient(135deg, var(--doc-brand) 0%, #0f766e 100%); color: #fff; padding: 5mm; display: flex; justify-content: space-between; align-items: center; gap: 4mm; min-height: 44px; border-radius: 16px; box-shadow: 0 16px 32px rgba(15, 118, 110, 0.18); margin: 3mm 0; }
   .sales-doc-grand-total span { font-weight: 900; color: rgba(255, 255, 255, 0.9); text-transform: uppercase; }
   .sales-doc-grand-total strong { color: #fff; font-size: 18px; font-weight: 950; white-space: nowrap; }
   .sales-doc-summary-strong { border-top: 1px solid var(--doc-border); margin-top: 2mm; padding-top: 3mm; }
   .sales-doc-summary-strong strong { color: var(--doc-brand); font-size: 12.4px; }
 
-  .sales-doc-payment-notes { font-size: 10.6px; line-height: 1.42; }
+  .sales-doc-payment-notes { font-size: 10.6px; line-height: 1.42; overflow-wrap: anywhere; word-break: break-word; }
   .sales-doc-bank-card, .sales-doc-payment-block, .sales-doc-note-block { border: 1px solid var(--doc-border); border-radius: 16px; padding: 5mm; background: #fff; box-shadow: 0 10px 24px rgba(15, 23, 42, 0.05); }
   .sales-doc-bank-card { display: grid; grid-template-columns: 5px 1fr; gap: 10px; }
   .sales-doc-bank-strip { background: var(--doc-brand); border-radius: 999px; }
@@ -428,6 +458,15 @@ const documentTemplateCss = `
   .sales-document-print-root.sales-document-pdf-export .sales-doc-info-box .sales-doc-info-value.sales-doc-preline {
     font-size: 8.9px !important;
     line-height: 1.22 !important;
+  }
+
+  .sales-document-print-root.sales-document-pdf-export .sales-doc-reference-list {
+    gap: 4px !important;
+  }
+
+  .sales-document-print-root.sales-document-pdf-export .sales-doc-reference-item p {
+    font-size: 8.9px !important;
+    line-height: 1.2 !important;
   }
 
   @media (max-width: 920px) {
