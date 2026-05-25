@@ -80,11 +80,11 @@ const LABELS: Partial<Record<SalesDocumentActionId, string>> = {
   reject: "Reject / ปฏิเสธ",
   cancel_void: "Void document / ยกเลิกหรือทำให้เป็นโมฆะ",
   create_revision: "Create Revision / สร้างฉบับแก้ไข",
-  create_invoice: "Create Invoice / สร้างใบแจ้งหนี้",
+  create_invoice: "Create Billing Note / Invoice / สร้างใบวางบิล/ใบแจ้งหนี้",
   create_deposit_invoice: "Create Deposit Invoice / สร้างใบแจ้งหนี้เงินมัดจำ",
   create_installment: "Create Installment / สร้างการผ่อนชำระ",
   create_delivery_note: "Create Delivery Note / สร้างใบส่งของ",
-  create_billing_note: "Create Billing Note / สร้างใบวางบิล",
+  create_billing_note: "Create Billing Note / Invoice / สร้างใบวางบิล/ใบแจ้งหนี้",
   create_tax_invoice: "Create Tax Invoice / สร้างใบกำกับภาษี",
   create_receipt: "Create Receipt / สร้างใบเสร็จรับเงิน",
   create_receipt_remaining: "Create Receipt for Remaining Amount / สร้างใบเสร็จยอดคงเหลือ",
@@ -168,15 +168,14 @@ export const getSalesDocumentActionType = (document: DocumentSummary): SalesDocu
   const explicitTypes = document.documentTypes ?? [];
   const types = explicitTypes.length ? explicitTypes : inferSalesDocumentTypes(document);
   if (types.includes("delivery_note")) return "delivery_note";
-  if (types.includes("billing_note")) return "billing_note";
   if (types.includes("quotation")) return "quotation";
   if (types.includes("receipt")) return "receipt";
   if (types.includes("credit_note")) return "credit_note";
   if (types.includes("debit_note")) return "debit_note";
   if (document.kind === "invoice" && !explicitTypes.length) return "invoice";
-  if (types.includes("tax_invoice") && !types.includes("invoice")) return "tax_invoice";
-  if (types.includes("invoice")) return "invoice";
-  if (document.kind === "billing") return "billing_note";
+  if (types.includes("tax_invoice") && !types.includes("invoice") && !types.includes("billing_note")) return "tax_invoice";
+  if (types.includes("invoice") || types.includes("billing_note")) return "invoice";
+  if (document.kind === "billing") return "invoice";
   return document.kind as SalesDocumentActionType;
 };
 
@@ -297,7 +296,6 @@ export const getSalesDocumentActions = (
       action("create_deposit_invoice"),
       action("create_installment"),
       action("create_delivery_note"),
-      action("create_billing_note"),
       action("cancel_void"),
     ];
   }

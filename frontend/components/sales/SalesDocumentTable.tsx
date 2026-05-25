@@ -5,6 +5,7 @@ import { EmptyState } from "@/components/ui-kit/EmptyState";
 import { StatusBadge } from "@/components/ui-kit/StatusBadge";
 import { SalesWorkflowProgress } from "@/components/sales/SalesWorkflowProgress";
 import { fmtTHB } from "@/lib/demo-data";
+import { buildSalesDocumentTitle } from "@/lib/document-sections";
 import type { DocumentSummary } from "@/lib/types";
 import {
   buildSalesDocumentPacks,
@@ -303,7 +304,9 @@ const PackDetails = ({
     {pack.documents.map((document) => {
       const attachmentCount = document.attachmentCount ?? document.attachments?.length ?? 0;
       const steps = documentWorkflowSteps(document).map((step) => getWorkflowStepLabel(step, language)).join(" / ");
-      const documentTypes = document.documentTypes?.length ? document.documentTypes.join(" / ").replace(/_/g, " ") : document.kind.replace(/_/g, " ");
+      const documentTypes = document.documentTypes?.length
+        ? buildSalesDocumentTitle(document.documentTypes, language) || document.documentTypes.join(" / ").replace(/_/g, " ")
+        : buildSalesDocumentTitle([document.kind], language) || document.kind.replace(/_/g, " ");
       return (
         <div key={document.id} className="grid gap-2 border-t border-border/50 px-3 py-2 text-xs first:border-t-0 md:grid-cols-[1fr_auto_auto] md:items-start">
           <div className="min-w-0">

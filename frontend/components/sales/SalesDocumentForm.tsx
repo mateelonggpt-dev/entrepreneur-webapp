@@ -70,6 +70,7 @@ import {
   getPrimarySalesDocumentType,
   getRealDocumentTypes,
   getSalesDocumentNumberPrefix,
+  sanitizeSalesDocumentTypes,
   type DocumentLanguage,
 } from "@/lib/document-sections";
 import type { BrandingSettings, CompanySettings, Customer, DocumentKind, DocumentSettings, Product, SalesDocumentRecord, TeamMember, UsersSettings, Vendor } from "@/lib/types";
@@ -1081,7 +1082,7 @@ export const SalesDocumentForm = ({
   const { t } = useTranslation();
   const { data, refresh } = useAppData();
   const realTypes = useMemo(
-    () => getRealDocumentTypes(selectedDocumentTypes ?? selectedTypes ?? []),
+    () => getRealDocumentTypes(sanitizeSalesDocumentTypes(selectedDocumentTypes ?? selectedTypes ?? [])),
     [selectedDocumentTypes, selectedTypes]
   );
   const [documentLanguage, setDocumentLanguage] = useState<DocumentLanguage>(language);
@@ -5019,10 +5020,10 @@ const referenceFromSummary = (item: {
 const referenceKindLabels: Record<string, { en: string; th: string }> = {
   quotation: { en: "Quotation", th: "ใบเสนอราคา" },
   delivery_note: { en: "Delivery Note", th: "ใบส่งของ" },
-  invoice: { en: "Invoice", th: "ใบแจ้งหนี้" },
+  invoice: { en: "Billing Note / Invoice", th: "ใบวางบิล/ใบแจ้งหนี้" },
   tax_invoice: { en: "Tax Invoice", th: "ใบกำกับภาษี" },
-  billing: { en: "Billing Note", th: "ใบวางบิล" },
-  billing_note: { en: "Billing Note", th: "ใบวางบิล" },
+  billing: { en: "Billing Note / Invoice", th: "ใบวางบิล/ใบแจ้งหนี้" },
+  billing_note: { en: "Billing Note / Invoice", th: "ใบวางบิล/ใบแจ้งหนี้" },
   receipt: { en: "Receipt", th: "ใบเสร็จรับเงิน" },
   credit_note: { en: "Credit Note", th: "ใบลดหนี้" },
   debit_note: { en: "Debit Note", th: "ใบเพิ่มหนี้" },
@@ -5032,9 +5033,10 @@ const referenceKindLabels: Record<string, { en: string; th: string }> = {
 
 const getSuggestedReferenceKinds = (currentType: string): string[] => {
   if (currentType === "delivery_note") return ["quotation"];
-  if (currentType === "invoice") return ["quotation", "delivery_note", "billing", "billing_note"];
+  if (currentType === "invoice") return ["quotation", "delivery_note"];
   if (currentType === "tax_invoice") return ["quotation", "delivery_note", "invoice"];
-  if (currentType === "billing_note" || currentType === "combined_billing_note") return ["invoice", "tax_invoice"];
+  if (currentType === "billing_note") return ["quotation", "delivery_note"];
+  if (currentType === "combined_billing_note") return ["invoice", "tax_invoice"];
   if (currentType === "receipt" || currentType === "combined_receipt") return ["invoice", "tax_invoice", "billing", "billing_note", "combined_billing_note"];
   if (currentType === "credit_note" || currentType === "debit_note") return ["invoice", "tax_invoice"];
   if (currentType === "cash_sale" || currentType === "short_tax_invoice") return ["quotation", "delivery_note"];
@@ -5621,7 +5623,7 @@ const dominantVatRate = (lines: Line[]) => {
 const resolveSalesDocumentKind = (primaryType: string): DocumentKind => {
   if (primaryType === "quotation") return "quotation";
   if (primaryType === "receipt" || primaryType === "combined_receipt") return "receipt";
-  if (primaryType === "billing_note" || primaryType === "combined_billing_note") return "billing";
+  if (primaryType === "combined_billing_note") return "billing";
   if (primaryType === "credit_note") return "credit_note";
   if (primaryType === "debit_note") return "debit_note";
   if (primaryType === "deposit") return "deposit";
@@ -5636,7 +5638,7 @@ const resolveNumberPrefix = (primaryType: string, _data: ReturnType<typeof useAp
     cash_sale: "CA",
     delivery_note: "INV",
     combined_billing_note: "BL",
-    billing_note: "BL",
+    billing_note: "INV",
     combined_receipt: "RE",
     receipt: "RE",
     quotation: "QT",

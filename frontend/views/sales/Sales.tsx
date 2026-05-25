@@ -97,8 +97,8 @@ const Sales = () => {
     },
     {
       id: "invoice",
-      label: "Create Invoice",
-      thaiLabel: "สร้างใบแจ้งหนี้",
+      label: "Create Billing Note / Invoice",
+      thaiLabel: "สร้างใบวางบิล/ใบแจ้งหนี้",
       icon: FileCheck2,
       action: () => nav("/sales/invoices/new"),
     },
@@ -217,7 +217,7 @@ const Sales = () => {
         nav(createFromDocumentPath(document, "delivery_note"));
         return;
       case "create_billing_note":
-        nav(createFromDocumentPath(document, "billing_note"));
+        nav(createFromDocumentPath(document, "invoice"));
         return;
       case "create_tax_invoice":
         nav(createFromDocumentPath(document, "tax_invoice"));

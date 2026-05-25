@@ -306,7 +306,7 @@ const SaleDocuments = () => {
       create_deposit_invoice: createFromDocumentPath(document, "invoice", { documentVariant: "deposit_invoice" }),
       create_installment: createFromDocumentPath(document, "invoice", { flow: "installment" }),
       create_delivery_note: createFromDocumentPath(document, "delivery_note"),
-      create_billing_note: createFromDocumentPath(document, "billing_note"),
+      create_billing_note: createFromDocumentPath(document, "invoice"),
       create_tax_invoice: createFromDocumentPath(document, "tax_invoice"),
       create_receipt: createFromDocumentPath(document, "receipt"),
       create_receipt_remaining: createFromDocumentPath(document, "receipt"),
