@@ -21,7 +21,6 @@ export interface SalesWorkflow {
 
 export const SALES_WORKFLOW_STEPS: SalesWorkflowStepId[] = [
   "quotation",
-  "billing_note",
   "invoice",
   "delivery_note",
   "receipt",
@@ -29,8 +28,8 @@ export const SALES_WORKFLOW_STEPS: SalesWorkflowStepId[] = [
 
 export const SALES_WORKFLOW_LABELS: Record<SalesWorkflowStepId, { en: string; th: string }> = {
   quotation: { en: "Quotation", th: "ใบเสนอราคา" },
-  billing_note: { en: "Billing Note", th: "ใบวางบิล" },
-  invoice: { en: "Invoice", th: "ใบวางบิล/ใบแจ้งหนี้" },
+  billing_note: { en: "Billing Note / Invoice", th: "ใบวางบิล/ใบแจ้งหนี้" },
+  invoice: { en: "Billing Note / Invoice", th: "ใบวางบิล/ใบแจ้งหนี้" },
   delivery_note: { en: "Delivery Note", th: "ใบส่งของ" },
   receipt: { en: "Receipt", th: "ใบเสร็จรับเงิน" },
 };
@@ -56,7 +55,7 @@ const inferDocumentTypes = (document: DocumentSummary) => {
 export const documentWorkflowSteps = (document: DocumentSummary): SalesWorkflowStepId[] =>
   inferDocumentTypes(document).flatMap((type) => {
     if (type === "quotation") return ["quotation" as const];
-    if (type === "billing_note") return ["billing_note" as const];
+    if (type === "billing_note") return ["invoice" as const];
     if (type === "invoice") return ["invoice" as const];
     if (type === "delivery_note") return ["delivery_note" as const];
     if (type === "receipt") return ["receipt" as const];
@@ -177,7 +176,7 @@ export const buildSalesWorkflow = (
 };
 
 export const workflowStepToDocumentType = (step: SalesWorkflowStepId) =>
-  step === "billing_note" ? "billing_note" : step;
+  step === "billing_note" ? "invoice" : step;
 
 export const workflowStepSourceKind = (document: DocumentSummary): DocumentKind =>
   document.kind === "billing" ? "billing" : document.kind;

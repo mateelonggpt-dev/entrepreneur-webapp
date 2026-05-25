@@ -12,16 +12,32 @@ interface PoAttachmentBoxProps {
   disabled?: boolean;
 }
 
-const acceptedPoTypes = "application/pdf,image/*";
+const acceptedPoTypes = "application/pdf,image/jpeg,image/png";
+const allowedMimeTypes = new Set(["application/pdf", "image/jpeg", "image/png"]);
+const MAX_VISIBLE_FILENAME = 42;
+
+const shortenFileName = (name: string) => {
+  if (name.length <= MAX_VISIBLE_FILENAME) return name;
+  const dotIndex = name.lastIndexOf(".");
+  const extension = dotIndex > 0 ? name.slice(dotIndex) : "";
+  const stem = dotIndex > 0 ? name.slice(0, dotIndex) : name;
+  const reserved = extension.length + 3;
+  const available = Math.max(16, MAX_VISIBLE_FILENAME - reserved);
+  const headLength = Math.ceil(available * 0.62);
+  const tailLength = Math.max(6, available - headLength);
+  return `${stem.slice(0, headLength)}...${stem.slice(-tailLength)}${extension}`;
+};
 
 export const PoAttachmentBox = ({ files, onFilesChange, disabled }: PoAttachmentBoxProps) => {
   const inputRef = useRef<HTMLInputElement>(null);
   const { i18n } = useTranslation();
-  const isThai = i18n.language === "th";
+  const isThai = i18n.language?.startsWith("th");
 
   const addFiles = (incoming: FileList | null) => {
     if (!incoming?.length) return;
-    onFilesChange([...files, ...Array.from(incoming)]);
+    const nextFiles = Array.from(incoming).filter((file) => allowedMimeTypes.has(file.type));
+    if (!nextFiles.length) return;
+    onFilesChange([...files, ...nextFiles]);
   };
 
   const removeFile = (index: number) => {
@@ -29,24 +45,30 @@ export const PoAttachmentBox = ({ files, onFilesChange, disabled }: PoAttachment
   };
 
   return (
-    <Card className="border-dashed border-sky-200 bg-sky-50/50 p-5 shadow-none">
-      <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
-        <div className="flex gap-3">
+    <Card className="min-w-0 max-w-full overflow-hidden border-dashed border-sky-200 bg-sky-50/50 p-4 shadow-none sm:p-5">
+      <div className="flex min-w-0 max-w-full flex-col gap-4 md:flex-row md:items-start md:justify-between">
+        <div className="flex min-w-0 gap-3">
           <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-sky-100 text-sky-700">
             <Paperclip className="h-5 w-5" />
           </div>
-          <div>
-            <h3 className="font-display text-sm font-semibold">{isThai ? "PO ลูกค้า / เอกสารอ้างอิงจากลูกค้า" : "Customer PO / Customer reference evidence"}</h3>
-            <p className="text-sm font-medium text-slate-700">{isThai ? "แนบใบสั่งซื้อหรือเอกสารยืนยันจากลูกค้า" : "Attach the purchase order or confirmation from your customer"}</p>
+          <div className="min-w-0">
+            <h3 className="font-display text-sm font-semibold">
+              {isThai ? "PO ลูกค้า / เอกสารอ้างอิงจากลูกค้า" : "Customer PO / Customer reference evidence"}
+            </h3>
+            <p className="text-sm font-medium text-slate-700">
+              {isThai ? "แนบใบสั่งซื้อหรือเอกสารยืนยันจากลูกค้า" : "Attach the purchase order or confirmation from your customer"}
+            </p>
             <p className="mt-1 max-w-2xl text-xs text-muted-foreground">
-              {isThai ? "ไฟล์นี้ใช้เป็นหลักฐานภายในเท่านั้น และจะไม่แสดงบนเอกสารพิมพ์หรือ PDF" : "These files are internal evidence only and will not appear on the printed document or PDF."}
+              {isThai
+                ? "ไฟล์นี้ใช้เป็นหลักฐานภายในเท่านั้น และจะไม่แสดงบนเอกสารพิมพ์หรือ PDF"
+                : "These files are internal evidence only and will not appear on the printed document or PDF."}
             </p>
           </div>
         </div>
         <Button
           type="button"
           variant="outline"
-          className="gap-1.5 bg-white"
+          className="w-full shrink-0 gap-1.5 bg-white sm:w-auto"
           disabled={disabled}
           onClick={() => inputRef.current?.click()}
         >
@@ -71,20 +93,23 @@ export const PoAttachmentBox = ({ files, onFilesChange, disabled }: PoAttachment
         {files.length > 0 ? (
           files.map((file, index) => {
             const Icon = file.type.startsWith("image/") ? Image : FileText;
+            const visibleName = shortenFileName(file.name);
             return (
-              <div key={`${file.name}-${file.lastModified}-${index}`} className="flex items-center gap-3 rounded-lg border border-sky-100 bg-white p-3">
+              <div key={`${file.name}-${file.lastModified}-${index}`} className="flex min-w-0 max-w-full items-center gap-3 overflow-hidden rounded-lg border border-sky-100 bg-white p-3">
                 <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md bg-slate-100 text-slate-600">
                   <Icon className="h-4 w-4" />
                 </div>
-                <div className="min-w-0 flex-1">
-                  <p className="truncate text-sm font-medium">{file.name}</p>
+                <div className="min-w-0 flex-1 overflow-hidden">
+                  <p className="block max-w-full truncate text-sm font-medium" title={file.name}>
+                    {visibleName}
+                  </p>
                   <p className="text-xs text-muted-foreground">{formatFileSize(file.size)}</p>
                 </div>
                 <Button
                   type="button"
                   variant="ghost"
                   size="icon"
-                  className="h-8 w-8 text-muted-foreground hover:text-destructive"
+                  className="h-8 w-8 shrink-0 text-muted-foreground hover:text-destructive"
                   disabled={disabled}
                   onClick={() => removeFile(index)}
                   aria-label={`Remove ${file.name}`}

@@ -58,6 +58,7 @@ from ..services.data_service import (
     list_products,
     list_reports,
     preview_import,
+    remove_document,
     save_settings_section,
     save_company_settings,
     save_branding_asset,
@@ -725,6 +726,20 @@ def override_workflow_warning_endpoint(kind: str, document_id: str):
     current_email = current_email or (session.get("auth_user") or {}).get("email")
     try:
         record = override_workflow_warning(kind, document_id, payload, actor_email=current_email)
+    except ValueError as exc:
+        abort(400, description=str(exc))
+    if not record:
+        abort(404, description="Document not found.")
+    return jsonify(record)
+
+
+@api_blueprint.post("/documents/<kind>/<document_id>/remove")
+def remove_document_endpoint(kind: str, document_id: str):
+    payload = request.get_json(silent=True) or {}
+    current_email = getattr(current_user, "email", None) if getattr(current_user, "is_authenticated", False) else None
+    current_email = current_email or (session.get("auth_user") or {}).get("email")
+    try:
+        record = remove_document(kind, document_id, payload, actor_email=current_email)
     except ValueError as exc:
         abort(400, description=str(exc))
     if not record:

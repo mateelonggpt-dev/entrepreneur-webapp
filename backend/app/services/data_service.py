@@ -1082,7 +1082,12 @@ def _summarize_document(kind: str, record: dict[str, Any]) -> dict[str, Any]:
 
 
 def _document_summaries(key: str, kind: str) -> list[dict[str, Any]]:
-    return [_summarize_document(kind, item) for item in _db().get(key, [])]
+    inactive_statuses = {"inactive", "removed", "deleted", "void", "cancelled", "canceled"}
+    return [
+        _summarize_document(kind, item)
+        for item in _db().get(key, [])
+        if str(item.get("status", "")).strip().lower() not in inactive_statuses
+    ]
 
 
 def _push_activity(data: dict[str, Any], who: str, what: str, kind: str, amount: float | None = None) -> None:
@@ -1091,6 +1096,73 @@ def _push_activity(data: dict[str, Any], who: str, what: str, kind: str, amount:
         entry["amount"] = amount
     data.setdefault("recentActivity", []).insert(0, entry)
     data["recentActivity"] = data["recentActivity"][:20]
+
+
+def _document_reference_ids(document: dict[str, Any]) -> set[str]:
+    ids: set[str] = set()
+    for key_name in (
+        "sourceDocumentId",
+        "relatedDocument",
+        "relatedInvoice",
+        "relatedPurchaseOrderId",
+        "sourceBillingId",
+        "convertedFromId",
+        "parentQuotationId",
+        "depositSourceDocumentId",
+    ):
+        value = document.get(key_name)
+        if value:
+            ids.add(str(value))
+    for key_name in (
+        "sourceDocumentIds",
+        "linkedDocumentIds",
+        "convertedToIds",
+        "relatedDocumentIds",
+        "sourceInvoiceIds",
+    ):
+        for value in document.get(key_name, []) or []:
+            if value:
+                ids.add(str(value))
+    for reference in document.get("referenceDocuments", []) or []:
+        if isinstance(reference, dict) and reference.get("id"):
+            ids.add(str(reference["id"]))
+    return ids
+
+
+def _document_removal_blockers(data: dict[str, Any], document_id: str, record: dict[str, Any]) -> list[str]:
+    blockers: list[str] = []
+    linked_ids = set(_coerce_id_list(record.get("linkedDocumentIds"))) | set(_coerce_id_list(record.get("convertedToIds")))
+    if linked_ids:
+        blockers.append("linked documents")
+
+    for collection_name in DOCUMENT_COLLECTION_KEYS:
+        for candidate in data.get(collection_name, []):
+            if candidate.get("id") == document_id:
+                continue
+            if document_id not in _document_reference_ids(candidate):
+                continue
+            collection_kind = next(
+                (kind for kind, config in DOCUMENT_CONFIG.items() if config["key"] == collection_name),
+                collection_name,
+            )
+            candidate_kind = canonical_document_kind(candidate.get("kind") or collection_kind)
+            candidate_types = {canonical_document_kind(item) for item in candidate.get("documentTypes", []) or []}
+            if candidate_kind in {"receipt", "tax_invoice", "credit_note", "debit_note"} or candidate_types.intersection(
+                {"receipt", "tax_invoice", "credit_note", "debit_note"}
+            ):
+                blockers.append(f"{candidate.get('id')} ({candidate_kind})")
+            else:
+                blockers.append(str(candidate.get("id")))
+
+    for payment in data.get("payments", []):
+        payment_refs = _document_reference_ids(payment)
+        for allocation in payment.get("allocations", []) or []:
+            if isinstance(allocation, dict) and allocation.get("documentId"):
+                payment_refs.add(str(allocation["documentId"]))
+        if document_id in payment_refs:
+            blockers.append(f"{payment.get('id')} (payment)")
+
+    return list(dict.fromkeys(blockers))
 
 
 def _parse_document_period(date_text: str | None) -> tuple[str, str]:
@@ -2372,6 +2444,62 @@ def create_document(kind: str, payload: dict[str, Any], actor_email: str | None 
         _reconcile_inventory_for_document(data, kind=resolved, record=saved_record)
 
         return deepcopy(saved_record)
+
+    return _mutate(mutator)
+
+
+def remove_document(kind: str, document_id: str, payload: dict[str, Any], actor_email: str | None = None) -> dict[str, Any] | None:
+    resolved = _kind_alias(kind)
+    mode = str(payload.get("mode") or "").strip().lower() or "delete"
+    if mode not in {"delete", "void", "remove"}:
+        raise ValueError("Unsupported removal mode.")
+    reason = str(payload.get("reason") or "").strip()
+
+    def mutator(data: dict[str, Any]) -> dict[str, Any] | None:
+        actor = _document_actor_context(data, actor_email)
+        record = next((item for item in data.get(DOCUMENT_CONFIG[resolved]["key"], []) if item.get("id") == document_id), None)
+        if not record:
+            return None
+
+        status = str(record.get("status", "draft")).strip().lower()
+        blockers = _document_removal_blockers(data, document_id, record)
+        has_tax_relevance = bool(record.get("isTaxInvoice") or "tax_invoice" in (record.get("documentTypes") or []))
+        has_attachments = bool(record.get("attachments"))
+        requires_override_reason = bool(blockers or has_tax_relevance or has_attachments)
+
+        if blockers and mode in {"delete", "void"}:
+            raise ValueError(
+                "This document has related documents. Please void, issue a credit note, or cancel related documents first."
+            )
+        if mode == "remove":
+            if actor["role"] != "owner":
+                raise ValueError("Only owners can remove documents from the system.")
+            if requires_override_reason and not reason:
+                raise ValueError("A reason is required to remove a document with links, payments, attachments, or tax relevance.")
+
+        if mode == "delete" and status not in {"draft", "pending", "rejected"}:
+            raise ValueError("Only draft or pending documents can be deleted. Use void for issued documents.")
+
+        next_status = "inactive" if mode in {"delete", "remove"} else "void"
+        now = datetime.now().isoformat(timespec="seconds")
+        actor_label = actor["email"] or "System"
+        event_label = "removed document" if mode == "remove" else "deleted document" if mode == "delete" else "voided document"
+        record["status"] = next_status
+        record["removedAt"] = now
+        record["removedBy"] = actor_label
+        record["removeMode"] = mode
+        if reason:
+            record["removeReason"] = reason
+        record.setdefault("timeline", []).append(
+            {
+                "who": actor_label,
+                "what": event_label if not reason else f"{event_label}: {reason}",
+                "time": now,
+                "type": "remove" if mode in {"delete", "remove"} else "void",
+            }
+        )
+        _push_activity(data, actor_label, f"{event_label} {document_id}", next_status, record.get("amount"))
+        return deepcopy(record)
 
     return _mutate(mutator)
 

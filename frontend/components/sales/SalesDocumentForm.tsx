@@ -70,6 +70,7 @@ import {
   getPrimarySalesDocumentType,
   getRealDocumentTypes,
   getSalesDocumentNumberPrefix,
+  sanitizeSalesDocumentTypes,
   type DocumentLanguage,
 } from "@/lib/document-sections";
 import type { BrandingSettings, CompanySettings, Customer, DocumentKind, DocumentSettings, Product, SalesDocumentRecord, TeamMember, UsersSettings, Vendor } from "@/lib/types";
@@ -1023,7 +1024,7 @@ const TextField = ({
   type?: string;
   readOnly?: boolean;
 }) => (
-  <div>
+  <div className="min-w-0">
     <Label>{label}</Label>
     <Input
       type={type}
@@ -1036,9 +1037,9 @@ const TextField = ({
 );
 
 const ReadOnlyValue = ({ label, value, className = "" }: { label: string; value: string | number; className?: string }) => (
-  <div>
+  <div className="min-w-0">
     <Label>{label}</Label>
-    <div className={`mt-1.5 min-h-9 rounded-md border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-700 ${className}`}>
+    <div className={`mt-1.5 min-h-9 max-w-full rounded-md border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-700 [overflow-wrap:anywhere] ${className}`}>
       {value || "-"}
     </div>
   </div>
@@ -1053,7 +1054,7 @@ const PaperBlock = ({
   children: ReactNode;
   className?: string;
 }) => (
-  <section className={`rounded-lg border border-slate-200 bg-white p-4 ${className}`}>
+  <section className={`min-w-0 rounded-lg border border-slate-200 bg-white p-4 ${className}`}>
     {title ? <p className="mb-3 text-xs font-semibold uppercase tracking-wider text-slate-500">{title}</p> : null}
     {children}
   </section>
@@ -1081,7 +1082,7 @@ export const SalesDocumentForm = ({
   const { t } = useTranslation();
   const { data, refresh } = useAppData();
   const realTypes = useMemo(
-    () => getRealDocumentTypes(selectedDocumentTypes ?? selectedTypes ?? []),
+    () => getRealDocumentTypes(sanitizeSalesDocumentTypes(selectedDocumentTypes ?? selectedTypes ?? [])),
     [selectedDocumentTypes, selectedTypes]
   );
   const [documentLanguage, setDocumentLanguage] = useState<DocumentLanguage>(language);
@@ -1092,20 +1093,32 @@ export const SalesDocumentForm = ({
   const [invoiceTaxType, setInvoiceTaxType] = useState<"normal" | "tax">(initialTaxInvoice ? "tax" : "normal");
   const [invoicePaymentMode, setInvoicePaymentMode] = useState<InvoicePaymentMode>(initialInvoicePaymentMode);
   const isDepositPaymentDocument = isInvoiceDocument && invoicePaymentMode === "deposit";
+  const titleDocumentTypes = useMemo(
+    () => {
+      const hasExplicitTaxInvoice = realTypes.includes("tax_invoice");
+      return realTypes.map((type) =>
+        type === "invoice" && invoiceTaxType === "tax" && !hasExplicitTaxInvoice ? "tax_invoice" : type
+      );
+    },
+    [invoiceTaxType, realTypes]
+  );
   const documentTitleTh = useMemo(
-    () =>
-      isInvoiceDocument
-        ? isTaxInvoiceDocument || invoiceTaxType === "tax"
-          ? "ใบกำกับภาษี"
-          : "ใบวางบิล/ใบแจ้งหนี้"
-        : documentTitle || buildSalesDocumentTitle(realTypes, "th"),
-    [documentTitle, invoiceTaxType, isInvoiceDocument, isTaxInvoiceDocument, realTypes]
+    () => documentTitle || buildSalesDocumentTitle(titleDocumentTypes, "th"),
+    [documentTitle, titleDocumentTypes]
   );
   const documentTitleEn = useMemo(
-    () => (isInvoiceDocument ? (isTaxInvoiceDocument || invoiceTaxType === "tax" ? "Tax Invoice" : "Invoice") : buildSalesDocumentTitle(realTypes, "en")),
-    [invoiceTaxType, isInvoiceDocument, isTaxInvoiceDocument, realTypes]
+    () => buildSalesDocumentTitle(titleDocumentTypes, "en"),
+    [titleDocumentTypes]
   );
   const previewTitle = documentLanguage === "th" ? documentTitleTh : documentTitleEn;
+  const previewTitleSizeClass =
+    Array.from(previewTitle).length > 34
+      ? "text-lg sm:text-xl xl:text-[1.28rem]"
+      : Array.from(previewTitle).length > 26
+      ? "text-xl sm:text-[1.45rem] xl:text-[1.55rem]"
+      : Array.from(previewTitle).length > 18
+        ? "text-[1.35rem] sm:text-2xl"
+        : "text-2xl";
   const kind = useMemo(() => resolveSalesDocumentKind(primaryDocumentType), [primaryDocumentType]);
   const numberPrefix = useMemo(() => resolveNumberPrefix(primaryDocumentType, data, realTypes), [data, primaryDocumentType, realTypes]);
   const [documentNumber, setDocumentNumber] = useState("");
@@ -1366,7 +1379,9 @@ export const SalesDocumentForm = ({
   const companyBankAccounts = companySettings?.bankAccounts ?? [];
   const selectedBankAccount = companyBankAccounts.find((account) => account.id === paymentDetails.selectedBankAccountId) ?? null;
   const selectedSellerUser = internalUsers.find((user) => user.id === sellerUserId) ?? null;
-  const showPoAttachmentBox = realTypes.some((type) => type === "invoice" || type === "tax_invoice");
+  const showPoAttachmentBox = realTypes.some((type) =>
+    ["invoice", "tax_invoice", "delivery_note", "billing_note"].includes(type)
+  );
   const stockWarningCount = lines.filter(stockWarning).length;
   const validationErrors = useMemo(
     () =>
@@ -2354,7 +2369,7 @@ export const SalesDocumentForm = ({
         customerInfo: { ...customer, code: savedCustomer?.id ?? customer.code },
       });
 
-      if (showPoAttachmentBox && poAttachmentFiles.length > 0) {
+      if (poAttachmentFiles.length > 0) {
         await uploadAttachments({
           entityType: kind,
           entityId: created.id,
@@ -2370,7 +2385,7 @@ export const SalesDocumentForm = ({
       setPoAttachmentFiles([]);
       toast.success(submitMode === "draft" ? `Draft ${created.id} saved` : `Document ${created.id} created`, {
         description:
-          showPoAttachmentBox && poAttachmentFiles.length > 0
+          poAttachmentFiles.length > 0
             ? `${documentTitleTh} - ${poAttachmentFiles.length} PO file(s) attached`
             : documentTitleTh,
       });
@@ -2466,9 +2481,9 @@ export const SalesDocumentForm = ({
   }
 
   return (
-    <form className="space-y-6">
-      <Card className="mx-auto max-w-6xl bg-white p-6 text-slate-950 shadow-xl">
-        <div className="flex items-start justify-between gap-6 border-b border-slate-200 pb-6">
+    <form className="min-w-0 max-w-full space-y-6 overflow-x-hidden pb-28 sm:pb-24">
+      <Card className="mx-auto w-full max-w-6xl overflow-hidden bg-white p-4 text-slate-950 shadow-xl sm:p-6">
+        <div className="grid min-w-0 gap-6 border-b border-slate-200 pb-6 xl:grid-cols-[minmax(0,1fr)_minmax(320px,420px)]">
           <div className="flex min-w-0 gap-4">
             <div className="flex h-20 w-28 shrink-0 items-center justify-center border border-slate-200 bg-slate-50">
               {branding.logoUrl ? <img src={resolveAssetUrl(branding.logoUrl)} alt="Company logo" className="max-h-16 max-w-24 object-contain" /> : <Image className="h-8 w-8 text-slate-400" />}
@@ -2495,10 +2510,10 @@ export const SalesDocumentForm = ({
               ) : null}
             </div>
           </div>
-          <div className="w-80 shrink-0 text-right">
-            <div className="mb-3 flex justify-end gap-2">
+          <div className="min-w-0 justify-self-stretch text-left xl:max-w-[420px] xl:justify-self-end xl:text-right">
+            <div className="mb-3 flex flex-wrap justify-start gap-2 xl:justify-end">
               <Select value={copyGeneration} onValueChange={(value) => setCopyGeneration(value as CopyGeneration)}>
-                <SelectTrigger className="h-8 w-40 border-slate-200 bg-white text-xs"><SelectValue /></SelectTrigger>
+                <SelectTrigger className="h-8 w-full min-w-0 border-slate-200 bg-white text-xs sm:w-40"><SelectValue /></SelectTrigger>
                 <SelectContent>
                   {localizedCopyOptions.map((option) => (
                     <SelectItem key={option.value} value={option.value}>
@@ -2508,15 +2523,15 @@ export const SalesDocumentForm = ({
                 </SelectContent>
               </Select>
               <Select value={documentLanguage} onValueChange={(value) => setDocumentLanguage(value as DocumentLanguage)}>
-                <SelectTrigger className="h-8 w-20 border-slate-200 bg-white text-xs"><SelectValue /></SelectTrigger>
+                <SelectTrigger className="h-8 w-20 min-w-0 border-slate-200 bg-white text-xs"><SelectValue /></SelectTrigger>
                 <SelectContent>
                   <SelectItem value="th">TH</SelectItem>
                   <SelectItem value="en">EN</SelectItem>
                 </SelectContent>
               </Select>
             </div>
-            <h2 className="text-2xl font-bold leading-tight">{previewTitle}</h2>
-            <div className="ml-auto mt-3 w-52" data-field="documentNumber">
+            <h2 className={`${previewTitleSizeClass} break-words font-bold leading-tight`}>{previewTitle}</h2>
+            <div className="mt-3 w-full max-w-56 xl:ml-auto" data-field="documentNumber">
               <Input
                 value={documentNumber}
                 onChange={(event) => {
@@ -2527,16 +2542,16 @@ export const SalesDocumentForm = ({
               />
               <FieldError message={fieldErrors.documentNumber} />
             </div>
-            <div className="ml-auto mt-4 grid w-80 gap-3 text-left">
-              <div className="grid grid-cols-2 gap-3">
-                <div data-field="issueDate">
+            <div className="mt-4 grid w-full min-w-0 gap-3 text-left">
+              <div className="grid min-w-0 gap-3 sm:grid-cols-2">
+                <div className="min-w-0" data-field="issueDate">
                   <Label>{labels.issueDate}<RequiredMark /></Label>
-                  <Input type="date" value={issueDate} onChange={(event) => { setIssueDate(event.target.value); setDueDateEdited(false); }} className={`mt-1.5 border-slate-200 ${fieldErrors.issueDate ? "border-destructive" : ""}`} />
+                  <Input type="date" value={issueDate} onChange={(event) => { setIssueDate(event.target.value); setDueDateEdited(false); }} className={`mt-1.5 min-w-0 border-slate-200 ${fieldErrors.issueDate ? "border-destructive" : ""}`} />
                   <FieldError message={fieldErrors.issueDate} />
                 </div>
-                <div data-field="dueDate">
+                <div className="min-w-0" data-field="dueDate">
                   <Label>{labels.dueDate}<RequiredMark /></Label>
-                  <Input type="date" value={dueDate} onChange={(event) => { setDueDate(event.target.value); setDueDateEdited(true); }} className={`mt-1.5 border-slate-200 ${fieldErrors.dueDate ? "border-destructive" : ""}`} />
+                  <Input type="date" value={dueDate} onChange={(event) => { setDueDate(event.target.value); setDueDateEdited(true); }} className={`mt-1.5 min-w-0 border-slate-200 ${fieldErrors.dueDate ? "border-destructive" : ""}`} />
                   <FieldError message={fieldErrors.dueDate} />
                 </div>
               </div>
@@ -2547,22 +2562,22 @@ export const SalesDocumentForm = ({
                 </div>
               </div>
               {isInvoiceDocument ? (
-                <div className="grid grid-cols-2 gap-3">
-                  <div>
+                <div className="grid min-w-0 gap-3 sm:grid-cols-2">
+                  <div className="min-w-0">
                     <Label>{labels.invoiceType}<RequiredMark /></Label>
                     <Select
                       value={isTaxInvoiceDocument ? "tax" : invoiceTaxType}
                       onValueChange={(value) => setInvoiceTaxType(value as "normal" | "tax")}
                       disabled={isTaxInvoiceDocument}
                     >
-                      <SelectTrigger className="mt-1.5 border-slate-200 bg-white"><SelectValue /></SelectTrigger>
+                      <SelectTrigger className="mt-1.5 min-w-0 border-slate-200 bg-white"><SelectValue /></SelectTrigger>
                       <SelectContent>
                         <SelectItem value="normal">{labels.normalInvoice}</SelectItem>
                         <SelectItem value="tax">{labels.taxInvoice}</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
-                  <div>
+                  <div className="min-w-0">
                     <Label>{labels.paymentMode}<RequiredMark /></Label>
                     <Select
                       value={invoicePaymentMode}
@@ -2582,7 +2597,7 @@ export const SalesDocumentForm = ({
                         }
                       }}
                     >
-                      <SelectTrigger className="mt-1.5 border-slate-200 bg-white"><SelectValue /></SelectTrigger>
+                      <SelectTrigger className="mt-1.5 min-w-0 border-slate-200 bg-white"><SelectValue /></SelectTrigger>
                       <SelectContent>
                         <SelectItem value="full_payment">{labels.fullPayment}</SelectItem>
                         <SelectItem value="partial_payment">{labels.partialPayment}</SelectItem>
@@ -2685,18 +2700,19 @@ export const SalesDocumentForm = ({
                   value={reference}
                   onChange={(event) => setReference(event.target.value)}
                   placeholder={documentLanguage === "th" ? "เช่น PO-2026-001" : "e.g. PO-2026-001"}
-                  className="mt-1.5 border-slate-200 bg-white"
+                  className="mt-1.5 min-w-0 border-slate-200 bg-white"
                 />
               </div>
 
-              {/* PO_ATTACHMENT_BOX_VISIBLE_HOTFIX */}
-              <div className="mt-3">
-                <PoAttachmentBox
-                  files={poAttachmentFiles}
-                  onFilesChange={setPoAttachmentFiles}
-                  disabled={Boolean(submitting)}
-                />
-              </div>
+              {showPoAttachmentBox ? (
+                <div className="mt-3">
+                  <PoAttachmentBox
+                    files={poAttachmentFiles}
+                    onFilesChange={setPoAttachmentFiles}
+                    disabled={Boolean(submitting)}
+                  />
+                </div>
+              ) : null}
             </div>
           </div>
         </div>
@@ -2858,7 +2874,7 @@ export const SalesDocumentForm = ({
         </div>
 
         {isDepositPaymentDocument ? (
-          <div className="mt-6 overflow-x-auto rounded-lg border border-emerald-200 bg-emerald-50/70 p-3">
+          <div className="mt-6 min-w-0 max-w-full overflow-x-auto rounded-lg border border-emerald-200 bg-emerald-50/70 p-3 [contain:inline-size]">
             <table className="w-full min-w-[560px] text-sm">
               <thead className="text-xs uppercase text-emerald-900">
                 <tr>
@@ -2885,7 +2901,7 @@ export const SalesDocumentForm = ({
             </table>
           </div>
         ) : (
-        <div className="mt-6 overflow-x-auto">
+        <div className="mt-6 min-w-0 max-w-full overflow-x-auto [contain:inline-size]">
           <div data-field="lines">
             <FieldError message={fieldErrors.lines} />
           </div>
@@ -3073,8 +3089,8 @@ export const SalesDocumentForm = ({
         </div>
         )}
 
-        <div className="mt-6 grid gap-6 md:grid-cols-[1fr_420px]">
-          <section className="space-y-4 text-sm">
+        <div className="mt-6 grid min-w-0 gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(320px,420px)]">
+          <section className="min-w-0 space-y-4 text-sm">
             <PaperBlock title={labels.payment}>
               <div className="grid gap-4 md:grid-cols-2">
                 <div>
@@ -3178,7 +3194,7 @@ export const SalesDocumentForm = ({
               </div>
             </PaperBlock>
           </section>
-          <section className="rounded-lg border border-slate-200 p-4">
+          <section className="min-w-0 rounded-lg border border-slate-200 p-4">
             <EditableTotalsSummary
               totals={totals}
               lines={lines}
@@ -3672,14 +3688,6 @@ export const SalesDocumentForm = ({
             </div>
           </Section>
 
-          {showPoAttachmentBox ? (
-            <PoAttachmentBox
-              files={poAttachmentFiles}
-              onFilesChange={setPoAttachmentFiles}
-              disabled={Boolean(submitting)}
-            />
-          ) : null}
-
         <div className="hidden">
           <Card className="card-premium sticky top-20 overflow-hidden">
             <div className="border-b border-border bg-card p-5">
@@ -3709,9 +3717,9 @@ export const SalesDocumentForm = ({
       </div>
       </div>
 
-      <div className="sticky bottom-0 z-20 -mx-2 rounded-t-xl border border-border bg-card/95 p-3 shadow-lg backdrop-blur">
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          <div className="flex flex-wrap items-center gap-3 text-sm">
+      <div className="sticky bottom-0 z-20 -mx-2 rounded-t-xl border border-border bg-card/95 p-2 shadow-lg backdrop-blur sm:p-3">
+        <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between sm:gap-3">
+          <div className="flex min-w-0 flex-wrap items-center gap-2 text-sm sm:gap-3">
             <div>
               <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Grand total</p>
               <p className="font-display text-lg font-bold text-primary">{formatMoney(totals.remainingDue, currency)}</p>
@@ -3727,7 +3735,7 @@ export const SalesDocumentForm = ({
               </span>
             ) : null}
           </div>
-          <Button type="button" className="border-0 bg-gradient-brand text-primary-foreground shadow-brand" onClick={previewDocument}>
+          <Button type="button" className="w-full border-0 bg-gradient-brand text-primary-foreground shadow-brand sm:w-auto" onClick={previewDocument}>
             <Eye className="mr-1.5 h-4 w-4" /> {labels.preview}
           </Button>
         </div>
@@ -3979,13 +3987,13 @@ const CompactIdentity = ({
   onEdit?: () => void;
   editHref?: string;
 }) => (
-  <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-slate-200 bg-slate-50 px-3 py-2">
-    <div className="min-w-0">
+  <div className="flex min-w-0 flex-wrap items-center justify-between gap-3 rounded-lg border border-slate-200 bg-slate-50 px-3 py-2">
+    <div className="min-w-0 flex-1">
       <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">{label}</p>
       <p className="truncate text-sm font-semibold">{value}</p>
       <p className="mt-0.5 text-xs text-muted-foreground">{helper}</p>
     </div>
-    <div className="flex gap-1">
+    <div className="flex shrink-0 gap-1">
       <Button type="button" variant="ghost" size="icon" className="h-8 w-8" onClick={onToggle} aria-label={`${expanded ? "Collapse" : "Expand"} ${label}`}>
         {expanded ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
       </Button>
@@ -4030,18 +4038,18 @@ const ReferenceCombobox = ({
   const placeholder = labels.searchReferenceDocuments;
 
   return (
-    <div className="relative">
+    <div className="relative min-w-0">
     <Popover open={open} onOpenChange={onOpenChange}>
       <PopoverTrigger asChild>
         <Button
           type="button"
           variant="outline"
-          className="mt-1.5 h-auto min-h-9 w-full justify-between border-slate-200 bg-white px-3 py-2 text-left font-normal"
+          className="mt-1.5 h-auto min-h-9 w-full min-w-0 justify-between border-slate-200 bg-white px-3 py-2 text-left font-normal"
           aria-label={placeholder}
         >
-          <span className="min-w-0">
+          <span className="min-w-0 flex-1">
             {selected ? (
-              <span className="block truncate pr-20">
+              <span className="block truncate pr-2">
                 {formatReferenceKind(selected.kind, language)} · {selected.id}
               </span>
             ) : (
@@ -4287,7 +4295,7 @@ const ReferenceGroupList = ({
   }, {});
 
   return (
-    <div className="mt-3 space-y-3 rounded-lg border border-slate-200 bg-slate-50 p-3">
+    <div className="mt-3 min-w-0 space-y-3 rounded-lg border border-slate-200 bg-slate-50 p-3">
       <p className="text-xs font-semibold uppercase tracking-wider text-slate-600">{labels.referenceDocuments}</p>
       {Object.entries(grouped).map(([kind, items]) => (
         <div key={kind} className="space-y-2">
@@ -4329,16 +4337,16 @@ const ReferenceChip = ({
   onRemove: () => void;
   onReimport: () => void;
 }) => (
-  <div className="mt-1.5 flex flex-wrap items-center justify-between gap-2 rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs">
-    <div className="min-w-0">
-      <p className="font-semibold text-slate-950">
+  <div className="mt-1.5 flex min-w-0 flex-wrap items-center justify-between gap-2 rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs">
+    <div className="min-w-0 flex-1">
+      <p className="break-words font-semibold text-slate-950">
         {formatReferenceKind(reference.kind, language)} · <span className="font-mono">{reference.id}</span>
       </p>
-      <p className="mt-0.5 truncate text-slate-600">
+      <p className="mt-0.5 break-words text-slate-600">
         {reference.party || "-"} · {reference.date || "-"} · {formatMoney(reference.amount, currency)} · {formatReferenceStatus(reference.status, language)}
       </p>
     </div>
-    <div className="flex gap-1">
+    <div className="flex shrink-0 gap-1">
       <Button type="button" variant="ghost" size="icon" className="h-8 w-8 text-slate-700" onClick={onView} aria-label={labels.sourceDocument}>
         <Eye className="h-4 w-4" />
       </Button>
@@ -4696,7 +4704,7 @@ const TotalsSummary = ({
   const withholdingGroups = totals.withholdingGroups ?? [];
   const shouldShowWithholding = showWithholding || withholdingGroups.length > 0;
   return (
-    <dl className="space-y-2 text-sm">
+    <dl className="min-w-0 space-y-2 text-sm">
       <SummaryRow label={isThai ? "ยอดรวม" : "Subtotal"} value={formatMoney(totals.subtotalBeforeDiscount, currency)} />
       <SummaryRow label={`${isThai ? "ส่วนลด" : "Discount"} ${formatPercent(discountRate)}`} value={formatMoney(totals.totalDiscount, currency)} />
       <SummaryRow label={isThai ? "ยอดก่อน VAT" : "Amount before VAT"} value={formatMoney(totals.amountBeforeVat, currency)} />
@@ -4713,17 +4721,17 @@ const TotalsSummary = ({
         <SummaryRow label={labels.totalWithholdingTax} value={formatMoney(totals.withholdingAmount, currency)} />
       ) : null}
       {showAmountPaid ? <SummaryRow label={isThai ? "จำนวนเงินที่ชำระแล้ว" : labels.amountPaid} value={formatMoney(totals.amountPaid, currency)} /> : null}
-      <div className="flex justify-between border-t border-border pt-3 font-display text-lg font-bold">
-        <dt>{shouldShowWithholding && totals.withholdingAmount > 0 ? labels.amountAfterWithholding : isThai ? "จำนวนเงินที่ชำระ" : "Amount remaining due"}</dt>
-        <dd className="gradient-brand-text tabular-nums">{formatMoney(totals.remainingDue, currency)}</dd>
+      <div className="flex min-w-0 justify-between gap-3 border-t border-border pt-3 font-display text-lg font-bold">
+        <dt className="min-w-0 break-words">{shouldShowWithholding && totals.withholdingAmount > 0 ? labels.amountAfterWithholding : isThai ? "จำนวนเงินที่ชำระ" : "Amount remaining due"}</dt>
+        <dd className="shrink-0 tabular-nums gradient-brand-text">{formatMoney(totals.remainingDue, currency)}</dd>
       </div>
     </dl>
   );
 };
 const SummaryRow = ({ label, value, strong = false }: { label: string; value: string; strong?: boolean }) => (
-  <div className={`flex justify-between ${strong ? "font-semibold" : ""}`}>
-    <dt className="text-muted-foreground">{label}</dt>
-    <dd className="tabular-nums">{value}</dd>
+  <div className={`flex min-w-0 justify-between gap-3 ${strong ? "font-semibold" : ""}`}>
+    <dt className="min-w-0 break-words text-muted-foreground">{label}</dt>
+    <dd className="shrink-0 tabular-nums">{value}</dd>
   </div>
 );
 
@@ -4804,7 +4812,7 @@ const EditableTotalsSummary = ({
   const withholdingGroups = totals.withholdingGroups ?? [];
   const showWithholdingRows = showWithholding || withholdingGroups.length > 0;
   return (
-    <dl className="space-y-2 text-sm">
+    <dl className="min-w-0 space-y-2 text-sm">
       <SummaryRow label={isThai ? "ยอดรวม" : "Subtotal"} value={formatMoney(totals.subtotalBeforeDiscount, currency)} />
       <EditablePercentSummaryRow
         label={isThai ? "ส่วนลด" : "Discount"}
@@ -4837,9 +4845,9 @@ const EditableTotalsSummary = ({
         <SummaryRow label={labels.totalWithholdingTax} value={formatMoney(totals.withholdingAmount, currency)} />
       ) : null}
       {showAmountPaid ? <SummaryRow label={labels.amountPaid} value={formatMoney(totals.amountPaid, currency)} /> : null}
-      <div className="flex justify-between border-t border-border pt-3 font-display text-lg font-bold">
-        <dt>{showWithholdingRows && totals.withholdingAmount > 0 ? labels.amountAfterWithholding : isThai ? "จำนวนเงินที่ชำระ" : "Amount remaining due"}</dt>
-        <dd className="gradient-brand-text tabular-nums">{formatMoney(totals.remainingDue, currency)}</dd>
+      <div className="flex min-w-0 justify-between gap-3 border-t border-border pt-3 font-display text-lg font-bold">
+        <dt className="min-w-0 break-words">{showWithholdingRows && totals.withholdingAmount > 0 ? labels.amountAfterWithholding : isThai ? "จำนวนเงินที่ชำระ" : "Amount remaining due"}</dt>
+        <dd className="shrink-0 tabular-nums gradient-brand-text">{formatMoney(totals.remainingDue, currency)}</dd>
       </div>
     </dl>
   );
@@ -4860,9 +4868,9 @@ const EditablePercentSummaryRow = ({
   onChange: (value: number) => void;
   wholeNumber?: boolean;
 }) => (
-  <div className="grid grid-cols-[minmax(92px,1fr)_auto_minmax(120px,auto)] items-center gap-3">
-    <dt className="text-muted-foreground">{label}</dt>
-    <div className="flex items-center gap-2">
+  <div className="grid min-w-0 grid-cols-[minmax(80px,1fr)_auto_minmax(100px,auto)] items-center gap-2 sm:gap-3">
+    <dt className="min-w-0 break-words text-muted-foreground">{label}</dt>
+    <div className="flex shrink-0 items-center gap-2">
       <Input
         type="number"
         min={0}
@@ -4875,7 +4883,7 @@ const EditablePercentSummaryRow = ({
       />
       <span className="text-xs text-muted-foreground">%</span>
     </div>
-    <dd className="text-right tabular-nums">{formatMoney(amount, currency)}</dd>
+    <dd className="min-w-0 text-right tabular-nums">{formatMoney(amount, currency)}</dd>
   </div>
 );
 
@@ -5012,10 +5020,10 @@ const referenceFromSummary = (item: {
 const referenceKindLabels: Record<string, { en: string; th: string }> = {
   quotation: { en: "Quotation", th: "ใบเสนอราคา" },
   delivery_note: { en: "Delivery Note", th: "ใบส่งของ" },
-  invoice: { en: "Invoice", th: "ใบแจ้งหนี้" },
+  invoice: { en: "Billing Note / Invoice", th: "ใบวางบิล/ใบแจ้งหนี้" },
   tax_invoice: { en: "Tax Invoice", th: "ใบกำกับภาษี" },
-  billing: { en: "Billing Note", th: "ใบวางบิล" },
-  billing_note: { en: "Billing Note", th: "ใบวางบิล" },
+  billing: { en: "Billing Note / Invoice", th: "ใบวางบิล/ใบแจ้งหนี้" },
+  billing_note: { en: "Billing Note / Invoice", th: "ใบวางบิล/ใบแจ้งหนี้" },
   receipt: { en: "Receipt", th: "ใบเสร็จรับเงิน" },
   credit_note: { en: "Credit Note", th: "ใบลดหนี้" },
   debit_note: { en: "Debit Note", th: "ใบเพิ่มหนี้" },
@@ -5025,9 +5033,10 @@ const referenceKindLabels: Record<string, { en: string; th: string }> = {
 
 const getSuggestedReferenceKinds = (currentType: string): string[] => {
   if (currentType === "delivery_note") return ["quotation"];
-  if (currentType === "invoice") return ["quotation", "delivery_note", "billing", "billing_note"];
+  if (currentType === "invoice") return ["quotation", "delivery_note"];
   if (currentType === "tax_invoice") return ["quotation", "delivery_note", "invoice"];
-  if (currentType === "billing_note" || currentType === "combined_billing_note") return ["invoice", "tax_invoice"];
+  if (currentType === "billing_note") return ["quotation", "delivery_note"];
+  if (currentType === "combined_billing_note") return ["invoice", "tax_invoice"];
   if (currentType === "receipt" || currentType === "combined_receipt") return ["invoice", "tax_invoice", "billing", "billing_note", "combined_billing_note"];
   if (currentType === "credit_note" || currentType === "debit_note") return ["invoice", "tax_invoice"];
   if (currentType === "cash_sale" || currentType === "short_tax_invoice") return ["quotation", "delivery_note"];
@@ -5614,7 +5623,7 @@ const dominantVatRate = (lines: Line[]) => {
 const resolveSalesDocumentKind = (primaryType: string): DocumentKind => {
   if (primaryType === "quotation") return "quotation";
   if (primaryType === "receipt" || primaryType === "combined_receipt") return "receipt";
-  if (primaryType === "billing_note" || primaryType === "combined_billing_note") return "billing";
+  if (primaryType === "combined_billing_note") return "billing";
   if (primaryType === "credit_note") return "credit_note";
   if (primaryType === "debit_note") return "debit_note";
   if (primaryType === "deposit") return "deposit";
@@ -5629,7 +5638,7 @@ const resolveNumberPrefix = (primaryType: string, _data: ReturnType<typeof useAp
     cash_sale: "CA",
     delivery_note: "INV",
     combined_billing_note: "BL",
-    billing_note: "BL",
+    billing_note: "INV",
     combined_receipt: "RE",
     receipt: "RE",
     quotation: "QT",

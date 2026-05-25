@@ -48,10 +48,11 @@ export const SalesWorkflowProgress = ({
   const hasPartial = workflow.steps.some((step) => step.status === "partial");
   const nextStep = workflow.steps.find((step) => step.status !== "complete");
   const source = workflow.source;
+  const stepTotal = workflow.steps.length;
   const summaryLabel =
     language === "th"
-      ? `${completeCount}/5 ขั้นตอน${hasPartial ? " มีบางส่วน" : ""}`
-      : `${completeCount}/5 steps${hasPartial ? " with partial" : ""}`;
+      ? `${completeCount}/${stepTotal} ขั้นตอน${hasPartial ? " มีบางส่วน" : ""}`
+      : `${completeCount}/${stepTotal} steps${hasPartial ? " with partial" : ""}`;
 
   return (
     <Collapsible open={open} onOpenChange={setOpen}>

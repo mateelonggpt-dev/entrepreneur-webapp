@@ -74,17 +74,17 @@ const LABELS: Partial<Record<SalesDocumentActionId, string>> = {
   duplicate: "Duplicate / คัดลอกเอกสาร",
   duplicate_recreate: "Duplicate / Recreate / คัดลอกเอกสาร",
   submit_for_approval: "Submit for Approval / ส่งอนุมัติ",
-  delete: "Delete / ลบ",
+  delete: "Delete document / ลบเอกสาร",
   cancel_request: "Cancel Request / ยกเลิกคำขอ",
   approve: "Approve / อนุมัติ",
   reject: "Reject / ปฏิเสธ",
-  cancel_void: "Cancel / Void / ยกเลิก",
+  cancel_void: "Void document / ยกเลิกหรือทำให้เป็นโมฆะ",
   create_revision: "Create Revision / สร้างฉบับแก้ไข",
-  create_invoice: "Create Invoice / สร้างใบแจ้งหนี้",
+  create_invoice: "Create Billing Note / Invoice / สร้างใบวางบิล/ใบแจ้งหนี้",
   create_deposit_invoice: "Create Deposit Invoice / สร้างใบแจ้งหนี้เงินมัดจำ",
   create_installment: "Create Installment / สร้างการผ่อนชำระ",
   create_delivery_note: "Create Delivery Note / สร้างใบส่งของ",
-  create_billing_note: "Create Billing Note / สร้างใบวางบิล",
+  create_billing_note: "Create Billing Note / Invoice / สร้างใบวางบิล/ใบแจ้งหนี้",
   create_tax_invoice: "Create Tax Invoice / สร้างใบกำกับภาษี",
   create_receipt: "Create Receipt / สร้างใบเสร็จรับเงิน",
   create_receipt_remaining: "Create Receipt for Remaining Amount / สร้างใบเสร็จยอดคงเหลือ",
@@ -97,6 +97,9 @@ const LABELS: Partial<Record<SalesDocumentActionId, string>> = {
   view_receipt: "View Receipt / ดูใบเสร็จรับเงิน",
   view_payment_history: "View Payment History / ดูประวัติการชำระเงิน",
   view_payment_details: "View Payment Details / ดูรายละเอียดการชำระเงิน",
+  attach_evidence: "Attach evidence / แนบหลักฐาน",
+  view_evidence: "View evidence / ดูหลักฐานแนบ",
+  remove_document: "Remove from system / นำออกจากระบบ",
   apply_to_invoice: "Apply to Invoice / นำไปใช้กับใบแจ้งหนี้",
   view_application_history: "View Application History / ดูประวัติการใช้งาน",
 };
@@ -131,6 +134,9 @@ const GROUPS: Partial<Record<SalesDocumentActionId, SalesDocumentActionGroup>> =
   view_receipt: "related",
   view_payment_history: "related",
   view_payment_details: "related",
+  attach_evidence: "related",
+  view_evidence: "related",
+  remove_document: "danger",
   apply_to_invoice: "workflow",
   view_application_history: "related",
 };
@@ -142,22 +148,19 @@ const action = (id: SalesDocumentActionId): SalesDocumentAction => ({
 });
 
 const baseOpenActions = (includeEdit: boolean) =>
-  [
-    "view",
-    includeEdit ? "edit" : "create_revision",
-    "download_pdf",
-    "duplicate",
-  ].map((id) => action(id as SalesDocumentActionId));
+  ["view", includeEdit ? "edit" : "create_revision", "download_pdf", "duplicate"].map((id) =>
+    action(id as SalesDocumentActionId)
+  );
 
-const normalizeStatus = (status: string): SalesDocumentStatusGroup => {
+export const normalizeSalesDocumentStatus = (status: string): SalesDocumentStatusGroup => {
   const value = status.toLowerCase().replace(/[\s-]+/g, "_");
   if (["cancelled", "canceled", "void", "inactive", "rejected"].includes(value)) return "cancelled";
-  if (["draft"].includes(value)) return "draft";
+  if (value === "draft") return "draft";
   if (["pending", "pending_approval"].includes(value)) return "pending";
   if (["partial", "partially_paid"].includes(value)) return "partial";
-  if (["paid"].includes(value)) return "paid";
+  if (value === "paid") return "paid";
   if (["completed", "converted", "billed", "invoiced"].includes(value)) return "completed";
-  if (["applied"].includes(value)) return "applied";
+  if (value === "applied") return "applied";
   return "approved";
 };
 
@@ -165,15 +168,14 @@ export const getSalesDocumentActionType = (document: DocumentSummary): SalesDocu
   const explicitTypes = document.documentTypes ?? [];
   const types = explicitTypes.length ? explicitTypes : inferSalesDocumentTypes(document);
   if (types.includes("delivery_note")) return "delivery_note";
-  if (types.includes("billing_note")) return "billing_note";
   if (types.includes("quotation")) return "quotation";
   if (types.includes("receipt")) return "receipt";
   if (types.includes("credit_note")) return "credit_note";
   if (types.includes("debit_note")) return "debit_note";
   if (document.kind === "invoice" && !explicitTypes.length) return "invoice";
-  if (types.includes("tax_invoice") && !types.includes("invoice")) return "tax_invoice";
-  if (types.includes("invoice")) return "invoice";
-  if (document.kind === "billing") return "billing_note";
+  if (types.includes("tax_invoice") && !types.includes("invoice") && !types.includes("billing_note")) return "tax_invoice";
+  if (types.includes("invoice") || types.includes("billing_note")) return "invoice";
+  if (document.kind === "billing") return "invoice";
   return document.kind as SalesDocumentActionType;
 };
 
@@ -182,12 +184,19 @@ export const getActionSourceKind = (document: DocumentSummary): DocumentKind => 
   return document.kind;
 };
 
+export const getRemovalActionForDocument = (document: DocumentSummary): "delete" | "void" | null => {
+  const status = normalizeSalesDocumentStatus(document.status);
+  if (status === "draft" || status === "pending") return "delete";
+  if (status === "cancelled") return null;
+  return "void";
+};
+
 export const getSalesDocumentActions = (
   document: DocumentSummary,
   options: { canApprove?: boolean; allowApprovedEdit?: boolean } = {}
 ) => {
   const type = getSalesDocumentActionType(document);
-  const status = normalizeStatus(document.status);
+  const status = normalizeSalesDocumentStatus(document.status);
   const canApprove = options.canApprove ?? true;
   const allowApprovedEdit = options.allowApprovedEdit ?? true;
 
@@ -209,6 +218,7 @@ export const getSalesDocumentActions = (
       action("duplicate"),
       action("cancel_request"),
       ...(canApprove ? [action("approve"), action("reject")] : []),
+      action("delete"),
     ];
   }
 
@@ -242,21 +252,8 @@ export const getSalesDocumentActions = (
   }
 
   if (status === "paid" || status === "completed" || status === "applied") {
-    if (type === "quotation") {
-      return [
-        action("view"),
-        action("download_pdf"),
-        action("duplicate"),
-        action("view_related_documents"),
-      ];
-    }
-    if (type === "delivery_note") {
-      return [
-        action("view"),
-        action("download_pdf"),
-        action("duplicate"),
-        action("view_related_documents"),
-      ];
+    if (type === "quotation" || type === "delivery_note") {
+      return [action("view"), action("download_pdf"), action("duplicate"), action("view_related_documents")];
     }
     if (["invoice", "tax_invoice"].includes(type)) {
       return [
@@ -279,13 +276,7 @@ export const getSalesDocumentActions = (
       ];
     }
     if (type === "receipt") {
-      return [
-        action("view"),
-        action("download_pdf"),
-        action("duplicate"),
-        action("view_related_invoice"),
-        action("view_payment_details"),
-      ];
+      return [action("view"), action("download_pdf"), action("duplicate"), action("view_related_invoice"), action("view_payment_details")];
     }
     if (["credit_note", "debit_note"].includes(type)) {
       return [
@@ -305,7 +296,6 @@ export const getSalesDocumentActions = (
       action("create_deposit_invoice"),
       action("create_installment"),
       action("create_delivery_note"),
-      action("create_billing_note"),
       action("cancel_void"),
     ];
   }
@@ -343,13 +333,7 @@ export const getSalesDocumentActions = (
   }
 
   if (type === "receipt") {
-    return [
-      action("view"),
-      action("download_pdf"),
-      action("duplicate"),
-      action("view_related_invoice"),
-      action("cancel_void"),
-    ];
+    return [action("view"), action("download_pdf"), action("duplicate"), action("view_related_invoice"), action("cancel_void")];
   }
 
   return [

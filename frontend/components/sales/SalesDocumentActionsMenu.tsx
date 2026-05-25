@@ -7,7 +7,11 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { getSalesDocumentActions, type SalesDocumentActionId } from "@/lib/sales-document-actions";
+import {
+  getRemovalActionForDocument,
+  getSalesDocumentActions,
+  type SalesDocumentActionId,
+} from "@/lib/sales-document-actions";
 import type { DocumentSummary } from "@/lib/types";
 import { MoreHorizontal } from "lucide-react";
 import { useTranslation } from "react-i18next";
@@ -31,9 +35,10 @@ export const SalesDocumentActionsMenu = ({
 }: SalesDocumentActionsMenuProps) => {
   const { i18n } = useTranslation();
   const language = i18n.language?.startsWith("th") ? "th" : "en";
-  const actions = variant === "shared"
-    ? getSharedActions(language, canRemove)
-    : getSalesDocumentActions(document, { canApprove, allowApprovedEdit });
+  const actions =
+    variant === "shared"
+      ? getSharedActions(document, language, canRemove)
+      : getSalesDocumentActions(document, { canApprove, allowApprovedEdit });
 
   return (
     <DropdownMenu>
@@ -69,25 +74,33 @@ const sharedLabels = {
     duplicate: "Duplicate document",
     attach_evidence: "Attach evidence",
     view_evidence: "View evidence",
-    remove_document: "Remove document",
+    delete: "Delete document",
+    cancel_void: "Void document",
+    remove_document: "Remove from system",
   },
   th: {
     create_from_reference: "สร้างเอกสารจากเอกสารนี้",
     duplicate: "คัดลอกเอกสาร",
     attach_evidence: "แนบหลักฐาน",
     view_evidence: "ดูหลักฐานแนบ",
-    remove_document: "ลบเอกสาร",
+    delete: "ลบเอกสาร",
+    cancel_void: "ยกเลิก/ทำให้เป็นโมฆะ",
+    remove_document: "นำออกจากระบบ",
   },
 } satisfies Record<"en" | "th", Partial<Record<SalesDocumentActionId, string>>>;
 
-const getSharedActions = (language: "en" | "th", canRemove: boolean) =>
-  ([
-    { id: "create_from_reference", group: "workflow" },
-    { id: "duplicate", group: "open" },
-    { id: "attach_evidence", group: "related" },
-    { id: "view_evidence", group: "related" },
-    ...(canRemove ? [{ id: "remove_document", group: "danger" }] : []),
-  ] as Array<{ id: SalesDocumentActionId; group: "open" | "workflow" | "related" | "danger" }>).map((item) => ({
+const getSharedActions = (document: DocumentSummary, language: "en" | "th", canRemove: boolean) => {
+  const removalAction = getRemovalActionForDocument(document);
+  return (
+    [
+      { id: "create_from_reference", group: "workflow" },
+      { id: "duplicate", group: "open" },
+      { id: "attach_evidence", group: "related" },
+      { id: "view_evidence", group: "related" },
+      ...(canRemove && removalAction ? [{ id: removalAction === "delete" ? "delete" : "cancel_void", group: "danger" }] : []),
+    ] as Array<{ id: SalesDocumentActionId; group: "open" | "workflow" | "related" | "danger" }>
+  ).map((item) => ({
     ...item,
     label: sharedLabels[language][item.id] ?? item.id,
   }));
+};

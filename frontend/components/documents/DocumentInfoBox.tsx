@@ -1,5 +1,5 @@
+import type { ReactNode } from "react";
 import type { SalesDocumentTemplateData } from "@/components/documents/types";
-import { formatDocumentMoney } from "@/components/documents/document-utils";
 
 const labels = {
   en: {
@@ -9,6 +9,8 @@ const labels = {
     dueDate: "Due date",
     reference: "Reference / RE",
     referenceDocuments: "Reference documents",
+    quotationNo: "Quotation No.",
+    customerPo: "Customer PO No.",
     seller: "Seller",
     days: "days",
   },
@@ -19,56 +21,38 @@ const labels = {
     dueDate: "วันครบกำหนด",
     reference: "อ้างอิง / RE",
     referenceDocuments: "เอกสารอ้างอิง",
+    quotationNo: "เลขที่ใบเสนอราคา",
+    customerPo: "เลขที่ PO ลูกค้า",
     seller: "ผู้ขาย",
     days: "วัน",
   },
 };
 
-const referenceKindLabels = {
-  en: {
-    quotation: "Quotation",
-    delivery_note: "Delivery Note",
-    invoice: "Invoice",
-    tax_invoice: "Tax Invoice",
-    receipt: "Receipt",
-    billing_note: "Billing Note",
-    combined_receipt: "Combined Receipt",
-    credit_note: "Credit Note",
-    debit_note: "Debit Note",
-  },
-  th: {
-    quotation: "ใบเสนอราคา",
-    delivery_note: "ใบส่งของ",
-    invoice: "ใบแจ้งหนี้",
-    tax_invoice: "ใบกำกับภาษี",
-    receipt: "ใบเสร็จรับเงิน",
-    billing_note: "ใบวางบิล",
-    combined_receipt: "ใบเสร็จรวม",
-    credit_note: "ใบลดหนี้",
-    debit_note: "ใบเพิ่มหนี้",
-  },
-} as const;
+type ReferenceDocument = NonNullable<SalesDocumentTemplateData["referenceDocuments"]>[number];
 
-const formatReferenceKind = (kind: string | undefined, language: "th" | "en") => {
-  const normalized = String(kind ?? "").trim();
-  if (!normalized) return "";
-  const mapped = referenceKindLabels[language][normalized as keyof (typeof referenceKindLabels)["th"]];
-  return mapped ?? normalized.replace(/_/g, " ");
+const referenceKind = (reference: ReferenceDocument) =>
+  reference.type || reference.kind || reference.documentTypes?.[0] || "";
+
+const isQuotationReference = (reference: ReferenceDocument) =>
+  referenceKind(reference) === "quotation" || Boolean(reference.documentTypes?.includes("quotation"));
+
+const uniqueValues = (values: string[]) => Array.from(new Set(values.map((value) => value.trim()).filter(Boolean)));
+
+const printableReferenceInfo = (references: ReferenceDocument[]) => {
+  const quotationReferences = references.filter(isQuotationReference);
+  const printableReferences = quotationReferences.length ? quotationReferences : references;
+  return {
+    isQuotationOnly: quotationReferences.length > 0,
+    numbers: uniqueValues(printableReferences.map((reference) => reference.number || reference.id)),
+  };
 };
-
 
 export const DocumentInfoBox = ({ data }: { data: SalesDocumentTemplateData }) => {
   const t = labels[data.language];
-  const referenceRows = (data.referenceDocuments ?? []).map((reference) => {
-    const kindLabel = formatReferenceKind(reference.type || reference.kind, data.language);
-    const numberLabel = reference.number || reference.id;
-    const amountValue = reference.total ?? reference.amount;
-    const amountLabel = typeof amountValue === "number" && amountValue > 0 ? formatDocumentMoney(amountValue, data.currency) : "";
-    const firstLine = [kindLabel, numberLabel].filter(Boolean).join(" · ");
-    const secondLine = [reference.party, reference.date, amountLabel, reference.status].filter(Boolean).join(" · ");
-    return [firstLine, secondLine].filter(Boolean).join("\n");
-  });
-  const reference = referenceRows.length ? referenceRows.join("\n\n") : data.relatedDocument || data.reference || "-";
+  const referenceDocuments = data.referenceDocuments ?? [];
+  const referenceInfo = printableReferenceInfo(referenceDocuments);
+  const fallbackReference = data.relatedDocument?.trim();
+  const customerPoReference = data.reference?.trim();
   const sellerValue = data.sellerUser?.name
     ? `${data.sellerUser.name}${data.sellerUser.email ? ` (${data.sellerUser.email})` : ""}`
     : data.documentContact?.trim() || data.seller.contactPerson || data.seller.name || "-";
@@ -77,7 +61,15 @@ export const DocumentInfoBox = ({ data }: { data: SalesDocumentTemplateData }) =
     <aside className="sales-doc-info-stack sales-doc-avoid-break">
       <div className="sales-doc-info-box">
         <InfoRow label={`${t.documentNo}:`} value={data.documentNumber || "-"} />
-        <InfoRow label={`${referenceRows.length ? t.referenceDocuments : t.reference}:`} value={reference} multiline={referenceRows.length > 0} />
+        {referenceInfo.numbers.length ? (
+          <InfoRow
+            label={`${referenceInfo.isQuotationOnly ? t.quotationNo : t.referenceDocuments}:`}
+            value={referenceInfo.numbers.join(", ")}
+          />
+        ) : fallbackReference ? (
+          <InfoRow label={`${t.reference}:`} value={fallbackReference} />
+        ) : null}
+        {customerPoReference ? <InfoRow label={`${t.customerPo}:`} value={customerPoReference} /> : null}
         <InfoRow label={`${t.issueDate}:`} value={data.issueDate || "-"} />
         <InfoRow label={`${t.creditTerm}:`} value={`${data.creditTerms || 0} ${t.days}`} />
         <InfoRow label={`${t.dueDate}:`} value={data.dueDate || "-"} />
@@ -87,13 +79,13 @@ export const DocumentInfoBox = ({ data }: { data: SalesDocumentTemplateData }) =
   );
 };
 
-const InfoRow = ({ label, value, multiline = false }: { label: string; value: string; multiline?: boolean }) => {
-  const valueClassName = ["sales-doc-info-value", multiline ? "sales-doc-preline" : ""].filter(Boolean).join(" ");
-
-  return (
-    <div className="sales-doc-info-row">
-      <span>{label}</span>
-      <strong className={valueClassName} title={value}>{value}</strong>
-    </div>
-  );
-};
+const InfoRow = ({ label, value, children }: { label: string; value?: string; children?: ReactNode }) => (
+  <div className="sales-doc-info-row">
+    <span>{label}</span>
+    {children ?? (
+      <strong className="sales-doc-info-value" title={value}>
+        {value}
+      </strong>
+    )}
+  </div>
+);
