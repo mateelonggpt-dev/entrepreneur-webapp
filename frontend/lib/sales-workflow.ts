@@ -30,7 +30,7 @@ export const SALES_WORKFLOW_STEPS: SalesWorkflowStepId[] = [
 export const SALES_WORKFLOW_LABELS: Record<SalesWorkflowStepId, { en: string; th: string }> = {
   quotation: { en: "Quotation", th: "ใบเสนอราคา" },
   billing_note: { en: "Billing Note", th: "ใบวางบิล" },
-  invoice: { en: "Invoice", th: "ใบวางบิล/ใบแจ้งหนี้" },
+  invoice: { en: "Invoice", th: "ใบแจ้งหนี้" },
   delivery_note: { en: "Delivery Note", th: "ใบส่งของ" },
   receipt: { en: "Receipt", th: "ใบเสร็จรับเงิน" },
 };

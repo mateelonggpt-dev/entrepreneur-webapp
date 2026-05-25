@@ -1093,10 +1093,12 @@ export const SalesDocumentForm = ({
   const [invoicePaymentMode, setInvoicePaymentMode] = useState<InvoicePaymentMode>(initialInvoicePaymentMode);
   const isDepositPaymentDocument = isInvoiceDocument && invoicePaymentMode === "deposit";
   const titleDocumentTypes = useMemo(
-    () =>
-      realTypes.map((type) =>
-        type === "invoice" && invoiceTaxType === "tax" ? "tax_invoice" : type
-      ),
+    () => {
+      const hasExplicitTaxInvoice = realTypes.includes("tax_invoice");
+      return realTypes.map((type) =>
+        type === "invoice" && invoiceTaxType === "tax" && !hasExplicitTaxInvoice ? "tax_invoice" : type
+      );
+    },
     [invoiceTaxType, realTypes]
   );
   const documentTitleTh = useMemo(
@@ -1109,7 +1111,9 @@ export const SalesDocumentForm = ({
   );
   const previewTitle = documentLanguage === "th" ? documentTitleTh : documentTitleEn;
   const previewTitleSizeClass =
-    Array.from(previewTitle).length > 26
+    Array.from(previewTitle).length > 34
+      ? "text-lg sm:text-xl xl:text-[1.28rem]"
+      : Array.from(previewTitle).length > 26
       ? "text-xl sm:text-[1.45rem] xl:text-[1.55rem]"
       : Array.from(previewTitle).length > 18
         ? "text-[1.35rem] sm:text-2xl"

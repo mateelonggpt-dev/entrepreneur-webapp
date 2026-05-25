@@ -16,7 +16,7 @@ export const SALES_DOCUMENT_LABELS: Record<string, Record<DocumentLanguage, stri
   none: { en: "None", th: "ไม่เลือก" },
   quotation: { en: "Quotation", th: "ใบเสนอราคา" },
   billing_note: { en: "Billing Note", th: "ใบวางบิล" },
-  invoice: { en: "Invoice", th: "ใบวางบิล/ใบแจ้งหนี้" },
+  invoice: { en: "Invoice", th: "ใบแจ้งหนี้" },
   delivery_note: { en: "Delivery Note", th: "ใบส่งของ" },
   tax_invoice: { en: "Tax Invoice", th: "ใบกำกับภาษี" },
   receipt: { en: "Receipt", th: "ใบเสร็จรับเงิน" },
@@ -53,7 +53,8 @@ export const QUOTATION_INCOMPATIBILITY_HELPER =
 
 export const SALE_DOCUMENT_TYPE_OPTIONS: DocumentTypeOption[] = [
   { id: "quotation", label: SALES_DOCUMENT_LABELS.quotation.en, thaiLabel: SALES_DOCUMENT_LABELS.quotation.th },
-  { id: "invoice", label: "Billing Note + Invoice", thaiLabel: "ใบวางบิล/ใบแจ้งหนี้" },
+  { id: "billing_note", label: SALES_DOCUMENT_LABELS.billing_note.en, thaiLabel: SALES_DOCUMENT_LABELS.billing_note.th },
+  { id: "invoice", label: SALES_DOCUMENT_LABELS.invoice.en, thaiLabel: SALES_DOCUMENT_LABELS.invoice.th },
   { id: "delivery_note", label: SALES_DOCUMENT_LABELS.delivery_note.en, thaiLabel: SALES_DOCUMENT_LABELS.delivery_note.th },
   { id: "tax_invoice", label: SALES_DOCUMENT_LABELS.tax_invoice.en, thaiLabel: SALES_DOCUMENT_LABELS.tax_invoice.th },
   { id: "receipt", label: SALES_DOCUMENT_LABELS.receipt.en, thaiLabel: SALES_DOCUMENT_LABELS.receipt.th },
@@ -148,8 +149,6 @@ export const isSalesDocumentCombinationAllowed = (currentTypes: string[], candid
   const nextTypes = Array.from(new Set([...currentTypes, candidateType].filter((type) => !["none", "others"].includes(type))));
   if (nextTypes.length <= 1) return true;
   if (nextTypes.includes("quotation")) return false;
-  if (nextTypes.includes("invoice") && nextTypes.includes("tax_invoice")) return false;
-
   const standaloneTypes = [
     "cash_sale",
     "short_tax_invoice",
@@ -162,15 +161,17 @@ export const isSalesDocumentCombinationAllowed = (currentTypes: string[], candid
   if (nextTypes.some((type) => standaloneTypes.includes(type))) return false;
 
   const allowedPairs = new Set([
+    "billing_note|delivery_note",
     "delivery_note|invoice",
     "delivery_note|receipt",
     "billing_note|invoice",
+    "billing_note|receipt",
     "invoice|receipt",
   ]);
   const normalizedTypes = nextTypes.map(normalizeCombinationType);
 
   return normalizedTypes.every((left, leftIndex) =>
-    normalizedTypes.slice(leftIndex + 1).every((right) => allowedPairs.has([left, right].sort().join("|")))
+    normalizedTypes.slice(leftIndex + 1).every((right) => left === right || allowedPairs.has([left, right].sort().join("|")))
   );
 };
 
@@ -194,10 +195,6 @@ export const sanitizeSalesDocumentTypes = (selectedTypes: string[]) => {
   }
 
   const uniqueTypes = Array.from(new Set(realTypes.filter((type) => type !== "quotation")));
-  if (uniqueTypes.includes("invoice") && uniqueTypes.includes("tax_invoice")) {
-    return [uniqueTypes[uniqueTypes.length - 1]];
-  }
-
   const standaloneTypes = [
     "cash_sale",
     "short_tax_invoice",

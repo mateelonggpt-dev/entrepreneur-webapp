@@ -28,7 +28,13 @@ export const DocumentHeader = ({
 }) => {
   const titleLength = Array.from(data.title).length;
   const titleClassName =
-    titleLength > 26 ? "sales-doc-title-long" : titleLength > 18 ? "sales-doc-title-medium" : undefined;
+    titleLength > 34
+      ? "sales-doc-title-extra-long"
+      : titleLength > 26
+        ? "sales-doc-title-long"
+        : titleLength > 18
+          ? "sales-doc-title-medium"
+          : undefined;
 
   return (
     <header className="sales-doc-avoid-break sales-doc-header">
