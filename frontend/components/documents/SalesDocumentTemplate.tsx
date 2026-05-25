@@ -96,9 +96,9 @@ const documentTemplateCss = `
   .sales-doc-company-name span { color: var(--doc-brand); }
   .sales-doc-title-zone { text-align: right; min-width: 0; max-width: 100%; }
   .sales-doc-copy-label { display: inline-flex; border: 1px solid #ccfbf1; background: var(--doc-brand-soft); color: var(--doc-brand); font-size: 10px; font-weight: 800; min-height: 26px; padding: 4px 12px; margin: 0 0 7px; border-radius: 999px; letter-spacing: 0.08em; text-transform: uppercase; }
-  .sales-doc-title-zone h1 { color: var(--doc-brand); font-size: 34px; line-height: 1.02; font-weight: 900; margin: 0; letter-spacing: 0; max-width: 100%; text-wrap: balance; overflow-wrap: anywhere; word-break: break-word; }
-  .sales-doc-title-zone h1.sales-doc-title-medium { font-size: 29px; line-height: 1.06; }
-  .sales-doc-title-zone h1.sales-doc-title-long { font-size: 24px; line-height: 1.1; }
+  .sales-doc-title-zone h1 { color: var(--doc-brand); font-size: 34px; line-height: 1.02; font-weight: 900; margin: 0; letter-spacing: 0; max-width: 100%; white-space: nowrap; overflow: hidden; text-overflow: clip; }
+  .sales-doc-title-zone h1.sales-doc-title-medium { font-size: 24px; line-height: 1.06; }
+  .sales-doc-title-zone h1.sales-doc-title-long { font-size: 16px; line-height: 1.12; }
   .sales-doc-title-en { color: var(--doc-muted); font-size: 11.2px; font-weight: 700; margin: 2mm 0 0; letter-spacing: 0.04em; text-transform: uppercase; }
 
   .document-main-info { display: grid; grid-template-columns: minmax(0, 1fr) minmax(72mm, 82mm); gap: 7mm; margin-top: 8mm; font-size: 10.8px; line-height: 1.42; }
@@ -260,12 +260,12 @@ const documentTemplateCss = `
   }
 
   .sales-document-print-root.sales-document-pdf-export .sales-doc-title-zone h1.sales-doc-title-medium {
-    font-size: 25px !important;
+    font-size: 20px !important;
     line-height: 1.05 !important;
   }
 
   .sales-document-print-root.sales-document-pdf-export .sales-doc-title-zone h1.sales-doc-title-long {
-    font-size: 21px !important;
+    font-size: 14px !important;
     line-height: 1.1 !important;
   }
 
@@ -487,8 +487,8 @@ const documentTemplateCss = `
     .sales-doc-header, .document-main-info, .sales-doc-bottom-grid { grid-template-columns: 1fr; }
     .sales-doc-title-zone { text-align: left; }
     .sales-doc-title-zone h1 { font-size: 30px; }
-    .sales-doc-title-zone h1.sales-doc-title-medium { font-size: 26px; }
-    .sales-doc-title-zone h1.sales-doc-title-long { font-size: 22px; }
+    .sales-doc-title-zone h1.sales-doc-title-medium { font-size: 22px; }
+    .sales-doc-title-zone h1.sales-doc-title-long { font-size: 15px; }
     .sales-doc-party-grid, .sales-doc-info-row { grid-template-columns: 1fr; gap: 2px; }
     .sales-doc-table { min-width: 720px; }
   }
