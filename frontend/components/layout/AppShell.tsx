@@ -8,16 +8,16 @@ export const AppShell = ({ children }: { children: ReactNode }) => {
   const [collapsed, setCollapsed] = useState(false);
 
   return (
-    <div className="min-h-screen w-full bg-background">
+    <div className="min-h-screen w-full overflow-x-hidden bg-background">
       <Sidebar collapsed={collapsed} onToggle={() => setCollapsed((c) => !c)} />
       <Topbar sidebarCollapsed={collapsed} />
       <main
         className={cn(
-          "transition-[padding] duration-300 pt-16",
+          "min-w-0 overflow-x-hidden pt-16 transition-[padding] duration-300",
           collapsed ? "pl-[76px]" : "pl-[272px]"
         )}
       >
-        <div className="p-6 lg:p-8 max-w-[1600px] mx-auto animate-fade-in">
+        <div className="mx-auto max-w-[1600px] min-w-0 p-6 animate-fade-in lg:p-8">
           {children}
         </div>
       </main>
