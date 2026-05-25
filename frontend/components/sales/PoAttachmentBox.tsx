@@ -4,6 +4,7 @@ import { Input } from "@/components/ui/input";
 import { formatFileSize } from "@/lib/document-utils";
 import { FileText, Image, Paperclip, Trash2, Upload } from "lucide-react";
 import { useRef } from "react";
+import { useTranslation } from "react-i18next";
 
 interface PoAttachmentBoxProps {
   files: File[];
@@ -15,6 +16,8 @@ const acceptedPoTypes = "application/pdf,image/*";
 
 export const PoAttachmentBox = ({ files, onFilesChange, disabled }: PoAttachmentBoxProps) => {
   const inputRef = useRef<HTMLInputElement>(null);
+  const { i18n } = useTranslation();
+  const isThai = i18n.language === "th";
 
   const addFiles = (incoming: FileList | null) => {
     if (!incoming?.length) return;
@@ -33,10 +36,10 @@ export const PoAttachmentBox = ({ files, onFilesChange, disabled }: PoAttachment
             <Paperclip className="h-5 w-5" />
           </div>
           <div>
-            <h3 className="font-display text-sm font-semibold">PO / Purchase Order Attachment</h3>
-            <p className="text-sm font-medium text-slate-700">เอกสาร PO / ใบสั่งซื้อจากลูกค้า</p>
+            <h3 className="font-display text-sm font-semibold">{isThai ? "PO ลูกค้า / เอกสารอ้างอิงจากลูกค้า" : "Customer PO / Customer reference evidence"}</h3>
+            <p className="text-sm font-medium text-slate-700">{isThai ? "แนบใบสั่งซื้อหรือเอกสารยืนยันจากลูกค้า" : "Attach the purchase order or confirmation from your customer"}</p>
             <p className="mt-1 max-w-2xl text-xs text-muted-foreground">
-              Attach the customer PO or purchase evidence for internal record only. These files will not appear on the printed document or PDF.
+              {isThai ? "ไฟล์นี้ใช้เป็นหลักฐานภายในเท่านั้น และจะไม่แสดงบนเอกสารพิมพ์หรือ PDF" : "These files are internal evidence only and will not appear on the printed document or PDF."}
             </p>
           </div>
         </div>
@@ -47,7 +50,7 @@ export const PoAttachmentBox = ({ files, onFilesChange, disabled }: PoAttachment
           disabled={disabled}
           onClick={() => inputRef.current?.click()}
         >
-          <Upload className="h-4 w-4" /> Add PO files
+          <Upload className="h-4 w-4" /> {isThai ? "แนบไฟล์ PO ลูกค้า" : "Add customer PO files"}
         </Button>
       </div>
 
@@ -98,7 +101,7 @@ export const PoAttachmentBox = ({ files, onFilesChange, disabled }: PoAttachment
             onClick={() => inputRef.current?.click()}
             className="flex w-full items-center justify-center rounded-lg border border-dashed border-sky-200 bg-white/80 px-4 py-5 text-center text-sm text-muted-foreground transition hover:border-sky-400 hover:text-slate-700 disabled:cursor-not-allowed disabled:opacity-60"
           >
-            Drop or choose PDF, JPG, or PNG files for this invoice.
+            {isThai ? "ลากไฟล์มาวาง หรือเลือกไฟล์ PDF, JPG, PNG สำหรับ PO ลูกค้า" : "Drop or choose PDF, JPG, or PNG files for this customer PO."}
           </button>
         )}
       </div>

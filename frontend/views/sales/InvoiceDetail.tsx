@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import { AppShell } from "@/components/layout/AppShell";
 import { BrandMark } from "@/components/brand/BrandMark";
 import { DocumentNextActions } from "@/components/documents/DocumentNextActions";
@@ -72,6 +73,7 @@ const InvoiceDetail = ({ id: propId }: { id?: string } = {}) => {
   const nav = useNavigate();
   const { data, refresh } = useAppData();
   const { user } = useAuth();
+  const { t } = useTranslation();
   const [invoiceDetail, setInvoiceDetail] = useState<Invoice | null>(null);
   const [attachments, setAttachments] = useState<Attachment[]>([]);
   const [evidenceOpen, setEvidenceOpen] = useState(false);
@@ -269,12 +271,12 @@ const InvoiceDetail = ({ id: propId }: { id?: string } = {}) => {
   return (
     <AppShell>
       <Button variant="ghost" size="sm" className="mb-4 -ml-2 gap-1" onClick={() => nav(-1)}>
-        <ArrowLeft className="h-4 w-4" /> Back
+        <ArrowLeft className="h-4 w-4" /> {t("common.back")}
       </Button>
 
       <PageHeader
         title={invoice.id}
-        breadcrumbs={[{ label: "Sales" }, { label: "Invoices" }, { label: invoice.id }]}
+        breadcrumbs={[{ label: t("common.income") }, { label: t("searchDialog.routes.invoices") }, { label: invoice.id }]}
         actions={
           <>
             <StatusBadge status={invoice.status} className="px-3 py-1.5 text-sm" />
@@ -284,13 +286,13 @@ const InvoiceDetail = ({ id: propId }: { id?: string } = {}) => {
               </Button>
             ) : null}
             <Button variant="outline" size="sm" className="gap-1.5" onClick={() => window.print()}>
-              <Printer className="h-4 w-4" /> Print
+              <Printer className="h-4 w-4" /> {t("common.print")}
             </Button>
             <Button variant="outline" size="sm" className="gap-1.5" onClick={() => void handleDownloadPdf()}>
               <Download className="h-4 w-4" /> PDF
             </Button>
             <Button variant="outline" size="sm" className="gap-1.5" onClick={() => setReceiptModalOpen(true)}>
-              <HandCoins className="h-4 w-4" /> Receipt
+              <HandCoins className="h-4 w-4" /> {t("documentActions.createReceipt")}
             </Button>
             <SalesDocumentActionsMenu
               document={invoiceSummary}
@@ -303,7 +305,7 @@ const InvoiceDetail = ({ id: propId }: { id?: string } = {}) => {
               className="gap-1.5 border-0 bg-gradient-brand text-primary-foreground shadow-brand"
               onClick={() => void handleSend()}
             >
-              <Send className="h-4 w-4" /> Send to customer
+              <Send className="h-4 w-4" /> {t("common.send")}
             </Button>
           </>
         }
@@ -403,16 +405,16 @@ const InvoiceDetail = ({ id: propId }: { id?: string } = {}) => {
             <Tabs defaultValue="activity">
               <TabsList className="bg-secondary">
                 <TabsTrigger value="activity" className="gap-1.5">
-                  <Activity className="h-4 w-4" /> Activity
+                  <Activity className="h-4 w-4" /> {t("dashboard.recentActivity", { defaultValue: "Activity" })}
                 </TabsTrigger>
                 <TabsTrigger value="related" className="gap-1.5">
-                  <FileText className="h-4 w-4" /> Related
+                  <FileText className="h-4 w-4" /> {t("workflow.nextActions", { defaultValue: "Related" })}
                 </TabsTrigger>
                 <TabsTrigger value="files" className="gap-1.5">
                   <Paperclip className="h-4 w-4" /> Files ({attachments.length})
                 </TabsTrigger>
                 <TabsTrigger value="notes" className="gap-1.5">
-                  <MessageSquare className="h-4 w-4" /> Notes
+                  <MessageSquare className="h-4 w-4" /> {t("modal.quotation.notes", { defaultValue: "Notes" })}
                 </TabsTrigger>
               </TabsList>
 
@@ -451,7 +453,7 @@ const InvoiceDetail = ({ id: propId }: { id?: string } = {}) => {
                       </div>
                     ))
                   ) : (
-                    <p className="text-sm text-muted-foreground">No related documents yet.</p>
+                    <p className="text-sm text-muted-foreground">{t("workflow.noRelatedDocuments", { defaultValue: "No related documents yet." })}</p>
                   )}
                 </div>
               </TabsContent>
@@ -462,7 +464,7 @@ const InvoiceDetail = ({ id: propId }: { id?: string } = {}) => {
                   <p className="text-sm font-semibold">Upload evidence or supporting files</p>
                   <p className="mt-1 text-xs text-muted-foreground">PDF, JPG, PNG up to 10MB</p>
                   <Button variant="outline" size="sm" className="mt-4" onClick={() => setEvidenceOpen(true)}>
-                    Attach Evidence
+                    {t("common.attachEvidence")}
                   </Button>
                 </div>
                 {attachments.map((attachment) => (
@@ -475,7 +477,7 @@ const InvoiceDetail = ({ id: propId }: { id?: string } = {}) => {
                     </div>
                     <div className="flex items-center gap-1">
                       <Button variant="ghost" size="sm" onClick={() => void handleDownloadAttachment(attachment)}>
-                        Download
+                        {t("common.download")}
                       </Button>
                       <Button
                         variant="ghost"
@@ -504,7 +506,7 @@ const InvoiceDetail = ({ id: propId }: { id?: string } = {}) => {
           <DocumentNextActions kind={isTaxInvoice ? "tax_invoice" : "invoice"} documentId={invoice.id} onAction={handleNextAction} />
 
           <Card className="card-premium p-5">
-            <h3 className="mb-3 text-sm font-display font-semibold">Summary</h3>
+            <h3 className="mb-3 text-sm font-display font-semibold">{t("modal.quotation.summary", { defaultValue: "Summary" })}</h3>
             <dl className="space-y-2 text-sm">
               <div className="flex justify-between">
                 <dt className="text-muted-foreground">Status</dt>
@@ -561,7 +563,7 @@ const InvoiceDetail = ({ id: propId }: { id?: string } = {}) => {
 
           <Card className="card-premium p-5">
             <h3 className="mb-3 flex items-center gap-2 text-sm font-display font-semibold">
-              <Building2 className="h-4 w-4 text-primary" /> Customer
+              <Building2 className="h-4 w-4 text-primary" /> {t("searchDialog.customers")}
             </h3>
             <p className="font-semibold">{invoice.customer}</p>
             <div className="mt-3 space-y-2 text-sm text-muted-foreground">
@@ -577,7 +579,7 @@ const InvoiceDetail = ({ id: propId }: { id?: string } = {}) => {
             </div>
             <div className="mt-4 grid gap-2">
               <Button variant="outline" size="sm" className="gap-1.5" onClick={() => void refreshCustomer()}>
-                <RefreshCcw className="h-4 w-4" /> Refresh contact
+                <RefreshCcw className="h-4 w-4" /> {t("common.refresh", { defaultValue: "Refresh" })}
               </Button>
               <Button
                 variant="outline"
@@ -586,10 +588,10 @@ const InvoiceDetail = ({ id: propId }: { id?: string } = {}) => {
                 onClick={() => setCustomerModalOpen(true)}
                 disabled={!editable || !customer}
               >
-                <PencilLine className="h-4 w-4" /> Edit customer
+                <PencilLine className="h-4 w-4" /> {t("common.edit")} {t("searchDialog.customers")}
               </Button>
               <Button variant="outline" size="sm" className="w-full" onClick={() => nav("/contacts/customers")}>
-                View customer
+                {t("common.view")} {t("searchDialog.customers")}
               </Button>
             </div>
           </Card>
@@ -642,6 +644,7 @@ export default InvoiceDetail;
 
 const GenericIncomeDocumentDetail = ({ summary }: { summary: ReturnType<typeof collectSalesWorkflowDocuments>[number] }) => {
   const nav = useNavigate();
+  const { t } = useTranslation();
   const { data, refresh } = useAppData();
   const { user } = useAuth();
   const [attachments, setAttachments] = useState<Attachment[]>([]);
@@ -725,11 +728,11 @@ const GenericIncomeDocumentDetail = ({ summary }: { summary: ReturnType<typeof c
   return (
     <AppShell>
       <Button variant="ghost" size="sm" className="mb-4 -ml-2 gap-1" onClick={() => nav(-1)}>
-        <ArrowLeft className="h-4 w-4" /> Back
+        <ArrowLeft className="h-4 w-4" /> {t("common.back")}
       </Button>
       <PageHeader
         title={summary.id}
-        breadcrumbs={[{ label: "Income" }, { label: "Documents" }, { label: summary.id }]}
+        breadcrumbs={[{ label: t("common.income") }, { label: t("common.documents") }, { label: summary.id }]}
         actions={
           <>
             <StatusBadge status={summary.status} className="px-3 py-1.5 text-sm" />
@@ -739,7 +742,7 @@ const GenericIncomeDocumentDetail = ({ summary }: { summary: ReturnType<typeof c
               </Button>
             ) : null}
             <Button variant="outline" size="sm" className="gap-1.5" onClick={() => window.print()}>
-              <Printer className="h-4 w-4" /> Print
+              <Printer className="h-4 w-4" /> {t("common.print")}
             </Button>
             <Button variant="outline" size="sm" className="gap-1.5" onClick={() => void downloadDocumentPdf(summary.kind, summary.id)}>
               <Download className="h-4 w-4" /> PDF

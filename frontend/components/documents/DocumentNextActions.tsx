@@ -41,7 +41,13 @@ export const DocumentNextActions = ({ kind, documentId, onAction }: DocumentNext
     };
   }, [documentId, kind]);
 
-  const actions = payload?.nextActions ?? [];
+  const seenActionLabels = new Set<string>();
+  const actions = (payload?.nextActions ?? []).filter((action) => {
+    const dedupeKey = action.labelKey || action.type || action.targetKind;
+    if (seenActionLabels.has(dedupeKey)) return false;
+    seenActionLabels.add(dedupeKey);
+    return true;
+  });
   if (!actions.length) {
     return null;
   }

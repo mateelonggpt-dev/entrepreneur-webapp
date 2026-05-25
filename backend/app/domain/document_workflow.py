@@ -115,7 +115,7 @@ LABEL_KEYS = {
     "credit_note": "documentActions.createCreditNote",
     "debit_note": "documentActions.createDebitNote",
     "deposit_invoice": "documentActions.recordDeposit",
-    "prepayment_tax_invoice": "documentActions.recordDeposit",
+    "prepayment_tax_invoice": "documentActions.issuePrepaymentTaxInvoice",
     "supplier_payment": "documentActions.payVendor",
     "advance_payment": "expenseCreate.documentTypes.advancePayment",
     "withholding_tax_certificate": "documentActions.createWhtCertificate",
