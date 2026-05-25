@@ -48,7 +48,7 @@ from .ledger_service import (
     build_project_profitability_rows,
     build_report_rows,
 )
-from .html_pdf_service import generate_html_document_pdf
+from .html_pdf_service import generate_html_document_pdf, generate_html_fragment_pdf
 from .image_pdf_service import generate_pdf_from_preview_images
 from .pdf_service import generate_document_pdf as generate_reportlab_document_pdf
 from .storage_service import (
@@ -3552,6 +3552,28 @@ def _generate_sales_document_pdf(path: Path, kind: str, record: dict[str, Any]) 
         generate_html_document_pdf(path, kind, record)
     except Exception:
         generate_reportlab_document_pdf(path, kind, record)
+
+
+def build_preview_html_pdf(payload: dict[str, Any]) -> dict[str, Any]:
+    html_fragment = str(payload.get("html") or "").strip()
+    if not html_fragment:
+        raise ValueError("html is required.")
+    if "sales-document-print-root" not in html_fragment or "sales-document-page" not in html_fragment:
+        raise ValueError("html must contain a sales document preview.")
+
+    raw_filename = str(payload.get("filename") or "document.pdf").strip() or "document.pdf"
+    safe_filename = "".join(char if char not in '\\/:*?"<>|' else "-" for char in raw_filename).strip("-")
+    if not safe_filename.lower().endswith(".pdf"):
+        safe_filename = f"{safe_filename}.pdf"
+
+    path = build_generated_path(Path(safe_filename).stem or "preview-html", "pdf")
+    generate_html_fragment_pdf(path, html_fragment)
+
+    return {
+        "path": path,
+        "download_name": safe_filename,
+        "mimetype": "application/pdf",
+    }
 
 
 def build_preview_image_pdf(payload: dict[str, Any]) -> dict[str, Any]:

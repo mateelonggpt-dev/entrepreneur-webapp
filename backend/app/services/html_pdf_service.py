@@ -3,6 +3,7 @@ from __future__ import annotations
 import base64
 import html
 import os
+import re
 import shutil
 import subprocess
 import tempfile
@@ -43,6 +44,24 @@ def _percent(value: Any) -> str:
         return "0%"
 
 
+def _float(value: Any, fallback: float = 0.0) -> float:
+    try:
+        return float(value or fallback)
+    except (TypeError, ValueError):
+        return fallback
+
+
+def _title_class(title: str) -> str:
+    length = len(title or "")
+    if length > 34:
+        return "title-extra-long"
+    if length > 26:
+        return "title-long"
+    if length > 18:
+        return "title-medium"
+    return ""
+
+
 def _document_types(record: dict[str, Any], kind: str) -> list[str]:
     raw_types = record.get("documentTypes") or [kind]
     types = [str(item).strip() for item in raw_types if str(item).strip()]
@@ -75,6 +94,7 @@ LABELS = {
         "amount_before_vat": "Amount before VAT",
         "grand_total": "Grand total",
         "withholding": "Withholding tax",
+        "paid": "Paid",
         "amount_due": "Amount due",
         "amount_words": "Amount in words",
         "payment": "Payment",
@@ -108,6 +128,7 @@ LABELS = {
         "amount_before_vat": "ยอดก่อน VAT",
         "grand_total": "ยอดรวมสุทธิ",
         "withholding": "ภาษีหัก ณ ที่จ่าย",
+        "paid": "จำนวนเงินที่ชำระแล้ว",
         "amount_due": "ยอดชำระ",
         "amount_words": "จำนวนเงินตัวอักษร",
         "payment": "การชำระเงิน",
@@ -254,7 +275,14 @@ def _line_rows(record: dict[str, Any], labels: dict[str, str], currency: str) ->
         description = _escape(line.get("desc") or line.get("description") or f"{labels['description']} {index}")
         details = str(line.get("details") or "").strip()
         details_html = f"<div class=\"line-detail\">{html.escape(details)}</div>" if details else ""
-        amount = line.get("lineTotal", line.get("totalAmount", line.get("amount", 0)))
+        amount = next(
+            (
+                line.get(key)
+                for key in ("lineTotal", "totalAmount", "amountBeforeVat", "amount")
+                if line.get(key) not in (None, "")
+            ),
+            _float(line.get("qty")) * _float(line.get("price")),
+        )
         rows.append(
             "<tr>"
             f"<td class=\"code\">{code or '-'}</td>"
@@ -270,13 +298,68 @@ def _line_rows(record: dict[str, Any], labels: dict[str, str], currency: str) ->
     return "\n".join(rows)
 
 
-def _summary_rows(record: dict[str, Any], labels: dict[str, str], currency: str) -> str:
+def _payment_lines(record: dict[str, Any]) -> list[str]:
+    method = str(record.get("paymentMethod") or "").strip()
+    details = record.get("paymentDetails") if isinstance(record.get("paymentDetails"), dict) else {}
+    selected_bank = details.get("selectedBankAccount") if isinstance(details.get("selectedBankAccount"), dict) else {}
+    if method == "Bank Transfer" and selected_bank:
+        return [
+            str(selected_bank.get("bankName") or "").strip(),
+            f"Account name: {selected_bank.get('accountName')}" if selected_bank.get("accountName") else "",
+            f"Account number: {selected_bank.get('accountNumber')}" if selected_bank.get("accountNumber") else "",
+            f"Branch: {selected_bank.get('branch')}" if selected_bank.get("branch") else "",
+            f"SWIFT: {selected_bank.get('swiftCode')}" if selected_bank.get("swiftCode") else "",
+            f"PromptPay: {selected_bank.get('promptPayId')}" if selected_bank.get("promptPayId") else "",
+        ]
+    if method == "Bank Transfer":
+        return [
+            str(details.get("bankAccount") or "").strip(),
+            str(details.get("accountName") or "").strip(),
+            str(details.get("accountNumber") or "").strip(),
+        ]
+    if method == "Cheque":
+        return [
+            f"Cheque: {details.get('chequeNumber')}" if details.get("chequeNumber") else "",
+            str(details.get("chequeBankName") or "").strip(),
+            str(details.get("chequeDate") or "").strip(),
+        ]
+    if method == "Credit Card":
+        return [
+            str(details.get("cardType") or "").strip(),
+            f"Approval: {details.get('approvalCode')}" if details.get("approvalCode") else "",
+        ]
+    if method == "PromptPay":
+        return [str(details.get("promptPayId") or selected_bank.get("promptPayId") or "").strip()]
+    if method == "Other":
+        return [str(details.get("otherNote") or "").strip()]
+    return [method]
+
+
+def _payment_html(record: dict[str, Any]) -> str:
+    lines = [line for line in _payment_lines(record) if line]
+    if not lines:
+        return "<p>-</p>"
+    heading = _escape(lines[0])
+    details = "".join(f"<p>{_escape(line)}</p>" for line in lines[1:])
+    return f"""
+      <div class="bank-card">
+        <div class="bank-strip"></div>
+        <div>
+          <strong>{heading}</strong>
+          {details}
+        </div>
+      </div>
+    """
+
+
+def _summary_html(record: dict[str, Any], labels: dict[str, str], currency: str) -> str:
     subtotal = float(record.get("amountBeforeVat", record.get("subtotal", record.get("amount", 0))) or 0)
     discount = float(record.get("totalDiscount", 0) or 0)
     vat = float(record.get("taxAmount", record.get("vat", 0)) or 0)
     total = float(record.get("amount", subtotal + vat) or 0)
     withholding = float(record.get("totalWithholdingTax", record.get("withholdingAmount", 0)) or 0)
-    amount_due = float(record.get("amountDue", total - withholding) or 0)
+    paid = float(record.get("amountPaid", 0) or 0)
+    amount_due = float(record.get("amountDue", total - withholding - paid) or 0)
     rows = [
         (labels["subtotal_before_discount"], record.get("subtotalBeforeDiscount", subtotal + discount), False),
     ]
@@ -286,20 +369,20 @@ def _summary_rows(record: dict[str, Any], labels: dict[str, str], currency: str)
         [
             (labels["amount_before_vat"], subtotal, False),
             (labels["vat"], vat, False),
-            (labels["grand_total"], total, True),
         ]
     )
     if withholding:
-        rows.extend(
-            [
-                (labels["withholding"], withholding, False),
-                (labels["amount_due"], amount_due, True),
-            ]
-        )
-    return "\n".join(
-        f"<div class=\"summary-row {'total' if important else ''}\"><span>{_escape(label)}</span><strong>{_money(value, currency)}</strong></div>"
-        for label, value, important in rows
+        rows.append((labels["withholding"], withholding, False))
+    row_html = "\n".join(
+        f"<div class=\"summary-row\"><span>{_escape(label)}</span><strong>{_money(value, currency)}</strong></div>"
+        for label, value, _important in rows
     )
+    return f"""
+      {row_html}
+      <div class="grand-total"><span>{labels["grand_total"]}</span><strong>{_money(total, currency)}</strong></div>
+      <div class="summary-row muted"><span>{labels["paid"]}</span><strong>{_money(paid, currency)}</strong></div>
+      <div class="summary-row due"><span>{labels["amount_due"]}</span><strong>{_money(amount_due, currency)}</strong></div>
+    """
 
 
 def _signature_html(record: dict[str, Any], labels: dict[str, str]) -> str:
@@ -327,6 +410,7 @@ def render_document_html(kind: str, record: dict[str, Any]) -> str:
     labels = LABELS[language]
     currency = str(record.get("currency") or "THB")
     title = _document_title(record, kind, language)
+    title_class = _title_class(title)
     subtitle = _document_subtitle(record, kind, language)
     seller = record.get("sellerInfo") or {}
     customer_info = record.get("customerInfo") or {}
@@ -360,7 +444,7 @@ def render_document_html(kind: str, record: dict[str, Any]) -> str:
                 </div>
                 <div class="title-zone">
                   <span class="copy-label">{_escape(copy_label)}</span>
-                  <h1>{_escape(title)}</h1>
+                  <h1 class="{title_class}">{_escape(title)}</h1>
                   <p>{_escape(subtitle)}</p>
                 </div>
               </header>
@@ -395,13 +479,12 @@ def render_document_html(kind: str, record: dict[str, Any]) -> str:
               <section class="bottom-grid">
                 <div class="payment-card">
                   <h2>{labels["payment"]}</h2>
-                  <p>{_escape(record.get("paymentMethod") or "-")}</p>
-                  <p>{_escape(record.get("paymentTerms") or "")}</p>
+                  {_payment_html(record)}
                   {f'<h2 class="notes-title">{labels["notes"]}</h2><p>{_escape(notes)}</p>' if notes else ''}
                 </div>
                 <div class="summary-card">
                   <h2>{labels["summary"]}</h2>
-                  {_summary_rows(record, labels, currency)}
+                  {_summary_html(record, labels, currency)}
                   {f'<div class="amount-words"><span>{labels["amount_words"]}</span><strong>{_escape(amount_words)}</strong></div>' if amount_words else ''}
                 </div>
               </section>
@@ -423,9 +506,9 @@ def render_document_html(kind: str, record: dict[str, Any]) -> str:
       margin: 0;
       background: #ffffff;
       color: #0f172a;
-      font-family: Tahoma, "Noto Sans Thai", Arial, sans-serif;
-      font-size: 10.5px;
-      line-height: 1.38;
+      font-family: "Noto Sans Thai", "Leelawadee UI", Tahoma, Arial, sans-serif;
+      font-size: 10.7px;
+      line-height: 1.4;
       -webkit-print-color-adjust: exact;
       print-color-adjust: exact;
     }}
@@ -437,30 +520,33 @@ def render_document_html(kind: str, record: dict[str, Any]) -> str:
       overflow: hidden;
     }}
     .page:last-child {{ page-break-after: auto; }}
-    .doc-header {{ display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 72mm); gap: 14mm; align-items: start; }}
-    .seller-head {{ display: grid; grid-template-columns: 20mm minmax(0, 1fr); gap: 7mm; min-width: 0; }}
-    .logo {{ width: 18mm; height: 18mm; border: 1px solid #bfdbfe; border-radius: 5mm; display: flex; align-items: center; justify-content: center; overflow: hidden; background: #eff6ff; color: #1d4ed8; font-weight: 800; font-size: 14px; }}
-    .logo img {{ width: 100%; height: 100%; object-fit: contain; }}
-    .eyebrow {{ margin: 0 0 2mm; color: #1d4ed8; font-weight: 700; }}
+    .doc-header {{ display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 76mm); gap: 9mm; align-items: start; padding-bottom: 9mm; border-bottom: 2px solid #2563eb; }}
+    .seller-head {{ display: grid; grid-template-columns: 18mm minmax(0, 1fr); gap: 5mm; min-width: 0; }}
+    .logo {{ width: 16.8mm; height: 16.8mm; border: 1px solid #ccfbf1; border-radius: 4.2mm; display: flex; align-items: center; justify-content: center; overflow: hidden; background: #eff6ff; color: #2563eb; font-weight: 950; font-size: 18px; }}
+    .logo img {{ width: 86%; height: 86%; object-fit: contain; }}
+    .eyebrow {{ margin: 0 0 1mm; color: #2563eb; font-weight: 900; font-size: 11.2px; }}
     .party-lines {{ color: #334155; overflow-wrap: anywhere; word-break: break-word; }}
-    .title-zone {{ text-align: right; min-width: 0; }}
-    .copy-label {{ display: inline-flex; border-radius: 999px; background: #dcfce7; color: #166534; padding: 1.5mm 5mm; font-weight: 800; font-size: 10px; }}
-    h1 {{ margin: 4mm 0 1mm; color: #1d4ed8; font-size: 22px; line-height: 1.08; overflow-wrap: anywhere; word-break: break-word; }}
-    .title-zone p {{ margin: 0; color: #64748b; font-weight: 800; letter-spacing: .04em; text-transform: uppercase; }}
-    .divider {{ height: 1px; background: #2563eb; margin: 11mm 0 9mm; }}
-    .main-info {{ display: grid; grid-template-columns: minmax(0, 1.05fr) minmax(0, .95fr); gap: 8mm; align-items: start; }}
-    .party-card, .info-card, .payment-card, .summary-card {{ border: 1px solid #dbeafe; border-radius: 4mm; padding: 5mm; min-width: 0; overflow-wrap: anywhere; word-break: break-word; break-inside: avoid; }}
-    .customer-card {{ border-left: 1.4mm solid #2563eb; }}
-    h2 {{ margin: 0 0 3mm; color: #1d4ed8; font-size: 11px; }}
+    .title-zone {{ text-align: right; min-width: 0; max-width: 100%; overflow: visible; }}
+    .copy-label {{ display: inline-flex; border-radius: 999px; border: 1px solid #ccfbf1; background: #dcfce7; color: #2563eb; padding: 1mm 4mm; font-weight: 900; font-size: 8.8px; min-height: 22px; align-items: center; }}
+    h1 {{ margin: 3mm 0 0.5mm; color: #2563eb; font-size: 30px; line-height: 1.24; font-weight: 950; letter-spacing: 0; max-width: 100%; white-space: nowrap; overflow: visible; padding: 0.5mm 0 1mm; }}
+    h1.title-medium {{ font-size: 20px; line-height: 1.26; }}
+    h1.title-long {{ font-size: 14px; line-height: 1.3; }}
+    h1.title-extra-long {{ font-size: 11px; line-height: 1.34; }}
+    .title-zone p {{ margin: 0; color: #64748b; font-weight: 800; letter-spacing: .04em; text-transform: uppercase; font-size: 9.8px; }}
+    .divider {{ display: none; }}
+    .main-info {{ display: grid; grid-template-columns: minmax(0, 1fr) minmax(72mm, 82mm); gap: 7mm; margin-top: 8mm; align-items: start; }}
+    .party-card, .info-card, .payment-card, .summary-card {{ border: 1px solid #dbeafe; border-radius: 4mm; padding: 5mm; min-width: 0; overflow-wrap: anywhere; word-break: break-word; break-inside: avoid; background: #fff; box-shadow: 0 10px 24px rgba(15, 23, 42, 0.05); }}
+    .customer-card {{ border-left: 1.2mm solid #2563eb; }}
+    h2 {{ margin: 0 0 3mm; color: #2563eb; font-size: 10px; font-weight: 950; letter-spacing: .04em; }}
     .info-row {{ display: grid; grid-template-columns: 29mm minmax(0, 1fr); gap: 3mm; padding: 1.2mm 0; }}
     .info-row span {{ color: #64748b; font-weight: 700; }}
     .info-row strong {{ text-align: right; min-width: 0; overflow-wrap: anywhere; word-break: break-word; }}
     .table-wrap {{ margin-top: 8mm; }}
-    table {{ width: 100%; border-collapse: separate; border-spacing: 0; table-layout: fixed; border: 1px solid #bfdbfe; border-radius: 3mm; overflow: hidden; }}
+    table {{ width: 100%; border-collapse: separate; border-spacing: 0; table-layout: fixed; border: 1px solid #dbeafe; border-radius: 3.5mm; overflow: hidden; }}
     thead {{ display: table-header-group; }}
     tr {{ break-inside: avoid; page-break-inside: avoid; }}
-    th {{ background: #eff6ff; color: #1e40af; font-size: 9.2px; padding: 2.2mm; text-align: left; border-bottom: 1px solid #bfdbfe; }}
-    td {{ padding: 2.4mm 2.2mm; border-bottom: 1px solid #e2e8f0; vertical-align: top; overflow-wrap: anywhere; word-break: break-word; }}
+    th {{ background: #f1f5f9; color: #0f172a; font-size: 9.2px; padding: 2.2mm; text-align: left; border-bottom: 1px solid #b8c4d4; font-weight: 900; }}
+    td {{ padding: 2.2mm; border-bottom: 1px solid #edf2f7; vertical-align: top; overflow-wrap: anywhere; word-break: break-word; }}
     tbody tr:last-child td {{ border-bottom: 0; }}
     th:nth-child(1), td:nth-child(1) {{ width: 21mm; }}
     th:nth-child(2), td:nth-child(2) {{ width: auto; }}
@@ -471,11 +557,19 @@ def render_document_html(kind: str, record: dict[str, Any]) -> str:
     .num {{ text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }}
     .strong {{ font-weight: 800; }}
     .line-detail {{ margin-top: 1mm; color: #64748b; font-size: 9px; }}
-    .bottom-grid {{ display: grid; grid-template-columns: minmax(0, 1fr) 68mm; gap: 8mm; margin-top: 9mm; align-items: start; }}
+    .bottom-grid {{ border-top: 1px solid #b8c4d4; padding-top: 8mm; display: grid; grid-template-columns: minmax(0, 1fr) 78mm; gap: 7mm; margin-top: 9mm; align-items: start; }}
+    .bank-card {{ display: grid; grid-template-columns: 5px minmax(0, 1fr); gap: 10px; border: 1px solid #dbeafe; border-radius: 3mm; padding: 4mm; background: #fff; }}
+    .bank-strip {{ background: #2563eb; border-radius: 999px; }}
+    .bank-card strong {{ display: block; margin-bottom: 1mm; color: #0f172a; }}
+    .bank-card p {{ margin: 0; color: #334155; }}
     .summary-row {{ display: flex; justify-content: space-between; gap: 5mm; padding: 1.2mm 0; color: #475569; }}
     .summary-row strong {{ color: #0f172a; white-space: nowrap; }}
-    .summary-row.total {{ margin-top: 1.2mm; border-top: 1px solid #bfdbfe; padding-top: 2.4mm; font-size: 12px; color: #0f172a; font-weight: 900; }}
-    .amount-words {{ margin-top: 3mm; border-top: 1px dashed #bfdbfe; padding-top: 2.4mm; color: #475569; }}
+    .summary-row.muted {{ border-top: 1px solid #dbeafe; margin-top: 1.5mm; padding-top: 2.5mm; color: #64748b; font-weight: 800; }}
+    .summary-row.due strong {{ color: #2563eb; font-size: 12.4px; }}
+    .grand-total {{ background: linear-gradient(135deg, #2563eb 0%, #0f766e 100%); color: #fff; padding: 4mm 5mm; display: flex; justify-content: space-between; align-items: center; gap: 4mm; min-height: 13mm; border-radius: 4mm; box-shadow: 0 10px 22px rgba(15, 118, 110, 0.18); margin: 3mm 0; }}
+    .grand-total span {{ font-weight: 900; color: rgba(255, 255, 255, 0.9); }}
+    .grand-total strong {{ color: #fff; font-size: 18px; font-weight: 950; white-space: nowrap; }}
+    .amount-words {{ margin-top: 3mm; border: 1px solid #dbeafe; border-radius: 3mm; background: #f8fafc; padding: 3mm; color: #475569; }}
     .amount-words strong {{ display: block; margin-top: 1mm; color: #0f172a; }}
     .notes-title {{ margin-top: 4mm; }}
     .signatures {{ display: grid; grid-template-columns: 1fr 1fr; gap: 12mm; margin-top: 12mm; break-inside: avoid; }}
@@ -488,6 +582,49 @@ def render_document_html(kind: str, record: dict[str, Any]) -> str:
 </head>
 <body>
   {"".join(pages)}
+</body>
+</html>"""
+
+
+def _sanitize_preview_html(html_fragment: str) -> str:
+    cleaned = re.sub(r"<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>", "", html_fragment, flags=re.IGNORECASE)
+    cleaned = re.sub(r"\s(on[a-z]+)\s*=\s*(['\"]).*?\2", "", cleaned, flags=re.IGNORECASE | re.DOTALL)
+    cleaned = re.sub(r"\s(on[a-z]+)\s*=\s*[^\s>]+", "", cleaned, flags=re.IGNORECASE)
+    return cleaned
+
+
+def render_preview_html_shell(html_fragment: str) -> str:
+    cleaned = _sanitize_preview_html(html_fragment)
+    return f"""<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <style>
+    @page {{ size: A4 portrait; margin: 0; }}
+    html, body {{
+      margin: 0;
+      padding: 0;
+      width: 210mm;
+      min-height: 297mm;
+      background: #ffffff;
+      -webkit-print-color-adjust: exact;
+      print-color-adjust: exact;
+    }}
+    body {{
+      overflow: visible;
+    }}
+    .sales-document-print-root.sales-document-pdf-export {{
+      width: auto !important;
+      min-height: 0 !important;
+      padding: 0 !important;
+      gap: 0 !important;
+      background: #ffffff !important;
+      align-items: flex-start !important;
+    }}
+  </style>
+</head>
+<body>
+  {cleaned}
 </body>
 </html>"""
 
@@ -569,6 +706,14 @@ def _print_with_chromium_cli(html_text: str, path: Path) -> bool:
 def generate_html_document_pdf(path: Path, kind: str, record: dict[str, Any]) -> Path:
     path.parent.mkdir(parents=True, exist_ok=True)
     html_text = render_document_html(kind, record)
+    if _print_with_playwright(html_text, path) or _print_with_chromium_cli(html_text, path):
+        return path
+    raise RuntimeError("Chromium PDF rendering is unavailable.")
+
+
+def generate_html_fragment_pdf(path: Path, html_fragment: str) -> Path:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    html_text = render_preview_html_shell(html_fragment)
     if _print_with_playwright(html_text, path) or _print_with_chromium_cli(html_text, path):
         return path
     raise RuntimeError("Chromium PDF rendering is unavailable.")

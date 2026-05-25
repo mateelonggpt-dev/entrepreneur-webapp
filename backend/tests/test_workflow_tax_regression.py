@@ -18,7 +18,7 @@ from backend.app.services.data_service import (
     remove_document,
     save_settings_section,
 )
-from backend.app.services.html_pdf_service import render_document_html
+from backend.app.services.html_pdf_service import render_document_html, render_preview_html_shell
 from backend.app.services.storage_service import DB_PATH, save_database
 
 
@@ -253,6 +253,21 @@ class WorkflowTaxRegressionTests(unittest.TestCase):
         self.assertIn("QT-2026-050001", html)
         self.assertIn("PO-2026-050001", html)
         self.assertNotIn("customer-po-internal.pdf", html)
+
+    def test_preview_html_pdf_shell_preserves_frontend_template_and_strips_scripts(self):
+        html = render_preview_html_shell(
+            '<div class="preview-wrapper sales-document-print-root">'
+            '<style>.sales-document-page{width:210mm}</style>'
+            '<script>alert("bad")</script>'
+            '<div class="sales-document-page" onclick="bad()">ใบส่งของ/ใบกำกับภาษี</div>'
+            "</div>"
+        )
+
+        self.assertIn("sales-document-pdf-export", html)
+        self.assertIn("sales-document-page", html)
+        self.assertIn("ใบส่งของ/ใบกำกับภาษี", html)
+        self.assertNotIn("<script", html.lower())
+        self.assertNotIn("onclick", html.lower())
 
     def test_sales_create_ui_keeps_tax_invoice_available_after_invoice_step(self):
         repo_root = Path(__file__).resolve().parents[2]
