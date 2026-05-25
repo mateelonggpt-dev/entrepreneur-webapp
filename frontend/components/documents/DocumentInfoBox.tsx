@@ -1,6 +1,5 @@
 import type { ReactNode } from "react";
 import type { SalesDocumentTemplateData } from "@/components/documents/types";
-import { formatDocumentMoney } from "@/components/documents/document-utils";
 
 const labels = {
   en: {
@@ -10,6 +9,8 @@ const labels = {
     dueDate: "Due date",
     reference: "Reference / RE",
     referenceDocuments: "Reference documents",
+    quotationNo: "Quotation No.",
+    customerPo: "Customer PO No.",
     seller: "Seller",
     days: "days",
   },
@@ -20,46 +21,38 @@ const labels = {
     dueDate: "วันครบกำหนด",
     reference: "อ้างอิง / RE",
     referenceDocuments: "เอกสารอ้างอิง",
+    quotationNo: "เลขที่ใบเสนอราคา",
+    customerPo: "เลขที่ PO ลูกค้า",
     seller: "ผู้ขาย",
     days: "วัน",
   },
 };
 
-const referenceKindLabels = {
-  en: {
-    quotation: "Quotation",
-    delivery_note: "Delivery Note",
-    invoice: "Billing Note / Invoice",
-    tax_invoice: "Tax Invoice",
-    receipt: "Receipt",
-    billing_note: "Billing Note / Invoice",
-    combined_receipt: "Combined Receipt",
-    credit_note: "Credit Note",
-    debit_note: "Debit Note",
-  },
-  th: {
-    quotation: "ใบเสนอราคา",
-    delivery_note: "ใบส่งของ",
-    invoice: "ใบวางบิล/ใบแจ้งหนี้",
-    tax_invoice: "ใบกำกับภาษี",
-    receipt: "ใบเสร็จรับเงิน",
-    billing_note: "ใบวางบิล/ใบแจ้งหนี้",
-    combined_receipt: "ใบเสร็จรวม",
-    credit_note: "ใบลดหนี้",
-    debit_note: "ใบเพิ่มหนี้",
-  },
-} as const;
+type ReferenceDocument = NonNullable<SalesDocumentTemplateData["referenceDocuments"]>[number];
 
-const formatReferenceKind = (kind: string | undefined, language: "th" | "en") => {
-  const normalized = String(kind ?? "").trim();
-  if (!normalized) return "";
-  const mapped = referenceKindLabels[language][normalized as keyof (typeof referenceKindLabels)["th"]];
-  return mapped ?? normalized.replace(/_/g, " ");
+const referenceKind = (reference: ReferenceDocument) =>
+  reference.type || reference.kind || reference.documentTypes?.[0] || "";
+
+const isQuotationReference = (reference: ReferenceDocument) =>
+  referenceKind(reference) === "quotation" || Boolean(reference.documentTypes?.includes("quotation"));
+
+const uniqueValues = (values: string[]) => Array.from(new Set(values.map((value) => value.trim()).filter(Boolean)));
+
+const printableReferenceInfo = (references: ReferenceDocument[]) => {
+  const quotationReferences = references.filter(isQuotationReference);
+  const printableReferences = quotationReferences.length ? quotationReferences : references;
+  return {
+    isQuotationOnly: quotationReferences.length > 0,
+    numbers: uniqueValues(printableReferences.map((reference) => reference.number || reference.id)),
+  };
 };
 
 export const DocumentInfoBox = ({ data }: { data: SalesDocumentTemplateData }) => {
   const t = labels[data.language];
   const referenceDocuments = data.referenceDocuments ?? [];
+  const referenceInfo = printableReferenceInfo(referenceDocuments);
+  const fallbackReference = data.relatedDocument?.trim();
+  const customerPoReference = data.reference?.trim();
   const sellerValue = data.sellerUser?.name
     ? `${data.sellerUser.name}${data.sellerUser.email ? ` (${data.sellerUser.email})` : ""}`
     : data.documentContact?.trim() || data.seller.contactPerson || data.seller.name || "-";
@@ -68,33 +61,15 @@ export const DocumentInfoBox = ({ data }: { data: SalesDocumentTemplateData }) =
     <aside className="sales-doc-info-stack sales-doc-avoid-break">
       <div className="sales-doc-info-box">
         <InfoRow label={`${t.documentNo}:`} value={data.documentNumber || "-"} />
-        {referenceDocuments.length ? (
-          <InfoRow label={`${t.referenceDocuments}:`}>
-            <div className="sales-doc-reference-list">
-              {referenceDocuments.map((reference, index) => {
-                const kindLabel = formatReferenceKind(reference.type || reference.kind, data.language);
-                const numberLabel = reference.number || reference.id;
-                const amountValue = reference.total ?? reference.amount;
-                const amountLabel =
-                  typeof amountValue === "number" && amountValue > 0
-                    ? formatDocumentMoney(amountValue, data.currency)
-                    : "";
-                const secondLine = [reference.party, reference.date].filter(Boolean).join(" · ");
-                const thirdLine = [amountLabel, reference.status].filter(Boolean).join(" · ");
-
-                return (
-                  <div className="sales-doc-reference-item" key={`${reference.id || reference.number || index}-${index}`}>
-                    <p className="sales-doc-reference-primary">{[kindLabel, numberLabel].filter(Boolean).join(" · ") || "-"}</p>
-                    {secondLine ? <p>{secondLine}</p> : null}
-                    {thirdLine ? <p>{thirdLine}</p> : null}
-                  </div>
-                );
-              })}
-            </div>
-          </InfoRow>
-        ) : (
-          <InfoRow label={`${t.reference}:`} value={data.relatedDocument || data.reference || "-"} />
-        )}
+        {referenceInfo.numbers.length ? (
+          <InfoRow
+            label={`${referenceInfo.isQuotationOnly ? t.quotationNo : t.referenceDocuments}:`}
+            value={referenceInfo.numbers.join(", ")}
+          />
+        ) : fallbackReference ? (
+          <InfoRow label={`${t.reference}:`} value={fallbackReference} />
+        ) : null}
+        {customerPoReference ? <InfoRow label={`${t.customerPo}:`} value={customerPoReference} /> : null}
         <InfoRow label={`${t.issueDate}:`} value={data.issueDate || "-"} />
         <InfoRow label={`${t.creditTerm}:`} value={`${data.creditTerms || 0} ${t.days}`} />
         <InfoRow label={`${t.dueDate}:`} value={data.dueDate || "-"} />
