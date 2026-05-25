@@ -15,7 +15,6 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { createDocument, downloadDocumentPdf, fetchDocument, removeDocument as removeDocumentApi } from "@/lib/api";
 import { useAppData } from "@/lib/app-data";
-import { useAuth } from "@/lib/auth";
 import {
   SALE_DOCUMENT_TYPE_OPTIONS,
   SALES_DOCUMENT_KIND_LABELS,
@@ -42,9 +41,7 @@ const SaleDocuments = () => {
   const location = useLocation();
   const { i18n } = useTranslation();
   const { data, refresh } = useAppData();
-  const { user } = useAuth();
   const activeLanguage = i18n.language?.startsWith("th") ? "th" : "en";
-  const canRemoveDocuments = user?.role === "owner";
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [customerFilter, setCustomerFilter] = useState("all");
@@ -410,7 +407,6 @@ const SaleDocuments = () => {
             document={summary}
             allowApprovedEdit={!data.policySummary.lockDocumentsAfterPayment}
             variant="shared"
-            canRemove={canRemoveDocuments}
             onAction={(action, document) => void handleDocumentAction(action, document)}
           />
         )}
