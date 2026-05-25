@@ -105,7 +105,7 @@ const documentTemplateCss = `
   .sales-doc-info-row, .sales-doc-summary-line { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 12px; align-items: start; min-height: 21px; padding: 2px 0; }
   .sales-doc-info-row strong, .sales-doc-summary-line strong { text-align: right; font-weight: 800; color: #0f172a; }
 
-  .sales-doc-table-zone { flex: 1 1 auto; min-height: 230px; margin-top: 8mm; overflow-x: auto; }
+  .sales-doc-table-zone { flex: 0 0 auto; min-height: 0; margin-top: 8mm; overflow-x: auto; }
   .sales-doc-table { width: 100%; border-collapse: separate; border-spacing: 0; table-layout: fixed; font-size: 10.4px; border: 1px solid var(--doc-border); border-radius: 16px; overflow: hidden; }
   .sales-doc-table th { background: #f1f5f9; border-bottom: 1px solid #b8c4d4; color: #0f172a; padding: 8px 7px; text-align: center; font-weight: 900; }
   .sales-doc-table td { border-bottom: 1px solid #edf2f7; padding: 7px; vertical-align: top; text-align: right; overflow-wrap: anywhere; color: #1e293b; }
@@ -114,7 +114,7 @@ const documentTemplateCss = `
   .sales-doc-line-title { font-weight: 850; margin: 0; color: #0f172a; }
   .sales-doc-line-detail { color: var(--doc-muted); margin: 1.2mm 0 0; font-size: 9.8px; line-height: 1.35; }
 
-  .sales-doc-bottom { margin-top: auto; flex-shrink: 0; }
+  .sales-doc-bottom { margin-top: 9mm; flex-shrink: 0; }
   .sales-doc-bottom-grid { border-top: 1px solid #b8c4d4; padding-top: 8mm; display: grid; grid-template-columns: minmax(0, 1fr) minmax(64mm, 78mm); gap: 7mm; font-size: 10.6px; line-height: 1.4; }
   .sales-doc-summary-words { border: 1px solid var(--doc-border); border-radius: 14px; margin-top: 5mm; padding: 4mm; background: #f8fafc; }
   .sales-doc-summary-words span { display: block; color: var(--doc-brand); font-weight: 900; font-size: 9.8px; text-transform: uppercase; }
@@ -350,6 +350,29 @@ const documentTemplateCss = `
 
   .sales-document-print-root.sales-document-pdf-export .sales-doc-signature-box span {
     font-size: 8px !important;
+  }
+
+
+  /* PDF_NATURAL_SPACING_HOTFIX
+     Keep short documents readable. Do not stretch the item table to fill A4. */
+  .sales-document-print-root.sales-document-pdf-export .sales-doc-table-zone {
+    flex: 0 0 auto !important;
+    min-height: 0 !important;
+    margin-top: 24px !important;
+    overflow: visible !important;
+  }
+
+  .sales-document-print-root.sales-document-pdf-export .sales-doc-bottom {
+    margin-top: 28px !important;
+    flex-shrink: 0 !important;
+  }
+
+  .sales-document-print-root.sales-document-pdf-export .sales-doc-bottom-grid {
+    padding-top: 18px !important;
+  }
+
+  .sales-document-print-root.sales-document-pdf-export .sales-doc-signature-section {
+    margin-top: 22px !important;
   }
 
   @media (max-width: 920px) {

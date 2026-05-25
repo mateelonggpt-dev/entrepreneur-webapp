@@ -2677,13 +2677,24 @@ export const SalesDocumentForm = ({
                 </div>
               ) : null}
               <div className="mt-3">
-                <Label htmlFor="customer-po-reference">{labels.customerReference}</Label>
+                <Label htmlFor="customer-po-reference">
+                  {documentLanguage === "th" ? "เลขที่ PO ลูกค้า / เลขอ้างอิง" : "Customer PO No. / Reference No."}
+                </Label>
                 <Input
                   id="customer-po-reference"
                   value={reference}
                   onChange={(event) => setReference(event.target.value)}
                   placeholder={documentLanguage === "th" ? "เช่น PO-2026-001" : "e.g. PO-2026-001"}
                   className="mt-1.5 border-slate-200 bg-white"
+                />
+              </div>
+
+              {/* PO_ATTACHMENT_BOX_VISIBLE_HOTFIX */}
+              <div className="mt-3">
+                <PoAttachmentBox
+                  files={poAttachmentFiles}
+                  onFilesChange={setPoAttachmentFiles}
+                  disabled={Boolean(submitting)}
                 />
               </div>
             </div>
