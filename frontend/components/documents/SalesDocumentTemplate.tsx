@@ -389,9 +389,9 @@ const documentTemplateCss = `
   }
 
   .sales-document-print-root.sales-document-pdf-export .sales-doc-signature-section {
-    margin-top: 18px !important;
-    padding-top: 14px !important;
-    min-height: 58px !important;
+    margin-top: 24px !important;
+    padding-top: 20px !important;
+    min-height: 118px !important;
     font-size: 9px !important;
     overflow: visible !important;
   }
@@ -401,16 +401,16 @@ const documentTemplateCss = `
   }
 
   .sales-document-print-root.sales-document-pdf-export .sales-doc-signature-box {
-    min-height: 52px !important;
+    min-height: 96px !important;
   }
 
   .sales-document-print-root.sales-document-pdf-export .sales-doc-signature-image-frame {
-    height: 42px !important;
-    margin-bottom: 8px !important;
+    height: 54px !important;
+    margin-bottom: 10px !important;
   }
 
   .sales-document-print-root.sales-document-pdf-export .sales-doc-signature-image {
-    max-height: 42px !important;
+    max-height: 54px !important;
   }
 
   .sales-document-print-root.sales-document-pdf-export .sales-doc-signature-box span {
@@ -437,7 +437,7 @@ const documentTemplateCss = `
   }
 
   .sales-document-print-root.sales-document-pdf-export .sales-doc-signature-section {
-    margin-top: 22px !important;
+    margin-top: 24px !important;
   }
 
 

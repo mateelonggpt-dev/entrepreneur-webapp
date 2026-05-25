@@ -273,10 +273,13 @@ class WorkflowTaxRegressionTests(unittest.TestCase):
         repo_root = Path(__file__).resolve().parents[2]
         document_sections_source = (repo_root / "frontend" / "lib" / "document-sections.ts").read_text(encoding="utf-8")
         sale_create_source = (repo_root / "frontend" / "views" / "sales" / "SaleCreate.tsx").read_text(encoding="utf-8")
+        template_source = (repo_root / "frontend" / "components" / "documents" / "SalesDocumentTemplate.tsx").read_text(encoding="utf-8")
 
         self.assertIn('"delivery_note|tax_invoice"', document_sections_source)
         self.assertIn('const ids = step.id === "invoice" ? ["invoice"] : [step.id];', sale_create_source)
         self.assertNotIn('["invoice", "tax_invoice"]', sale_create_source)
+        self.assertIn("min-height: 118px !important", template_source)
+        self.assertNotIn("min-height: 58px !important", template_source)
 
     def test_deposit_before_delivery_sets_tax_point_payment(self):
         deposit = create_document(
