@@ -102,8 +102,23 @@ const documentTemplateCss = `
   .sales-doc-strong { font-weight: 900; color: #0f172a; }
   .sales-doc-party-grid p, .sales-doc-info-box p, .sales-doc-payment-grid p, .sales-doc-note-block p, .sales-doc-words-line p { margin: 0; }
   .sales-doc-preline, .sales-doc-payment-grid p, .sales-doc-note-block p { white-space: pre-line; }
-  .sales-doc-info-row, .sales-doc-summary-line { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 12px; align-items: start; min-height: 21px; padding: 2px 0; }
+  .sales-doc-info-row, .sales-doc-summary-line { display: grid; gap: 12px; align-items: start; min-height: 21px; padding: 2px 0; }
+  .sales-doc-info-row { grid-template-columns: minmax(76px, 34%) minmax(0, 1fr); }
+  .sales-doc-summary-line { grid-template-columns: minmax(0, 1fr) auto; }
+  .sales-doc-info-row span { min-width: 0; }
   .sales-doc-info-row strong, .sales-doc-summary-line strong { text-align: right; font-weight: 800; color: #0f172a; }
+  .sales-doc-info-value {
+    min-width: 0;
+    max-width: 100%;
+    overflow-wrap: anywhere;
+    word-break: break-word;
+    white-space: normal;
+  }
+  .sales-doc-info-value.sales-doc-preline {
+    text-align: left;
+    white-space: pre-wrap;
+    line-height: 1.35;
+  }
 
   .sales-doc-table-zone { flex: 0 0 auto; min-height: 0; margin-top: 8mm; overflow-x: auto; }
   .sales-doc-table { width: 100%; border-collapse: separate; border-spacing: 0; table-layout: fixed; font-size: 10.4px; border: 1px solid var(--doc-border); border-radius: 16px; overflow: hidden; }
@@ -373,6 +388,46 @@ const documentTemplateCss = `
 
   .sales-document-print-root.sales-document-pdf-export .sales-doc-signature-section {
     margin-top: 22px !important;
+  }
+
+
+  /* REFERENCE_OVERFLOW_HOTFIX
+     Long customer PO/reference document text must wrap inside the right info box. */
+  .sales-doc-info-box {
+    min-width: 0;
+    overflow: hidden;
+  }
+
+  .sales-doc-info-box .sales-doc-info-row {
+    grid-template-columns: minmax(74px, 32%) minmax(0, 1fr) !important;
+  }
+
+  .sales-doc-info-box .sales-doc-info-row span,
+  .sales-doc-info-box .sales-doc-info-row strong {
+    min-width: 0 !important;
+  }
+
+  .sales-doc-info-box .sales-doc-info-value {
+    max-width: 100% !important;
+    overflow-wrap: anywhere !important;
+    word-break: break-word !important;
+    white-space: normal !important;
+  }
+
+  .sales-doc-info-box .sales-doc-info-value.sales-doc-preline {
+    text-align: left !important;
+    white-space: pre-wrap !important;
+    line-height: 1.32 !important;
+  }
+
+  .sales-document-print-root.sales-document-pdf-export .sales-doc-info-box .sales-doc-info-row {
+    grid-template-columns: 84px minmax(0, 1fr) !important;
+    gap: 8px !important;
+  }
+
+  .sales-document-print-root.sales-document-pdf-export .sales-doc-info-box .sales-doc-info-value.sales-doc-preline {
+    font-size: 8.9px !important;
+    line-height: 1.22 !important;
   }
 
   @media (max-width: 920px) {
