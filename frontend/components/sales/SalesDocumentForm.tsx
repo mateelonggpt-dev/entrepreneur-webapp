@@ -52,6 +52,7 @@ import {
   createProject,
   createProduct,
   createVendor,
+  downloadPreviewDocumentPdf,
   downloadPreviewImagesPdf,
   fetchDocument,
   fetchCompanySettings,
@@ -2022,12 +2023,16 @@ export const SalesDocumentForm = ({
   const downloadPreviewPdf = async () => {
     setDownloadingPdf(true);
     try {
-      const root = previewRef.current;
-      if (!root) {
-        throw new Error("Preview is not ready.");
-      }
       const filename = `${sanitizeFilename(documentNumber || "sales-document")}-${sanitizeFilename(previewTitle || documentTitleEn || "document")}.pdf`;
-      await downloadPreviewDomAsPdf(root, filename);
+      try {
+        await downloadPreviewDocumentPdf(kind, buildDocumentPayload("pending"), filename);
+      } catch {
+        const root = previewRef.current;
+        if (!root) {
+          throw new Error("Preview is not ready.");
+        }
+        await downloadPreviewDomAsPdf(root, filename);
+      }
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Unable to download PDF.");
     } finally {

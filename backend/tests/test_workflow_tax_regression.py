@@ -18,6 +18,7 @@ from backend.app.services.data_service import (
     remove_document,
     save_settings_section,
 )
+from backend.app.services.html_pdf_service import render_document_html
 from backend.app.services.storage_service import DB_PATH, save_database
 
 
@@ -196,6 +197,71 @@ class WorkflowTaxRegressionTests(unittest.TestCase):
         self.assertIn(delivery["id"], tax_invoice["sourceDocumentIds"])
         self.assertIn(tax_invoice["id"], refreshed_delivery["linkedDocumentIds"])
         self.assertIn(tax_invoice["id"], refreshed_delivery["convertedToIds"])
+
+    def test_combined_delivery_note_tax_invoice_keeps_both_document_types(self):
+        document = create_document(
+            "invoice",
+            {
+                "id": "INV-2026-050021",
+                "customer": "Bangkok Foods Co., Ltd.",
+                "date": "2026-05-25",
+                "deliveryDate": "2026-05-25",
+                "documentTypes": ["delivery_note", "tax_invoice"],
+                "documentTitle": "ใบส่งของ/ใบกำกับภาษี",
+                "invoiceTaxType": "tax",
+                "isTaxInvoice": True,
+                "lines": [self._line()],
+            },
+        )
+
+        self.assertEqual(["delivery_note", "tax_invoice"], document["documentTypes"])
+        self.assertTrue(document["isTaxInvoice"])
+        self.assertEqual("tax", document["invoiceTaxType"])
+        self.assertEqual("delivery", document["taxPointReason"])
+        self.assertEqual("2026-05-25", document["taxPointDate"])
+
+    def test_backend_html_pdf_template_renders_combined_delivery_tax_document(self):
+        html = render_document_html(
+            "invoice",
+            {
+                "id": "INV-2026-050021",
+                "number": "INV-2026-050021",
+                "customer": "Bangkok Foods Co., Ltd.",
+                "date": "2026-05-25",
+                "due": "2026-06-09",
+                "reference": "PO-2026-050001",
+                "documentLanguage": "th",
+                "documentTypes": ["delivery_note", "tax_invoice"],
+                "documentTitle": "ใบส่งของ/ใบกำกับภาษี",
+                "referenceDocuments": [
+                    {
+                        "id": "QT-2026-050001",
+                        "kind": "quotation",
+                        "number": "QT-2026-050001",
+                        "name": "Bangkok Foods Co., Ltd.",
+                        "total": 1070,
+                    }
+                ],
+                "attachments": [{"name": "customer-po-internal.pdf", "category": "customer_po"}],
+                "lines": [self._line()],
+                "amount": 1070,
+                "taxAmount": 70,
+            },
+        )
+
+        self.assertIn("ใบส่งของ/ใบกำกับภาษี", html)
+        self.assertIn("QT-2026-050001", html)
+        self.assertIn("PO-2026-050001", html)
+        self.assertNotIn("customer-po-internal.pdf", html)
+
+    def test_sales_create_ui_keeps_tax_invoice_available_after_invoice_step(self):
+        repo_root = Path(__file__).resolve().parents[2]
+        document_sections_source = (repo_root / "frontend" / "lib" / "document-sections.ts").read_text(encoding="utf-8")
+        sale_create_source = (repo_root / "frontend" / "views" / "sales" / "SaleCreate.tsx").read_text(encoding="utf-8")
+
+        self.assertIn('"delivery_note|tax_invoice"', document_sections_source)
+        self.assertIn('const ids = step.id === "invoice" ? ["invoice"] : [step.id];', sale_create_source)
+        self.assertNotIn('["invoice", "tax_invoice"]', sale_create_source)
 
     def test_deposit_before_delivery_sets_tax_point_payment(self):
         deposit = create_document(

@@ -48,8 +48,9 @@ from .ledger_service import (
     build_project_profitability_rows,
     build_report_rows,
 )
+from .html_pdf_service import generate_html_document_pdf
 from .image_pdf_service import generate_pdf_from_preview_images
-from .pdf_service import generate_document_pdf
+from .pdf_service import generate_document_pdf as generate_reportlab_document_pdf
 from .storage_service import (
     build_generated_path,
     clone_seed,
@@ -3520,7 +3521,7 @@ def build_document_pdf(kind: str, document_id: str) -> dict[str, Any] | None:
 
     resolved = _kind_alias(kind)
     path = build_generated_path(f"{resolved}-{document_id}", "pdf")
-    generate_document_pdf(path, resolved, record)
+    _generate_sales_document_pdf(path, resolved, record)
 
     return {
         "path": path,
@@ -3535,7 +3536,7 @@ def build_preview_document_pdf(kind: str, payload: dict[str, Any]) -> dict[str, 
     record = deepcopy(payload)
     record["id"] = document_number
     path = build_generated_path(f"{resolved}-{document_number}-preview", "pdf")
-    generate_document_pdf(path, resolved, record)
+    _generate_sales_document_pdf(path, resolved, record)
 
     document_title = str(payload.get("documentTitle") or payload.get("documentVariant") or resolved).strip()
     safe_title = "".join(char if char not in '\\/:*?"<>|' else "-" for char in document_title).strip("-") or "document"
@@ -3544,6 +3545,13 @@ def build_preview_document_pdf(kind: str, payload: dict[str, Any]) -> dict[str, 
         "download_name": f"{document_number}-{safe_title}.pdf",
         "mimetype": "application/pdf",
     }
+
+
+def _generate_sales_document_pdf(path: Path, kind: str, record: dict[str, Any]) -> None:
+    try:
+        generate_html_document_pdf(path, kind, record)
+    except Exception:
+        generate_reportlab_document_pdf(path, kind, record)
 
 
 def build_preview_image_pdf(payload: dict[str, Any]) -> dict[str, Any]:
@@ -3594,7 +3602,7 @@ def build_expense_receipt(expense_id: str) -> dict[str, Any] | None:
         "lines": [{**receipt_lines[0], "amount": totals["subtotal"]}],
     }
     path = build_generated_path(f"expense-{expense_id}", "pdf")
-    generate_document_pdf(path, "expense receipt", record)
+    generate_reportlab_document_pdf(path, "expense receipt", record)
     return {
         "path": path,
         "download_name": f"{expense_id}-receipt.pdf",
