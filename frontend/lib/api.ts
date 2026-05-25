@@ -875,6 +875,9 @@ export const downloadDocumentPdf = (kind: DocumentKind, id: string) =>
 export const downloadPreviewDocumentPdf = (kind: DocumentKind, payload: CreateDocumentPayload, fallbackName: string) =>
   downloadApiFileFromPost(`/api/documents/${kind}/preview-pdf`, payload, fallbackName);
 
+export const downloadPreviewHtmlPdf = (html: string, fallbackName: string) =>
+  downloadApiFileFromPost("/api/documents/preview-html-pdf", { html, filename: fallbackName }, fallbackName);
+
 export const downloadPreviewImagesPdf = async (payload: { images: string[]; filename: string }) => {
   const response = await fetch(buildApiUrl("/api/documents/preview-image-pdf"), {
     method: "POST",

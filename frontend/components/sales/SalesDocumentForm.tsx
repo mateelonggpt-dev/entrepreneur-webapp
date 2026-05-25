@@ -52,6 +52,8 @@ import {
   createProject,
   createProduct,
   createVendor,
+  downloadPreviewDocumentPdf,
+  downloadPreviewHtmlPdf,
   downloadPreviewImagesPdf,
   fetchDocument,
   fetchCompanySettings,
@@ -2022,12 +2024,20 @@ export const SalesDocumentForm = ({
   const downloadPreviewPdf = async () => {
     setDownloadingPdf(true);
     try {
+      const filename = `${sanitizeFilename(documentNumber || "sales-document")}-${sanitizeFilename(previewTitle || documentTitleEn || "document")}.pdf`;
       const root = previewRef.current;
       if (!root) {
         throw new Error("Preview is not ready.");
       }
-      const filename = `${sanitizeFilename(documentNumber || "sales-document")}-${sanitizeFilename(previewTitle || documentTitleEn || "document")}.pdf`;
-      await downloadPreviewDomAsPdf(root, filename);
+      try {
+        await downloadPreviewHtmlPdf(await serializePreviewHtmlForPdf(root), filename);
+      } catch (htmlPdfError) {
+        try {
+          await downloadPreviewDocumentPdf(kind, buildDocumentPayload("pending"), filename);
+        } catch {
+          throw htmlPdfError instanceof Error ? htmlPdfError : new Error("Unable to download PDF.");
+        }
+      }
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Unable to download PDF.");
     } finally {
@@ -5125,14 +5135,9 @@ const appendCanvasAsA4Images = (
   }
 };
 
-const downloadPreviewDomAsPdf = async (root: HTMLElement, filename: string) => {
-  const [{ default: html2canvas }, { default: JsPDF }] = await Promise.all([
-    import("html2canvas"),
-    import("jspdf"),
-  ]);
-  if ("fonts" in document) {
-    await document.fonts.ready;
-  }
+const PDF_EXPORT_CLASS = "sales-document-pdf-export";
+
+const waitForPreviewImages = async (root: HTMLElement) => {
   const imageElements = Array.from(root.querySelectorAll("img"));
   await Promise.all(
     imageElements.map(
@@ -5145,9 +5150,39 @@ const downloadPreviewDomAsPdf = async (root: HTMLElement, filename: string) => {
             })
     )
   );
+};
+
+const serializePreviewHtmlForPdf = async (root: HTMLElement) => {
+  if ("fonts" in document) {
+    await document.fonts.ready;
+  }
+  await waitForPreviewImages(root);
+
+  const clone = root.cloneNode(true) as HTMLElement;
+  clone.classList.add(PDF_EXPORT_CLASS);
+
+  const sourceImages = Array.from(root.querySelectorAll("img"));
+  Array.from(clone.querySelectorAll("img")).forEach((image, index) => {
+    const source = sourceImages[index];
+    if (source?.src) {
+      image.setAttribute("src", source.src);
+    }
+  });
+
+  return clone.outerHTML;
+};
+
+const downloadPreviewDomAsPdf = async (root: HTMLElement, filename: string) => {
+  const [{ default: html2canvas }, { default: JsPDF }] = await Promise.all([
+    import("html2canvas"),
+    import("jspdf"),
+  ]);
+  if ("fonts" in document) {
+    await document.fonts.ready;
+  }
+  await waitForPreviewImages(root);
   const PDF_PAGE_WIDTH_PX = 794;
   const PDF_PAGE_HEIGHT_PX = 1123;
-  const PDF_EXPORT_CLASS = "sales-document-pdf-export";
   const pages = Array.from(root.querySelectorAll<HTMLElement>(".sales-document-page"));
   const sourcePages = pages.length ? pages : [root];
   const capturedImages: string[] = [];

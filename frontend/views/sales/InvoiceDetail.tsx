@@ -57,7 +57,6 @@ import {
 import { toast } from "sonner";
 import { invoiceToSalesSummary } from "@/lib/document-sections";
 import { getSalesDocumentActionType, type SalesDocumentActionId } from "@/lib/sales-document-actions";
-import { useAuth } from "@/lib/auth";
 import { collectSalesWorkflowDocuments } from "@/lib/sales-workflow";
 
 const fallbackLines = [
@@ -77,7 +76,6 @@ const InvoiceDetail = ({ id: propId }: { id?: string } = {}) => {
   const id = propId ?? routeId;
   const nav = useNavigate();
   const { data, refresh } = useAppData();
-  const { user } = useAuth();
   const { t } = useTranslation();
   const [invoiceDetail, setInvoiceDetail] = useState<Invoice | null>(null);
   const [attachments, setAttachments] = useState<Attachment[]>([]);
@@ -170,7 +168,6 @@ const InvoiceDetail = ({ id: propId }: { id?: string } = {}) => {
     attachmentCount: attachments.length,
   });
   const invoiceSummary = invoiceToSalesSummary(invoice);
-  const canRemoveDocuments = user?.role === "owner";
 
   const handleSend = async () => {
     try {
@@ -300,7 +297,6 @@ const InvoiceDetail = ({ id: propId }: { id?: string } = {}) => {
             <SalesDocumentActionsMenu
               document={invoiceSummary}
               variant="shared"
-              canRemove={canRemoveDocuments}
               onAction={(action) => void handleMoreAction(action)}
             />
             <Button
@@ -699,12 +695,10 @@ const GenericIncomeDocumentDetail = ({ summary }: { summary: ReturnType<typeof c
   const nav = useNavigate();
   const { t } = useTranslation();
   const { data, refresh } = useAppData();
-  const { user } = useAuth();
   const [attachments, setAttachments] = useState<Attachment[]>([]);
   const [detail, setDetail] = useState<SalesDocumentRecord | null>(null);
   const [evidenceOpen, setEvidenceOpen] = useState(false);
   const [removalAction, setRemovalAction] = useState<"delete" | "void" | null>(null);
-  const canRemoveDocuments = user?.role === "owner";
   const customerPoAttachments = useMemo(() => attachments.filter(isCustomerPoAttachment), [attachments]);
   const genericAttachments = useMemo(() => attachments.filter((attachment) => !isCustomerPoAttachment(attachment)), [attachments]);
 
@@ -799,7 +793,6 @@ const GenericIncomeDocumentDetail = ({ summary }: { summary: ReturnType<typeof c
             <SalesDocumentActionsMenu
               document={summary}
               variant="shared"
-              canRemove={canRemoveDocuments}
               onAction={(action) => void handleMoreAction(action)}
             />
           </>

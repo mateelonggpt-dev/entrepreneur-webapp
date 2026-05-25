@@ -69,7 +69,7 @@ const SaleCreate = () => {
     const text = t("incomeCreate.workflowStepComplete");
     workflow.steps.forEach((step) => {
       if (step.status !== "complete") return;
-      const ids = step.id === "invoice" ? ["invoice", "tax_invoice"] : [step.id];
+      const ids = step.id === "invoice" ? ["invoice"] : [step.id];
       ids.forEach((id) => {
         if (queryDefaults.workflowStep === step.id) return;
         disabled[id] = text;

@@ -161,9 +161,19 @@ export const SalesDocumentTable = ({
                             </button>
                             <AttachmentBadge count={attachmentCount} onClick={attachmentCount ? () => onAttachmentClick?.(document) : undefined} />
                             {pack.documents.length > 1 ? (
-                              <span className="rounded-full bg-secondary px-2 py-0.5 text-[10px] font-semibold text-muted-foreground">
-                                {pack.documents.length} {language === "th" ? "เอกสาร" : "docs"}
-                              </span>
+                              <button
+                                type="button"
+                                className="rounded-full bg-secondary px-2 py-0.5 text-[10px] font-semibold text-muted-foreground transition hover:bg-primary/10 hover:text-primary"
+                                title={
+                                  language === "th"
+                                    ? "เปิดรายการเอกสารในโฟลว์เพื่อลบหรือยกเลิกเฉพาะเอกสาร"
+                                    : "Open flow documents to delete or void a specific document"
+                                }
+                                onClick={() => setExpandedPacks((current) => ({ ...current, [pack.id]: !current[pack.id] }))}
+                              >
+                                {language === "th" ? "จัดการ" : "Manage"} {pack.documents.length}{" "}
+                                {language === "th" ? "เอกสาร" : "docs"}
+                              </button>
                             ) : null}
                           </div>
                           <div className="mt-2">
@@ -301,6 +311,11 @@ const PackDetails = ({
   renderRowActions: (summary: DocumentSummary) => ReactNode;
 }) => (
   <div className="mt-3 rounded-lg border border-border/70 bg-secondary/20">
+    <div className="border-b border-border/50 px-3 py-2 text-[11px] leading-relaxed text-muted-foreground">
+      {language === "th"
+        ? "เอกสารแต่ละใบในโฟลว์มีเมนูของตัวเอง ใช้เมนูสามจุดด้านขวาเพื่อลบเอกสารร่าง หรือยกเลิกเอกสารที่ออกแล้ว"
+        : "Each flow document has its own actions menu. Use the three-dot menu on the right to delete drafts or void issued documents."}
+    </div>
     {pack.documents.map((document) => {
       const attachmentCount = document.attachmentCount ?? document.attachments?.length ?? 0;
       const steps = documentWorkflowSteps(document).map((step) => getWorkflowStepLabel(step, language)).join(" / ");

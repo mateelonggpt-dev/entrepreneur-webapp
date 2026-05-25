@@ -141,10 +141,10 @@ export const PURCHASE_DOCUMENT_TYPE_LABELS = Object.fromEntries(
 export const getRealDocumentTypes = (selectedTypes: string[]) =>
   selectedTypes.filter((type) => type !== "none" && type !== "others");
 
-const invoiceLikeTypes = new Set(["invoice", "tax_invoice", "billing_note"]);
 const normalizeBillingInvoiceType = (type: string) => (type === "billing_note" ? "invoice" : type);
 const normalizeCombinationType = (type: string) =>
-  type === "tax_invoice" || type === "billing_note" ? "invoice" : type;
+  type === "billing_note" ? "invoice" : type;
+const invoiceLikeTypes = new Set(["invoice", "tax_invoice", "billing_note"]);
 
 export const isSalesDocumentCombinationAllowed = (currentTypes: string[], candidateType: string) => {
   const nextTypes = Array.from(new Set([...currentTypes, candidateType].filter((type) => !["none", "others"].includes(type))));
@@ -163,8 +163,11 @@ export const isSalesDocumentCombinationAllowed = (currentTypes: string[], candid
 
   const allowedPairs = new Set([
     "delivery_note|invoice",
+    "delivery_note|tax_invoice",
     "delivery_note|receipt",
+    "invoice|tax_invoice",
     "invoice|receipt",
+    "receipt|tax_invoice",
   ]);
   const normalizedTypes = nextTypes.map(normalizeCombinationType);
 

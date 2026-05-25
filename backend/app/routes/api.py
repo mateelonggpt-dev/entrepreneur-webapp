@@ -10,6 +10,7 @@ from ..services.data_service import (
     build_attachment_download,
     build_document_pdf,
     build_preview_document_pdf,
+    build_preview_html_pdf,
     build_preview_image_pdf,
     build_expense_receipt,
     build_resource_export,
@@ -773,6 +774,16 @@ def document_preview_image_pdf():
     payload = request.get_json(silent=True) or {}
     try:
         document = build_preview_image_pdf(payload)
+    except ValueError as exc:
+        abort(400, description=str(exc))
+    return send_file(document["path"], as_attachment=True, download_name=document["download_name"], mimetype=document["mimetype"])
+
+
+@api_blueprint.post("/documents/preview-html-pdf")
+def document_preview_html_pdf():
+    payload = request.get_json(silent=True) or {}
+    try:
+        document = build_preview_html_pdf(payload)
     except ValueError as exc:
         abort(400, description=str(exc))
     return send_file(document["path"], as_attachment=True, download_name=document["download_name"], mimetype=document["mimetype"])
