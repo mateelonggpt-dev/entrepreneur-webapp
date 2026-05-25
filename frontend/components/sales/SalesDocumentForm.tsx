@@ -1,4 +1,4 @@
-﻿import { useEffect, useMemo, useRef, useState, type ElementType, type ReactNode } from "react";
+import { useEffect, useMemo, useRef, useState, type ElementType, type ReactNode } from "react";
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import {
@@ -2359,10 +2359,10 @@ export const SalesDocumentForm = ({
           entityType: kind,
           entityId: created.id,
           files: poAttachmentFiles,
-          category: "customer-po",
+          category: "customer_po",
           note: "Customer PO / purchase order evidence. Internal record only; not printed on document PDF.",
           attachedBy: selectedSellerUser?.name || salesperson || "Matter Acc.",
-          tags: ["customer-po", "internal-only"],
+          tags: ["customer_po", "customer-po", "internal-only"],
         });
       }
 
@@ -2396,11 +2396,11 @@ export const SalesDocumentForm = ({
             </Button>
             <Button type="button" variant="outline" onClick={() => void submit("draft")} disabled={Boolean(submitting)}>
               {submitting === "draft" ? <Loader2 className="mr-1.5 h-4 w-4 animate-spin" /> : <Save className="mr-1.5 h-4 w-4" />}
-              Save Draft
+              {documentLanguage === "th" ? "บันทึกร่าง" : "Save Draft"}
             </Button>
             <Button type="button" className="border-0 bg-gradient-brand text-primary-foreground shadow-brand" onClick={() => void submit("create")} disabled={Boolean(submitting)}>
               {submitting === "create" ? <Loader2 className="mr-1.5 h-4 w-4 animate-spin" /> : <Send className="mr-1.5 h-4 w-4" />}
-              {mode === "edit" ? "Save Document" : "Create Document"}
+              {mode === "edit" ? (documentLanguage === "th" ? "บันทึกเอกสาร" : "Save Document") : (documentLanguage === "th" ? "สร้างเอกสาร" : "Create Document")}
             </Button>
           </div>
         </div>
@@ -2943,6 +2943,7 @@ export const SalesDocumentForm = ({
                   <tr key={line.id} className={`border-b border-slate-200 align-top ${warning ? "bg-red-50" : ""}`}>
                     <td className="px-2 py-2">
                       <ProductCombobox
+                              language={documentLanguage}
                         value={line.sku}
                         products={data.products}
                         mode="code"
@@ -2952,13 +2953,14 @@ export const SalesDocumentForm = ({
                       {line.sku && !exists ? (
                         <label className="mt-2 flex items-center gap-2 text-[11px] text-slate-500">
                           <input type="checkbox" checked={Boolean(line.addAsProduct)} onChange={(event) => updateLine(line.id, "addAsProduct", event.target.checked)} />
-                          Add as new product/service
+                          {documentLanguage === "th" ? "เพิ่มเป็นสินค้า/บริการใหม่" : "Add as new product/service"}
                         </label>
                       ) : null}
                     </td>
                     <td className="px-2 py-2">
                       <div className="space-y-1.5">
                         <ProductCombobox
+                              language={documentLanguage}
                           value={line.desc}
                           products={data.products}
                           mode="description"
@@ -2979,7 +2981,7 @@ export const SalesDocumentForm = ({
                           <p>Only {formatQuantity(line.availableStock)} units available in stock. You entered {formatQuantity(line.qty)}.</p>
                           <label className="flex items-center gap-2">
                             <input type="checkbox" checked={Boolean(line.stockOverrideAcknowledged)} onChange={(event) => updateLine(line.id, "stockOverrideAcknowledged", event.target.checked)} />
-                            Acknowledge override
+                            {documentLanguage === "th" ? "ยืนยันการ override" : "Acknowledge override"}
                           </label>
                         </div>
                       ) : null}
@@ -3426,14 +3428,14 @@ export const SalesDocumentForm = ({
                           {line.sku && !exists ? (
                             <label className="mt-2 flex items-center gap-2 text-[11px] text-muted-foreground">
                               <input type="checkbox" checked={Boolean(line.addAsProduct)} onChange={(event) => updateLine(line.id, "addAsProduct", event.target.checked)} />
-                              Add as new product/service
+                              {documentLanguage === "th" ? "เพิ่มเป็นสินค้า/บริการใหม่" : "Add as new product/service"}
                             </label>
                           ) : null}
                         </td>
                         <td className="px-2 py-2">
                           <div className="space-y-1.5">
-                            <Input value={line.desc} onChange={(event) => updateLine(line.id, "desc", event.target.value)} className="h-8" placeholder="Description" />
-                            <Input value={line.details} onChange={(event) => updateLine(line.id, "details", event.target.value)} className="h-8 text-xs" placeholder="Detail / extra description" />
+                            <Input value={line.desc} onChange={(event) => updateLine(line.id, "desc", event.target.value)} className="h-8" placeholder={labels.description} />
+                            <Input value={line.details} onChange={(event) => updateLine(line.id, "details", event.target.value)} className="h-8 text-xs" placeholder={labels.detail} />
                           </div>
                         </td>
                         <td className="px-2 py-2">
@@ -3443,7 +3445,7 @@ export const SalesDocumentForm = ({
                               <p>Only {formatQuantity(line.availableStock)} units available in stock. You entered {formatQuantity(line.qty)}.</p>
                               <label className="flex items-center gap-2">
                                 <input type="checkbox" checked={Boolean(line.stockOverrideAcknowledged)} onChange={(event) => updateLine(line.id, "stockOverrideAcknowledged", event.target.checked)} />
-                                Acknowledge override
+                                {documentLanguage === "th" ? "ยืนยันการ override" : "Acknowledge override"}
                               </label>
                             </div>
                           ) : null}
@@ -3519,7 +3521,7 @@ export const SalesDocumentForm = ({
               </table>
             </div>
             <Button type="button" variant="outline" size="sm" className="gap-1.5" onClick={addLine}>
-              <Plus className="h-4 w-4" /> Add line
+              <Plus className="h-4 w-4" /> {labels.addLine}
             </Button>
           </Section>
 
@@ -4171,6 +4173,7 @@ const ProductCombobox = ({
   products,
   mode,
   placeholder,
+  language = "th",
   className = "",
   onSelect,
   onChange,
@@ -4179,12 +4182,31 @@ const ProductCombobox = ({
   products: Product[];
   mode: "code" | "description";
   placeholder?: string;
+  language?: DocumentLanguage;
   className?: string;
   onSelect: (product: Product) => void;
   onChange: (value: string) => void;
 }) => {
   const [open, setOpen] = useState(false);
-  const label = value || placeholder || (mode === "code" ? "Code" : "Description");
+  const isThai = language === "th";
+  const label = value || placeholder || (mode === "code" ? (isThai ? "รหัสสินค้า/บริการ" : "Code") : (isThai ? "คำอธิบายสินค้า/บริการ" : "Description"));
+  const searchPlaceholder = placeholder || (mode === "code" ? (isThai ? "ค้นหารหัสหรือชื่อสินค้า/บริการ" : "Search product code or name") : (isThai ? "ค้นหาชื่อสินค้า/บริการ" : "Search product/service name"));
+  const groupHeading = mode === "code" ? (isThai ? "รหัสสินค้า/บริการ" : "Product codes") : (isThai ? "สินค้าและบริการ" : "Products and services");
+  const productSummary = (product: Product) => {
+    const summary = String(product.stockSummary || product.productType || product.type || "-");
+    if (!isThai) return summary;
+    const onHandMatch = summary.match(/^(\d+(?:\.\d+)?) on hand$/i);
+    if (onHandMatch) return `คงเหลือ ${onHandMatch[1]}`;
+    const mapping: Record<string, string> = {
+      "Service item": "บริการ",
+      "Non-stock item": "สินค้า/บริการไม่ตัดสต็อก",
+      "Low stock": "สต็อกต่ำ",
+      "Inactive stock item": "สินค้าปิดใช้งาน",
+      "Out of stock": "สินค้าหมด",
+      "Negative stock": "สต็อกติดลบ",
+    };
+    return mapping[summary] ?? summary;
+  };
   return (
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
@@ -4202,10 +4224,10 @@ const ProductCombobox = ({
       </PopoverTrigger>
       <PopoverContent className="w-[min(520px,calc(100vw-2rem))] p-0" align="start">
         <Command filter={(itemValue, search) => (itemValue.toLowerCase().includes(search.toLowerCase()) ? 1 : 0)}>
-          <CommandInput placeholder={mode === "code" ? "Search product code or name" : "Search product/service name"} value={value} onValueChange={onChange} />
+          <CommandInput placeholder={searchPlaceholder} value={value} onValueChange={onChange} />
           <CommandList>
-            <CommandEmpty>No matching products.</CommandEmpty>
-            <CommandGroup heading={mode === "code" ? "Product codes" : "Products and services"}>
+            <CommandEmpty>{isThai ? "ไม่พบสินค้า/บริการ" : "No matching products."}</CommandEmpty>
+            <CommandGroup heading={groupHeading}>
               {products.map((product) => (
                 <CommandItem
                   key={product.sku}
@@ -4217,8 +4239,8 @@ const ProductCombobox = ({
                 >
                   <PackageSearch className="mr-2 h-4 w-4 text-primary" />
                   <div className="min-w-0">
-                    <p className="truncate text-sm font-medium">{product.sku} â€” {product.name}</p>
-                    <p className="truncate text-xs text-muted-foreground">{product.stockSummary || product.productType || product.type || "-"}</p>
+                    <p className="truncate text-sm font-medium">{product.sku} - {product.name}</p>
+                    <p className="truncate text-xs text-muted-foreground">{productSummary(product)}</p>
                   </div>
                 </CommandItem>
               ))}
