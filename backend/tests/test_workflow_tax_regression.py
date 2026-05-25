@@ -278,8 +278,10 @@ class WorkflowTaxRegressionTests(unittest.TestCase):
         self.assertIn('"delivery_note|tax_invoice"', document_sections_source)
         self.assertIn('const ids = step.id === "invoice" ? ["invoice"] : [step.id];', sale_create_source)
         self.assertNotIn('["invoice", "tax_invoice"]', sale_create_source)
-        self.assertIn("min-height: 118px !important", template_source)
+        self.assertIn("min-height: 88px !important", template_source)
+        self.assertIn("min-height: 78px !important", template_source)
         self.assertNotIn("min-height: 58px !important", template_source)
+        self.assertNotIn("min-height: 118px !important", template_source)
 
     def test_deposit_before_delivery_sets_tax_point_payment(self):
         deposit = create_document(
