@@ -190,7 +190,7 @@ export const SalesDocumentTable = ({
                         {documentTypes}
                       </span>
                       {document.documentTitle ? (
-                        <p className="mt-1 max-w-[160px] truncate text-[11px] text-muted-foreground">{document.documentTitle}</p>
+                        <p className="mt-1 max-w-[220px] break-words text-[11px] leading-snug text-muted-foreground">{document.documentTitle}</p>
                       ) : null}
                     </td>
                     <td className="px-3 py-3.5 font-medium">{document.party}</td>

@@ -1092,20 +1092,28 @@ export const SalesDocumentForm = ({
   const [invoiceTaxType, setInvoiceTaxType] = useState<"normal" | "tax">(initialTaxInvoice ? "tax" : "normal");
   const [invoicePaymentMode, setInvoicePaymentMode] = useState<InvoicePaymentMode>(initialInvoicePaymentMode);
   const isDepositPaymentDocument = isInvoiceDocument && invoicePaymentMode === "deposit";
-  const documentTitleTh = useMemo(
+  const titleDocumentTypes = useMemo(
     () =>
-      isInvoiceDocument
-        ? isTaxInvoiceDocument || invoiceTaxType === "tax"
-          ? "ใบกำกับภาษี"
-          : "ใบวางบิล/ใบแจ้งหนี้"
-        : documentTitle || buildSalesDocumentTitle(realTypes, "th"),
-    [documentTitle, invoiceTaxType, isInvoiceDocument, isTaxInvoiceDocument, realTypes]
+      realTypes.map((type) =>
+        type === "invoice" && invoiceTaxType === "tax" ? "tax_invoice" : type
+      ),
+    [invoiceTaxType, realTypes]
+  );
+  const documentTitleTh = useMemo(
+    () => documentTitle || buildSalesDocumentTitle(titleDocumentTypes, "th"),
+    [documentTitle, titleDocumentTypes]
   );
   const documentTitleEn = useMemo(
-    () => (isInvoiceDocument ? (isTaxInvoiceDocument || invoiceTaxType === "tax" ? "Tax Invoice" : "Invoice") : buildSalesDocumentTitle(realTypes, "en")),
-    [invoiceTaxType, isInvoiceDocument, isTaxInvoiceDocument, realTypes]
+    () => buildSalesDocumentTitle(titleDocumentTypes, "en"),
+    [titleDocumentTypes]
   );
   const previewTitle = documentLanguage === "th" ? documentTitleTh : documentTitleEn;
+  const previewTitleSizeClass =
+    Array.from(previewTitle).length > 26
+      ? "text-xl sm:text-[1.45rem] xl:text-[1.55rem]"
+      : Array.from(previewTitle).length > 18
+        ? "text-[1.35rem] sm:text-2xl"
+        : "text-2xl";
   const kind = useMemo(() => resolveSalesDocumentKind(primaryDocumentType), [primaryDocumentType]);
   const numberPrefix = useMemo(() => resolveNumberPrefix(primaryDocumentType, data, realTypes), [data, primaryDocumentType, realTypes]);
   const [documentNumber, setDocumentNumber] = useState("");
@@ -2517,7 +2525,7 @@ export const SalesDocumentForm = ({
                 </SelectContent>
               </Select>
             </div>
-            <h2 className="text-2xl font-bold leading-tight">{previewTitle}</h2>
+            <h2 className={`${previewTitleSizeClass} break-words font-bold leading-tight`}>{previewTitle}</h2>
             <div className="mt-3 w-full max-w-56 xl:ml-auto" data-field="documentNumber">
               <Input
                 value={documentNumber}

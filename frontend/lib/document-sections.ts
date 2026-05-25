@@ -163,7 +163,9 @@ export const isSalesDocumentCombinationAllowed = (currentTypes: string[], candid
 
   const allowedPairs = new Set([
     "delivery_note|invoice",
+    "delivery_note|receipt",
     "billing_note|invoice",
+    "invoice|receipt",
   ]);
   const normalizedTypes = nextTypes.map(normalizeCombinationType);
 
